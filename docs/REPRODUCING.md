@@ -64,6 +64,12 @@ npm run bench:replay -- scaling-rq1
 npm run bench:replay -- scaling-1m
 ```
 
+To regenerate the combined SOTA headline table from committed rows:
+
+```powershell
+npm run bench:sota:headline
+```
+
 This recomputes the aggregated `summary.json` from the cached `results.jsonl` for that run. Expected wall clock: **under 5 minutes** end-to-end including disk I/O for the full 9M corpus sweep.
 
 If the run directory is missing, replay will fail. Verify with:
@@ -164,7 +170,23 @@ Optional flags pick which cell of the sweep is the "headline":
 npm run bench:report -- <runId> --headline-ctx 8K --headline-corpus 1M
 ```
 
-## 6. Troubleshooting
+## 6. SOTA sidecar runs
+
+The SOTA sidecars are optional and slow. Start the sidecars as described in
+`services/README.md`, then run:
+
+```powershell
+npm run bench:sota:smoke
+npm run bench:sota:sidecars
+```
+
+`bench:sota:smoke` checks the CSM-vs-LightRAG path on three queries.
+`bench:sota:sidecars` runs the currently wired SOTA adapters:
+LightRAG, Mem0, and HippoRAG. If Mem0 or HippoRAG fails to install, index, or
+query cleanly, preserve the failure log and mark it as blocked. Do not count a
+sidecar failure as a CSM win.
+
+## 7. Troubleshooting
 
 **`Cannot find module @huggingface/transformers`** — run `npm install` first. This dependency powers the local embedding baselines and is installed from `package-lock.json`.
 

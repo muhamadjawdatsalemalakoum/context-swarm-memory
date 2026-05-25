@@ -1,19 +1,27 @@
 # CSM vs 2025 SOTA memory systems — head-to-head
 
-**Goal of this document:** measure CSM against the *current* state of the art in
-LLM memory — not just the 2023-vintage RAG baselines — on the same 30-query
-PaySwift benchmark, same local Gemma 4 31B answering model, same 100K-token
-corpus / 8K context. The SOTA targets are the three most-cited 2025 memory
-systems: **Mem0**, **HippoRAG 2**, and **LightRAG**.
+**Goal of this document:** report the v0.2 CSM head-to-head against the SOTA
+memory systems that were wired for Phase gamma — not just the 2023-vintage RAG
+baselines — on the same 30-query PaySwift benchmark, same local Gemma 4 31B
+answering model, same 100K-token corpus / 8K context. The Phase gamma targets
+were **Mem0**, **HippoRAG 2**, and **LightRAG**. The broader 2026 target ladder
+lives in [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md).
 
-**Status (2026-05-21): ✅ COMPLETE.** LightRAG ran the full 30-query benchmark
-head-to-head — **CSM wins, and the accuracy win is statistically significant**
-(paired McNemar p=0.031: CSM 30/30 vs LightRAG 24/30 in the headline run, with 6
-CSM-only wins and 0 LightRAG-only wins; CSM is ~27–30/30 across runs, ≥ LightRAG
-either way). CSM also leads on citation F1 (0.505 vs 0.265) and precision
-(0.789 vs 0.451). Mem0 and HippoRAG hit hard blockers running locally on consumer
-hardware — documented below, because "the SOTA is impractical to deploy locally"
-is itself a load-bearing finding for CSM's thesis.
+**Status (2026-05-21): Phase gamma complete for LightRAG, SOTA ladder ongoing.**
+LightRAG ran the full 30-query benchmark head-to-head — **CSM wins, and the
+accuracy win is statistically significant** (paired McNemar p=0.031: CSM 30/30
+vs LightRAG 24/30 in the headline run, with 6 CSM-only wins and 0 LightRAG-only
+wins; CSM is ~27–30/30 across runs, ≥ LightRAG either way). CSM also leads on
+citation F1 (0.505 vs 0.265) and precision (0.789 vs 0.451). Mem0 and HippoRAG
+hit hard blockers running locally on consumer hardware — documented below,
+because "the SOTA is impractical to deploy locally" is itself a load-bearing
+finding for CSM's thesis.
+
+This document is **not** a field-wide 2026 SOTA closure. The current ladder also
+needs Graphiti/Zep, Microsoft GraphRAG, APEX-MEM, LightMem/BEAM, LongMemEval,
+LoCoMo, BABILong, A-MEM/AgeMem, MemOS, and ShardMemo coverage. See
+[`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md) for the current
+target set and go/no-go rules.
 
 **Methodology correction (citation re-score, commit `bc03189`).** While validating
 LightRAG's first results we found and fixed a citation-id **parsing** bug: the
