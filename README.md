@@ -65,6 +65,8 @@ The next scientific milestone is therefore concrete: move the SOTA headline to
 **Agent Memory Benchmark / BEAM** for memory-at-scale, then **Microsoft
 STATE-Bench Memory Track** for agentic task improvement. BABILong stays as a
 diagnostic long-context check unless fresh frontier-model rows are added. The
+named product north star is **Hindsight**: CSM needs paired AMB/BEAM rows against
+Hindsight before making any serious SOTA memory claim. The
 freshness gate is documented in
 [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md), and the selected
 benchmark ladder is tracked in
@@ -216,6 +218,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
 | [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md) | 2026 freshness gate for any future SOTA claim |
 | [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md) | Current SOTA ladder, benchmark axes, go/no-go rules, and next integrations |
+| [`integrations/amb/README.md`](integrations/amb/README.md) | Agent Memory Benchmark / BEAM bridge for running CSM as an AMB memory provider |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
 | [`docs/GEMINI.md`](docs/GEMINI.md) | Hosted Gemini provider setup and cross-model confirmation workflow |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) | Step-by-step reproduction on a local 4090 |

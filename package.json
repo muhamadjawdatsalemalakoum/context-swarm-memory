@@ -25,6 +25,8 @@
     "bench:sota:sidecars": "tsx src/cli/index.ts bench run --systems csm,lightrag,mem0,hipporag --trials 1 --corpus-sizes 100K --model-contexts 8K",
     "bench:babilong:fetch": "tsx scripts/fetch-babilong.ts",
     "bench:babilong:csm": "tsx scripts/run-babilong-standard.ts --systems csm",
+    "amb:patch": "tsx scripts/patch-amb-csm-provider.ts",
+    "amb:csm:retrieve": "tsx scripts/amb-csm-retrieve.ts",
     "bench:fill-cache": "tsx src/cli/index.ts bench fill-cache",
     "bench:replay": "tsx src/cli/index.ts bench replay",
     "bench:report": "tsx src/cli/index.ts bench report",
