@@ -109,7 +109,7 @@ Environment:
   CSM_OPENAI_BASE_URL   default https://api.openai.com/v1; for Ollama: http://localhost:11434/v1
   OPENAI_API_KEY        required for hosted OpenAI; "ollama" auto-applied for local
   GEMINI_API_KEY        required for CSM_PROVIDER=gemini (GOOGLE_API_KEY also accepted)
-  CSM_GEMINI_MODEL      default Gemini model (default: gemini-3-flash-preview)
+  CSM_GEMINI_MODEL      default Gemini model (default: gemini-3.5-flash)
   CSM_OPENAI_MODEL      default model when stage models aren't set
   CSM_PROBE_MODEL       e.g. gemma4:e4b   (cheap, runs per candidate shard)
   CSM_RECALL_MODEL      e.g. gemma4:31b   (heavier, only on selected shards)
@@ -477,7 +477,7 @@ async function cmdProvider(rest: string[]): Promise<number> {
         : (process.env.CSM_OPENAI_BASE_URL ?? (resolved === "ollama" ? "http://localhost:11434/v1 (default)" : "https://api.openai.com/v1 (default)"));
     const defaultModel =
       resolved === "gemini"
-        ? (process.env.CSM_GEMINI_MODEL ?? process.env.CSM_MODEL ?? "gemini-3-flash-preview (default)")
+        ? (process.env.CSM_GEMINI_MODEL ?? process.env.CSM_MODEL ?? "gemini-3.5-flash (default)")
         : (process.env.CSM_OPENAI_MODEL ?? process.env.CSM_MODEL ?? "(unset)");
     console.log(`base url          : ${baseUrl}`);
     console.log(`default model     : ${defaultModel}`);

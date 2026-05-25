@@ -7,7 +7,7 @@ import type {
 } from "./LlmProvider.js";
 
 export const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-export const GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview";
+export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
 export interface GeminiProviderOptions {
   apiKey?: string;
@@ -79,7 +79,7 @@ export class GeminiProvider implements LlmProvider {
 
     const model = args.model ?? this.defaultModel;
     const endpoint = `${this.baseURL}/models/${encodeURIComponent(model)}:generateContent`;
-    const thinkingConfig = geminiThinkingConfig(model, args.jsonMode || Boolean(args.disableThinking));
+    const thinkingConfig = geminiThinkingConfig(model);
     const body: Record<string, unknown> = {
       systemInstruction: {
         parts: [{ text: args.system }],
@@ -164,14 +164,13 @@ function redactedEndpoint(baseURL: string, model: string): string {
   return `${stripSlash(baseURL)}/models/${encodeURIComponent(model)}:generateContent`;
 }
 
-function geminiThinkingConfig(model: string, lowLatency: boolean): Record<string, unknown> | undefined {
-  if (!lowLatency) return undefined;
+function geminiThinkingConfig(model: string): Record<string, unknown> | undefined {
+  const mode = (process.env.CSM_GEMINI_THINKING ?? "low").toLowerCase().trim();
+  if (mode === "default") return undefined;
   const lower = model.toLowerCase();
   if (lower.startsWith("gemini-3")) {
-    return { thinkingLevel: "minimal" };
-  }
-  if (lower.startsWith("gemini-2.5")) {
-    return { thinkingBudget: 0 };
+    if (mode === "none") return undefined;
+    return { thinkingLevel: mode };
   }
   return undefined;
 }

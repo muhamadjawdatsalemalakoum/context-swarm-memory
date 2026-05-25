@@ -63,8 +63,8 @@ For a faster hosted cross-model run:
 ```bash
 export CSM_PROVIDER=gemini
 export GEMINI_API_KEY=...
-npm run bench:confirm -- --run-id confirm-gemini-flash-v1 --model gemini-3-flash-preview
-npm run bench:trials -- confirm-gemini-flash-v1
+npm run bench:confirm -- --run-id confirm-gemini35-flash-v1 --model gemini-3.5-flash --model-contexts 160K --corpus-sizes 100K,1M,2M
+npm run bench:trials -- confirm-gemini35-flash-v1
 ```
 
 Publish the resulting `trial-summary.md` and `results.jsonl` as either committed

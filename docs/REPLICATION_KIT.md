@@ -44,9 +44,18 @@ replacement for the Gemma headline because the answering model changes.
 ```bash
 export CSM_PROVIDER=gemini
 export GEMINI_API_KEY=...
-export CSM_GEMINI_MODEL=gemini-3-flash-preview
-npm run bench:confirm -- --run-id replicate-gemini-flash-v1 --model gemini-3-flash-preview
-npm run bench:trials -- replicate-gemini-flash-v1
+export CSM_GEMINI_MODEL=gemini-3.5-flash
+export CSM_GEMINI_THINKING=low
+npm run bench:confirm -- --run-id replicate-gemini35-flash-v1 --model gemini-3.5-flash --model-contexts 160K --corpus-sizes 100K,1M,2M
+npm run bench:trials -- replicate-gemini35-flash-v1
+```
+
+For a larger CSM scaling run, keep the model budget around 15% of Gemini 3.5
+Flash's 1,048,576-token input limit and scale the memory corpus instead:
+
+```bash
+npm run bench:confirm -- --run-id replicate-gemini35-160k-scale-v1 --model gemini-3.5-flash --model-contexts 160K --corpus-sizes 100K,1M,2M,5M,9M
+npm run bench:trials -- replicate-gemini35-160k-scale-v1
 ```
 
 ## Report template

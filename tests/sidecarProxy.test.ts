@@ -305,6 +305,49 @@ describe("sidecarProxy — Phase γ cache fairness", () => {
     }
   });
 
+  it("injects Gemini OpenAI reasoning effort and hashes it into the cache key", async () => {
+    const upstream = makeMockUpstream();
+    upstream.setResponse("gemini low effort response");
+    const previousEffort = process.env.CSM_GEMINI_REASONING_EFFORT;
+    process.env.CSM_GEMINI_REASONING_EFFORT = "low";
+    const { server, stats, port } = await startTestProxy({
+      upstreamBaseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+      fetchImpl: upstream.fetchImpl,
+      cacheRoot,
+    });
+    try {
+      const body = {
+        model: "gemini-3.5-flash",
+        messages: [
+          { role: "system", content: "sys" },
+          { role: "user", content: "say hi" },
+        ],
+        temperature: 0,
+        max_tokens: 16,
+      };
+
+      const r1 = await postChat(port, body);
+      expect(r1.headers.get("x-cache-hit")).toBe("false");
+      expect(upstream.calls.length).toBe(1);
+      expect(JSON.parse(upstream.calls[0]!.body ?? "{}")).toMatchObject({
+        reasoning_effort: "low",
+      });
+
+      upstream.setResponse("THIS SHOULD NOT BE RETURNED");
+      const r2 = await postChat(port, body);
+      expect(r2.headers.get("x-cache-hit")).toBe("true");
+      expect(stats.hits).toBe(1);
+      expect(upstream.calls.length).toBe(1);
+    } finally {
+      if (previousEffort === undefined) {
+        delete process.env.CSM_GEMINI_REASONING_EFFORT;
+      } else {
+        process.env.CSM_GEMINI_REASONING_EFFORT = previousEffort;
+      }
+      await closeServer(server);
+    }
+  });
+
   it("emits x-cache-bytes-in and x-cache-bytes-out headers", async () => {
     const upstream = makeMockUpstream();
     upstream.setResponse("a meaningful response longer than 5 chars");
