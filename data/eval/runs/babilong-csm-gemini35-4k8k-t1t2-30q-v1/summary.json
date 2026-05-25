@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-05-25T19:42:46.137Z",
+  "cells": [
+    {
+      "system": "csm",
+      "task": "task1",
+      "length": "4K",
+      "errors": 0,
+      "n": 30,
+      "accuracy": 1,
+      "accuracyCi95": [
+        1,
+        1
+      ],
+      "meanCitationPrecision": 0.6666666666666666,
+      "meanCitationRecall": 0.36833333333333335,
+      "meanCitationF1": 0.2928571428571428,
+      "meanInputTokens": 4049.4333333333334,
+      "meanOutputTokens": 309.7,
+      "meanLatencyMs": 4803.5
+    },
+    {
+      "system": "csm",
+      "task": "task1",
+      "length": "8K",
+      "errors": 0,
+      "n": 30,
+      "accuracy": 1,
+      "accuracyCi95": [
+        1,
+        1
+      ],
+      "meanCitationPrecision": 0.6333333333333333,
+      "meanCitationRecall": 0.31818783068783063,
+      "meanCitationF1": 0.23661209161209162,
+      "meanInputTokens": 4049,
+      "meanOutputTokens": 315.56666666666666,
+      "meanLatencyMs": 4876.333333333333
+    },
+    {
+      "system": "csm",
+      "task": "task2",
+      "length": "4K",
+      "errors": 0,
+      "n": 30,
+      "accuracy": 0.1,
+      "accuracyCi95": [
+        0,
+        0.2
+      ],
+      "meanCitationPrecision": 0.03867521367521368,
+      "meanCitationRecall": 0.12583333333333332,
+      "meanCitationF1": 0.024603174603174606,
+      "meanInputTokens": 4083.866666666667,
+      "meanOutputTokens": 362.73333333333335,
+      "meanLatencyMs": 6062.966666666666
+    },
+    {
+      "system": "csm",
+      "task": "task2",
+      "length": "8K",
+      "errors": 0,
+      "n": 30,
+      "accuracy": 0,
+      "accuracyCi95": [
+        0,
+        0
+      ],
+      "meanCitationPrecision": 0.007692307692307693,
+      "meanCitationRecall": 0.115,
+      "meanCitationF1": 0.009718670076726343,
+      "meanInputTokens": 4098.5,
+      "meanOutputTokens": 351.1,
+      "meanLatencyMs": 6142.033333333334
+    }
+  ]
+}

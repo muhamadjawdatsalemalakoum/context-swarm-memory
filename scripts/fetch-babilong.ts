@@ -1,143 +1,74 @@
 #!/usr/bin/env tsx
 /**
- * One-shot fetcher for the BABILong benchmark splits we need for the CSM
- * scaling sweep. Pulls Tasks 1, 2, 3 (single-fact / two-fact / three-fact
- * supporting-facts) at context lengths {0K, 4K, 8K, 32K, 128K, 256K, 1M}
- * directly from Hugging Face's public `resolve` URLs — no auth, no
- * `datasets`-library dependency, no Python.
+ * Fetch BABILong rows from Hugging Face as JSONL.
  *
- * BABILong on HF is published as multiple sibling repos, one per context
- * length, under the `RMT-team` org. The canonical naming pattern is
- * `RMT-team/babilong-<length>-samples`, with files laid out per task at
- * `data/<task>-<split>-NNNNN-of-MMMMM.parquet` (HF's default Datasets-pyarrow
- * sharding). The 0K split (raw bAbI with no haystack) is published as a
- * subconfig of `RMT-team/babilong-1k-samples` per the BABILong paper, so we
- * source it from there. See the per-row mapping in `LENGTH_REPOS` below.
+ * The original integration expected parquet files. That made the public path
+ * fragile because fresh clones would need an extra parquet reader. Hugging
+ * Face's dataset-server exposes the same rows as JSON, so this script writes
+ * the loader's native JSONL format directly:
  *
- * The script is idempotent: each downloaded file lives at
- *   data/eval/corpus-babilong/raw/task<N>_<length>.<ext>
- * and is skipped on subsequent runs.
+ *   data/eval/corpus-babilong/raw/task<N>_<length>.jsonl
  *
- * IF a URL 404s (e.g. HF restructures the dataset, or the chosen length
- * doesn't have a dedicated repo) the script logs the unreachable file but
- * keeps going — the loader will fail clearly later, and the user can drop
- * a manually-downloaded copy at the same path. See
- * `data/eval/corpus-babilong/README.md` for the expected layout.
- *
- * Usage:
- *   npx tsx scripts/fetch-babilong.ts
- *   npx tsx scripts/fetch-babilong.ts --tasks 1,2 --lengths 0K,4K
- *
- * No network call is made unless this script is executed directly — it's
- * never imported by anything in `src/`.
+ * The default is a 30-row public subset per (task, length) cell. Use
+ * `--rows all` to pull every available row for a full local study.
  */
 
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, stat, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 
-// --------------------------------------------------------------------------
-// Configuration
-// --------------------------------------------------------------------------
-
-/**
- * The context lengths we care about for the CSM sweep, in label form.
- * Order matters only for logging; the script downloads in this order.
- *
- * 0K = raw bAbI (no haystack). The BABILong paper treats this as the
- * "no-noise" floor. It's published as a subset of `babilong-1k-samples`
- * upstream (the 0K column of every BABILong results table) — we mirror that.
- */
-const LENGTH_LABELS = ["0K", "4K", "8K", "32K", "128K", "256K", "1M"] as const;
+const LENGTH_LABELS = [
+  "0K",
+  "4K",
+  "8K",
+  "32K",
+  "128K",
+  "256K",
+  "1M",
+] as const;
 type LengthLabel = (typeof LENGTH_LABELS)[number];
 
-/** Tasks we sweep over. BABILong uses `qa<N>` naming upstream. */
 const TASK_IDS = [1, 2, 3] as const;
 type TaskId = (typeof TASK_IDS)[number];
-
-/**
- * HF repo + parquet path for each (task, length) combination.
- *
- * The HF resolve URL is composed as:
- *   https://huggingface.co/datasets/<repo>/resolve/main/<path>
- *
- * Path convention for the `babilong-<length>-samples` repos (verified by
- * spec, but may drift — re-check at fetch time via the printed URL):
- *
- *   data/<task>-test-00000-of-00001.parquet
- *
- * For 0K we point at the 1K-samples repo's `qa<N>_0k` subset; the BABILong
- * authors keep the no-haystack split inside the 1K bucket.
- */
-function repoForLength(length: LengthLabel): string {
-  // The 0K (no-haystack) data lives inside the 1K-samples repo.
-  const lowered = length === "0K" ? "1k" : length.toLowerCase();
-  return `RMT-team/babilong-${lowered}-samples`;
-}
-
-/**
- * The path within the repo for a given (task, length). Returns the
- * fully-formed HF resolve URL.
- *
- * Note: we cannot pre-verify the exact `NNNNN-of-MMMMM` shard count
- * without an HF API call. In practice every BABILong split currently
- * ships as a single shard (`00000-of-00001`); if that ever changes we'll
- * see a 404 and the script will log the attempted URL for inspection.
- */
-function urlFor(task: TaskId, length: LengthLabel): string {
-  const repo = repoForLength(length);
-  // The on-repo split label changes for 0K — it's the no-haystack variant
-  // of each task. Upstream BABILong publishes this as `qa<N>_0k`. For all
-  // other lengths the split label is just the task name (`qa1`, `qa2`, ...)
-  // and the length is implicit in the repo.
-  const taskSplit = length === "0K" ? `qa${task}_0k` : `qa${task}`;
-  const path = `data/${taskSplit}-test-00000-of-00001.parquet`;
-  return `https://huggingface.co/datasets/${repo}/resolve/main/${path}`;
-}
-
-/**
- * Local on-disk path for the downloaded file. Lives under the gitignored
- * `data/eval/corpus-babilong/raw/` (see the README in that dir).
- */
-function localPathFor(task: TaskId, length: LengthLabel, ext: string): string {
-  return resolve(
-    process.cwd(),
-    "data",
-    "eval",
-    "corpus-babilong",
-    "raw",
-    `task${task}_${length}.${ext}`,
-  );
-}
-
-// --------------------------------------------------------------------------
-// Tiny argv parser (avoid pulling in commander/yargs for a one-off script)
-// --------------------------------------------------------------------------
 
 interface CliArgs {
   tasks: TaskId[];
   lengths: LengthLabel[];
+  rows: number;
+  force: boolean;
+}
+
+interface DownloadResult {
+  task: TaskId;
+  length: LengthLabel;
+  url: string;
+  localPath?: string;
+  bytes: number;
+  status: "downloaded" | "skipped" | "failed";
+  rows: number;
+  error?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
   let tasks: TaskId[] = [...TASK_IDS];
   let lengths: LengthLabel[] = [...LENGTH_LABELS];
+  let rows = 30;
+  let force = false;
+
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
-    if (a === "--tasks" && i + 1 < argv.length) {
-      const parsed = argv[++i]!
-        .split(",")
-        .map((s) => Number.parseInt(s.trim(), 10));
+    const next = argv[i + 1];
+    if (a === "--tasks" && next) {
+      const parsed = next.split(",").map((s) => Number.parseInt(s.trim(), 10));
       for (const t of parsed) {
         if (!TASK_IDS.includes(t as TaskId)) {
-          throw new Error(
-            `Unknown task ${t}; supported: ${TASK_IDS.join(", ")}`,
-          );
+          throw new Error(`Unknown task ${t}; supported: ${TASK_IDS.join(", ")}`);
         }
       }
       tasks = parsed as TaskId[];
-    } else if (a === "--lengths" && i + 1 < argv.length) {
-      const parsed = argv[++i]!.split(",").map((s) => s.trim().toUpperCase());
+      i++;
+    } else if (a === "--lengths" && next) {
+      const parsed = next.split(",").map((s) => s.trim().toUpperCase());
       for (const l of parsed) {
         if (!LENGTH_LABELS.includes(l as LengthLabel)) {
           throw new Error(
@@ -146,6 +77,16 @@ function parseArgs(argv: string[]): CliArgs {
         }
       }
       lengths = parsed as LengthLabel[];
+      i++;
+    } else if (a === "--rows" && next) {
+      const raw = next.trim().toLowerCase();
+      rows = raw === "all" ? Number.POSITIVE_INFINITY : Number.parseInt(raw, 10);
+      if (raw !== "all" && (!Number.isFinite(rows) || rows <= 0)) {
+        throw new Error(`Invalid --rows value "${next}". Use a positive integer or "all".`);
+      }
+      i++;
+    } else if (a === "--force") {
+      force = true;
     } else if (a === "--help" || a === "-h") {
       printHelp();
       process.exit(0);
@@ -153,126 +94,165 @@ function parseArgs(argv: string[]): CliArgs {
       throw new Error(`Unknown arg: ${a}. Use --help for usage.`);
     }
   }
-  return { tasks, lengths };
+
+  return { tasks, lengths, rows, force };
 }
 
 function printHelp(): void {
   process.stdout.write(
     [
-      "Usage: npx tsx scripts/fetch-babilong.ts [--tasks 1,2,3] [--lengths 0K,4K,8K,32K,128K,256K,1M]",
+      "Usage: npx tsx scripts/fetch-babilong.ts [--tasks 1,2,3] [--lengths 0K,4K,8K,32K,128K,256K,1M] [--rows 30|all] [--force]",
       "",
-      "Pulls BABILong Tasks 1/2/3 at the listed context lengths from Hugging Face.",
-      "Idempotent: skips files that already exist on disk.",
+      "Fetches BABILong rows from Hugging Face dataset-server as JSONL.",
       "",
       `Default tasks:   ${TASK_IDS.join(",")}`,
       `Default lengths: ${LENGTH_LABELS.join(",")}`,
+      "Default rows:    30 per (task, length) cell",
       "",
-      "Output: data/eval/corpus-babilong/raw/task<N>_<length>.<ext>",
+      "Output: data/eval/corpus-babilong/raw/task<N>_<length>.jsonl",
       "",
     ].join("\n"),
   );
 }
 
-// --------------------------------------------------------------------------
-// Downloader
-// --------------------------------------------------------------------------
-
-interface DownloadResult {
-  task: TaskId;
-  length: LengthLabel;
-  url: string;
-  /** Local path (only present on success / skip). */
-  localPath?: string;
-  /** Size in bytes on success/skip. 0 on failure. */
-  bytes: number;
-  status: "downloaded" | "skipped" | "failed";
-  error?: string;
+function localPathFor(task: TaskId, length: LengthLabel): string {
+  return resolve(
+    process.cwd(),
+    "data",
+    "eval",
+    "corpus-babilong",
+    "raw",
+    `task${task}_${length}.jsonl`,
+  );
 }
 
-/**
- * Download a single file from HF. Returns metadata about the operation.
- * Never throws — failures are captured in the result for the summary to
- * surface clearly.
- */
+function rowsUrlFor(
+  task: TaskId,
+  length: LengthLabel,
+  offset: number,
+  rows: number,
+): string {
+  const params = new URLSearchParams({
+    dataset: "RMT-team/babilong-1k-samples",
+    config: length.toLowerCase(),
+    split: `qa${task}`,
+    offset: String(offset),
+    length: String(rows),
+  });
+  return `https://datasets-server.huggingface.co/rows?${params.toString()}`;
+}
+
 async function downloadOne(
   task: TaskId,
   length: LengthLabel,
+  rowLimit: number,
+  force: boolean,
 ): Promise<DownloadResult> {
-  const url = urlFor(task, length);
-  const localPath = localPathFor(task, length, "parquet");
+  const localPath = localPathFor(task, length);
+  const firstUrl = rowsUrlFor(task, length, 0, Number.isFinite(rowLimit) ? Math.min(rowLimit, 100) : 100);
 
-  if (existsSync(localPath)) {
-    const { size } = await import("node:fs/promises").then((m) =>
-      m.stat(localPath),
-    );
+  if (!force && existsSync(localPath)) {
+    const s = await stat(localPath);
     return {
       task,
       length,
-      url,
+      url: firstUrl,
       localPath,
-      bytes: size,
+      bytes: s.size,
       status: "skipped",
+      rows: await countJsonlRows(localPath),
     };
   }
 
   await mkdir(dirname(localPath), { recursive: true });
 
-  let response: Response;
-  try {
-    // `fetch` is global in Node 20+. We pass redirect: "follow" explicitly
-    // because HF uses CDN redirects from huggingface.co → cdn-lfs.huggingface.co.
-    response = await fetch(url, { redirect: "follow" });
-  } catch (err) {
+  const outRows: unknown[] = [];
+  const pageSize = 100;
+  for (let offset = 0; offset < rowLimit; offset += pageSize) {
+    const wanted = Number.isFinite(rowLimit)
+      ? Math.min(pageSize, rowLimit - offset)
+      : pageSize;
+    const url = rowsUrlFor(task, length, offset, wanted);
+
+    let response: Response;
+    try {
+      response = await fetch(url);
+    } catch (err) {
+      return {
+        task,
+        length,
+        url,
+        bytes: 0,
+        status: "failed",
+        rows: 0,
+        error: `fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        task,
+        length,
+        url,
+        bytes: 0,
+        status: "failed",
+        rows: 0,
+        error: `HTTP ${response.status} ${response.statusText}`,
+      };
+    }
+
+    const body = (await response.json()) as {
+      rows?: Array<{ row?: unknown }>;
+      error?: string;
+    };
+    if (body.error) {
+      return {
+        task,
+        length,
+        url,
+        bytes: 0,
+        status: "failed",
+        rows: 0,
+        error: body.error,
+      };
+    }
+
+    const pageRows = body.rows ?? [];
+    for (const item of pageRows) {
+      if (item.row) outRows.push(item.row);
+    }
+    if (pageRows.length < wanted) break;
+  }
+
+  if (outRows.length === 0) {
     return {
       task,
       length,
-      url,
+      url: firstUrl,
       bytes: 0,
       status: "failed",
-      error: `fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+      rows: 0,
+      error: "dataset-server returned zero rows",
     };
   }
 
-  if (!response.ok) {
-    return {
-      task,
-      length,
-      url,
-      bytes: 0,
-      status: "failed",
-      error: `HTTP ${response.status} ${response.statusText}`,
-    };
-  }
-
-  // Stream into a buffer. BABILong parquet shards are typically <500MB even
-  // at 1M context, so buffering is fine; the alternative (streaming to disk)
-  // adds complexity for negligible benefit.
-  const buf = Buffer.from(await response.arrayBuffer());
-  if (buf.length === 0) {
-    return {
-      task,
-      length,
-      url,
-      bytes: 0,
-      status: "failed",
-      error: "empty response body",
-    };
-  }
-
-  await writeFile(localPath, buf);
+  const text = `${outRows.map((row) => JSON.stringify(row)).join("\n")}\n`;
+  await writeFile(localPath, text, "utf8");
   return {
     task,
     length,
-    url,
+    url: firstUrl,
     localPath,
-    bytes: buf.length,
+    bytes: Buffer.byteLength(text),
     status: "downloaded",
+    rows: outRows.length,
   };
 }
 
-// --------------------------------------------------------------------------
-// Main
-// --------------------------------------------------------------------------
+async function countJsonlRows(path: string): Promise<number> {
+  const text = await import("node:fs/promises").then((m) => m.readFile(path, "utf8"));
+  return text.split(/\r?\n/).filter((line) => line.trim().length > 0).length;
+}
 
 async function main(): Promise<void> {
   let args: CliArgs;
@@ -286,54 +266,40 @@ async function main(): Promise<void> {
   }
 
   process.stdout.write(
-    `Fetching BABILong: ${args.tasks.length} tasks × ${args.lengths.length} lengths = ${args.tasks.length * args.lengths.length} files\n` +
+    `Fetching BABILong: ${args.tasks.length} tasks x ${args.lengths.length} lengths\n` +
       `Tasks:   ${args.tasks.map((t) => `qa${t}`).join(", ")}\n` +
-      `Lengths: ${args.lengths.join(", ")}\n\n`,
+      `Lengths: ${args.lengths.join(", ")}\n` +
+      `Rows:    ${Number.isFinite(args.rows) ? args.rows : "all"} per cell\n\n`,
   );
 
   const results: DownloadResult[] = [];
   for (const length of args.lengths) {
     for (const task of args.tasks) {
-      const r = await downloadOne(task, length);
+      const r = await downloadOne(task, length, args.rows, args.force);
       results.push(r);
       const tag = `qa${task}/${length}`.padEnd(10);
-      const url = r.url;
-      if (r.status === "downloaded") {
-        const mb = (r.bytes / (1024 * 1024)).toFixed(2);
-        process.stdout.write(`  [OK]   ${tag}  ${mb} MB  ${url}\n`);
-      } else if (r.status === "skipped") {
-        const mb = (r.bytes / (1024 * 1024)).toFixed(2);
-        process.stdout.write(`  [skip] ${tag}  ${mb} MB  (already on disk)\n`);
+      if (r.status === "failed") {
+        process.stdout.write(`  [FAIL] ${tag}  ${r.error}  ${r.url}\n`);
       } else {
-        process.stdout.write(`  [FAIL] ${tag}  ${r.error}  ${url}\n`);
+        const mb = (r.bytes / (1024 * 1024)).toFixed(2);
+        const verb = r.status === "skipped" ? "skip" : "OK";
+        process.stdout.write(
+          `  [${verb.padEnd(4)}] ${tag}  rows=${r.rows}  ${mb} MB  ${r.localPath}\n`,
+        );
       }
     }
   }
 
-  const downloaded = results.filter((r) => r.status === "downloaded");
-  const skipped = results.filter((r) => r.status === "skipped");
-  const failed = results.filter((r) => r.status === "failed");
-  const totalBytes = results.reduce((s, r) => s + r.bytes, 0);
-  const totalMb = (totalBytes / (1024 * 1024)).toFixed(2);
-
+  const downloaded = results.filter((r) => r.status === "downloaded").length;
+  const skipped = results.filter((r) => r.status === "skipped").length;
+  const failed = results.filter((r) => r.status === "failed").length;
+  const totalMb = (results.reduce((s, r) => s + r.bytes, 0) / (1024 * 1024)).toFixed(2);
   process.stdout.write(
-    `\nDone. ${downloaded.length} downloaded, ${skipped.length} skipped, ${failed.length} failed. Total on disk: ${totalMb} MB.\n`,
+    `\nDone. ${downloaded} downloaded, ${skipped} skipped, ${failed} failed. Total on disk: ${totalMb} MB.\n`,
   );
-
-  if (failed.length > 0) {
-    process.stdout.write(
-      `\nFailures detected. The fetch URL pattern is best-effort — Hugging\n` +
-        `Face occasionally restructures dataset repos. If a (task, length)\n` +
-        `combination is unreachable here, drop a manually-downloaded copy at\n` +
-        `the path shown above and the loader will pick it up. See\n` +
-        `data/eval/corpus-babilong/README.md for the expected layout.\n`,
-    );
-    process.exit(1);
-  }
+  if (failed > 0) process.exit(1);
 }
 
-// Node 20+ supports top-level await in ESM; we still wrap for the
-// process-exit-code semantics.
 main().catch((err) => {
   process.stderr.write(
     `fetch-babilong fatal: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,

@@ -107,6 +107,8 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
 | `npm run bench:sota:headline` | Regenerates the committed CSM-vs-SOTA comparison table from saved result rows | No |
 | `npm run bench:sota:scaling` | Reports whether systems improve, stay stable, or degrade as corpus size grows | No |
+| `npm run bench:babilong:fetch` | Fetches the public BABILong external benchmark subset as JSONL | Yes |
+| `npm run bench:babilong:csm` | Runs CSM row-wise on BABILong with exact-match free-form scoring | Yes |
 | `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
 | `npm run bench:trials -- <runId>` | Multi-trial runs can be summarized as mean +/- sample standard deviation | No |
 | `npm run verify:published` | Hashes the committed evidence rows and recomputes the published headline counts, citation F1, and McNemar checks from `results.jsonl` | No |
@@ -147,7 +149,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 
 ## Evaluation
 
-- **Corpus — PaySwift:** a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations. Released **CC0**. (A BABILong free-form path is wired but not yet driven.)
+- **Corpora:** PaySwift is a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations, released **CC0**. BABILong is now driven as a public external benchmark subset; see [`docs/BABILONG_RESULTS.md`](docs/BABILONG_RESULTS.md).
 - **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally; Graphiti/Zep, Microsoft GraphRAG, APEX-MEM, LightMem/BEAM, and LongMemEval/LoCoMo are the next comparison targets).
 - **Scoring is programmatic:** exact-match accuracy + citation precision/recall/F1 + bootstrap 95% CIs + paired exact McNemar. The same answering model is used for every system, so only retrieval differs.
 - **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus, harness, and canonical published result rows are in git; larger local caches and sidecar indexes stay ignored. Charts regenerate from committed summaries via `npx tsx scripts/build-readme-charts.ts`.

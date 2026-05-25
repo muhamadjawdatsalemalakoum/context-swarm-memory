@@ -17,19 +17,23 @@ interface ResultRow {
   citationPrecision: number;
   citationRecall: number;
   correct: boolean;
+  length?: string;
   modelContext?: number;
   queryId: string;
   system: string;
+  task?: number;
 }
 
 interface ExpectedMetric {
   corpusSize?: number;
   correct: number;
   f1: number;
+  length?: string;
   modelContext?: number;
   n: number;
   runId: string;
   system: string;
+  task?: number;
 }
 
 const HASHES: Record<string, string> = {
@@ -59,6 +63,22 @@ const HASHES: Record<string, string> = {
     "7c468a0446f19810d79e20395560be24ee9e6b6fc7c29807dc3768d0b184c785",
   "data/eval/runs/gemini35-160k-30q-v1/report.md":
     "134115a5cab0737e18ff72172283c06d5ff92743355c822129a0352e1d66da1c",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/config.json":
+    "a9270620fa34e90370f51526c8732140d99d69d7335bebb4d8a296f39ec657b9",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/results.jsonl":
+    "e83d52eec2341e63dcfc7d2bfb73abc8095bdc6a81ced9091a00b4155888d725",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/summary.json":
+    "ded09ef523091f4cdcb86ce5dede9d1cb6397e70273119161a82b9521cdb5517",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/report.md":
+    "4888eb8b98b7aaebe63aac2d4a6701059434045d627c9006c951d28ecb66cc61",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/config.json":
+    "3855fde8617dc4d09001cf48bce0639ab8342ff7fcfcf97f0e47bbf82453e22d",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/results.jsonl":
+    "dd82b1edee5176ef70ea0af1f2b1445af91d53bd18222ae3d4ae9f474be8a89d",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/summary.json":
+    "635d43d08eb6409295462a2d10c51f1240e32497ccdf0b2e2e4a7b459de3d89e",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/report.md":
+    "42ea7ef23e87643c9b76167fc83887116b9582b23b9ae00ff8cbc830f8efa55a",
 };
 
 const EXPECTED: ExpectedMetric[] = [
@@ -180,6 +200,78 @@ const EXPECTED: ExpectedMetric[] = [
     correct: 27,
     f1: 0.386,
   },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v1",
+    system: "csm",
+    task: 1,
+    length: "4K",
+    n: 30,
+    correct: 30,
+    f1: 0.293,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v1",
+    system: "csm",
+    task: 1,
+    length: "8K",
+    n: 30,
+    correct: 30,
+    f1: 0.237,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v1",
+    system: "csm",
+    task: 2,
+    length: "4K",
+    n: 30,
+    correct: 3,
+    f1: 0.025,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v1",
+    system: "csm",
+    task: 2,
+    length: "8K",
+    n: 30,
+    correct: 0,
+    f1: 0.01,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
+    system: "csm",
+    task: 1,
+    length: "4K",
+    n: 30,
+    correct: 30,
+    f1: 0.276,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
+    system: "csm",
+    task: 1,
+    length: "8K",
+    n: 30,
+    correct: 30,
+    f1: 0.22,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
+    system: "csm",
+    task: 2,
+    length: "4K",
+    n: 30,
+    correct: 18,
+    f1: 0.026,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
+    system: "csm",
+    task: 2,
+    length: "8K",
+    n: 30,
+    correct: 16,
+    f1: 0.005,
+  },
 ];
 
 function sha256(path: string): string {
@@ -191,7 +283,7 @@ function sha256(path: string): string {
 function loadRows(
   runId: string,
   system: string,
-  filters: { corpusSize?: number; modelContext?: number } = {},
+  filters: { corpusSize?: number; length?: string; modelContext?: number; task?: number } = {},
 ): ResultRow[] {
   const path = join(process.cwd(), "data", "eval", "runs", runId, "results.jsonl");
   return readFileSync(path, "utf8")
@@ -200,6 +292,8 @@ function loadRows(
     .map((line) => JSON.parse(line) as ResultRow)
     .filter((row) => row.system === system)
     .filter((row) => filters.corpusSize === undefined || row.corpusSize === filters.corpusSize)
+    .filter((row) => filters.task === undefined || row.task === filters.task)
+    .filter((row) => filters.length === undefined || row.length === filters.length)
     .filter((row) => filters.modelContext === undefined || row.modelContext === filters.modelContext)
     .sort((a, b) => a.queryId.localeCompare(b.queryId));
 }
@@ -233,6 +327,8 @@ function assertMetrics(expected: ExpectedMetric): void {
   const rows = loadRows(expected.runId, expected.system, expected);
   const label =
     `${expected.runId}/${expected.system}` +
+    (expected.task === undefined ? "" : `/task${expected.task}`) +
+    (expected.length === undefined ? "" : `/${expected.length}`) +
     (expected.corpusSize === undefined ? "" : `/${expected.corpusSize}`) +
     (expected.modelContext === undefined ? "" : `/${expected.modelContext}`);
   assertEqual(rows.length, expected.n, `${label} row count`);

@@ -155,6 +155,133 @@ export function resolveShardExpandMax(
   return Number.isFinite(parsed) ? parsed : 16;
 }
 
+export interface EntityBridgeEvent {
+  id: string;
+  shardId: string;
+  content: string;
+}
+
+/**
+ * Build expansion groups for entity-chain recall.
+ *
+ * This is deliberately lexical and local: after CSM has retrieved a foothold
+ * event, extract salient entity terms from the query + foothold content, then
+ * surface same-shard events that mention those terms. It helps tasks where the
+ * answer depends on a bridge fact ("Mary got the milk" -> later "Mary moved to
+ * the hallway") without relying on gold labels or mutating durable memory.
+ */
+export function buildEntityBridgeGroups(
+  baseOrder: string[],
+  eventLookup: Map<string, EntityBridgeEvent>,
+  eventsByShard: Map<string, EntityBridgeEvent[]>,
+  query: string,
+  rankedLimit = 24,
+): ShardLocalExpansionInput[] {
+  const groups: ShardLocalExpansionInput[] = [];
+  const seenGroup = new Set<string>();
+
+  for (const eventId of baseOrder) {
+    const seed = eventLookup.get(eventId);
+    if (!seed) continue;
+    const terms = extractBridgeTerms(`${query} ${seed.content}`);
+    if (terms.length === 0) continue;
+    const groupKey = `${seed.shardId}|${eventId}`;
+    if (seenGroup.has(groupKey)) continue;
+    seenGroup.add(groupKey);
+
+    const candidates = (eventsByShard.get(seed.shardId) ?? [])
+      .filter((event) => event.id !== eventId)
+      .map((event) => ({
+        event,
+        score: bridgeScore(event.content, terms),
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.event.id.localeCompare(a.event.id);
+      })
+      .slice(0, rankedLimit)
+      .map((item) => item.event.id);
+
+    if (candidates.length > 0) {
+      groups.push({
+        shardId: seed.shardId,
+        afterEventId: eventId,
+        rankedIds: candidates,
+      });
+    }
+  }
+
+  return groups;
+}
+
+export function buildLocalLexicalBridgeGroups(
+  baseOrder: string[],
+  eventLookup: Map<string, EntityBridgeEvent>,
+  eventsByShard: Map<string, EntityBridgeEvent[]>,
+  query: string,
+  rankedLimit = 16,
+): ShardLocalExpansionInput[] {
+  const queryTerms = extractBridgeTerms(query);
+  if (queryTerms.length === 0) return [];
+
+  const lastEventIdByShard = new Map<string, string>();
+  for (const eventId of baseOrder) {
+    const shardId = eventLookup.get(eventId)?.shardId;
+    if (shardId) lastEventIdByShard.set(shardId, eventId);
+  }
+
+  const groups: ShardLocalExpansionInput[] = [];
+  for (const [shardId, afterEventId] of lastEventIdByShard) {
+    const candidates = (eventsByShard.get(shardId) ?? [])
+      .map((event) => ({
+        event,
+        score: bridgeScore(event.content, queryTerms),
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.event.id.localeCompare(a.event.id);
+      })
+      .slice(0, rankedLimit)
+      .map((item) => item.event.id);
+
+    if (candidates.length > 0) {
+      groups.push({ shardId, afterEventId, rankedIds: candidates });
+    }
+  }
+
+  return groups;
+}
+
+export function resolveLexicalBridgeK(raw = process.env.CSM_LEXICAL_BRIDGE_K): number {
+  if (raw === undefined || raw.trim().length === 0) return 0;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function resolveLexicalBridgeMax(
+  raw = process.env.CSM_LEXICAL_BRIDGE_MAX,
+): number {
+  if (raw === undefined || raw.trim().length === 0) return 20;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 20;
+}
+
+export function resolveEntityBridgeK(raw = process.env.CSM_ENTITY_BRIDGE_K): number {
+  if (raw === undefined || raw.trim().length === 0) return 6;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 6;
+}
+
+export function resolveEntityBridgeMax(
+  raw = process.env.CSM_ENTITY_BRIDGE_MAX,
+): number {
+  if (raw === undefined || raw.trim().length === 0) return 24;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 24;
+}
+
 /**
  * CSM baseline for the Phase C scaling study.
  *
@@ -452,6 +579,82 @@ export class CsmBaseline implements BaselineRunner {
       }
     }
 
+    // **Shard-local lexical bridge** - env-tunable via
+    // `CSM_LEXICAL_BRIDGE_K` (default 0/off; set >0 to enable) and
+    // `CSM_LEXICAL_BRIDGE_MAX` (default 20).
+    //
+    // Dense retrieval is good at paraphrase but can miss exact, low-frequency
+    // entities under heavy filler. Once CSM has selected a shard, run a small
+    // exact-term pass inside that shard before the entity bridge below. This
+    // is the local hybrid-RAG analogue: it catches foothold facts like "Mary
+    // got the milk" so the next step can bridge to Mary-related updates.
+    const lexicalBridgeK = resolveLexicalBridgeK();
+    const lexicalBridgeMax = resolveLexicalBridgeMax();
+    let lexicalBridgeFired = false;
+    let lexicalBridgeCount = 0;
+    let lexicalBridgeShardIds: string[] = [];
+    if (
+      Number.isFinite(lexicalBridgeK) &&
+      lexicalBridgeK > 0 &&
+      Number.isFinite(lexicalBridgeMax) &&
+      lexicalBridgeMax > augmentedRetrievalOrder.length
+    ) {
+      const groups = buildLocalLexicalBridgeGroups(
+        augmentedRetrievalOrder,
+        corpus.byId,
+        corpus.byShard,
+        query.question,
+      );
+      const expanded = applyShardLocalExpansion(
+        augmentedRetrievalOrder,
+        groups,
+        lexicalBridgeMax,
+        lexicalBridgeK,
+      );
+      augmentedRetrievalOrder = expanded.order;
+      lexicalBridgeFired = expanded.fired;
+      lexicalBridgeCount = expanded.count;
+      lexicalBridgeShardIds = expanded.shardIds;
+    }
+
+    // **Entity-bridge expansion** - env-tunable via `CSM_ENTITY_BRIDGE_K`
+    // (default 6; set 0 to disable) and `CSM_ENTITY_BRIDGE_MAX` (default 24).
+    //
+    // Some external memory benchmarks (notably BABILong task 2) require a
+    // bridge through an entity chain: retrieve "Mary got the milk", then also
+    // retrieve later facts about Mary to answer where the milk is now. Dense
+    // similarity to the original query often finds the item event but misses
+    // the holder/location follow-up. This local lexical bridge pulls same-shard
+    // events that mention salient entities from already-retrieved footholds.
+    const entityBridgeK = resolveEntityBridgeK();
+    const entityBridgeMax = resolveEntityBridgeMax();
+    let entityBridgeFired = false;
+    let entityBridgeCount = 0;
+    let entityBridgeShardIds: string[] = [];
+    if (
+      Number.isFinite(entityBridgeK) &&
+      entityBridgeK > 0 &&
+      Number.isFinite(entityBridgeMax) &&
+      entityBridgeMax > augmentedRetrievalOrder.length
+    ) {
+      const groups = buildEntityBridgeGroups(
+        augmentedRetrievalOrder,
+        corpus.byId,
+        corpus.byShard,
+        query.question,
+      );
+      const expanded = applyShardLocalExpansion(
+        augmentedRetrievalOrder,
+        groups,
+        entityBridgeMax,
+        entityBridgeK,
+      );
+      augmentedRetrievalOrder = expanded.order;
+      entityBridgeFired = expanded.fired;
+      entityBridgeCount = expanded.count;
+      entityBridgeShardIds = expanded.shardIds;
+    }
+
     const csmRetrievedEventIds = augmentedRetrievalOrder;
     const retrievalOrder = csmRetrievedEventIds;
 
@@ -545,6 +748,12 @@ export class CsmBaseline implements BaselineRunner {
         shardExpandFired,
         shardExpandCount,
         shardExpandShardIds,
+        lexicalBridgeFired,
+        lexicalBridgeCount,
+        lexicalBridgeShardIds,
+        entityBridgeFired,
+        entityBridgeCount,
+        entityBridgeShardIds,
         routerTopScore: askResult.candidates[0]?.score ?? 0,
         packetCost: askResult.cost,
         // Per-stage breakdown so the report can disambiguate pipeline vs final.
@@ -812,6 +1021,62 @@ function dedupeInOrder(items: string[]): string[] {
     out.push(x);
   }
   return out;
+}
+
+const BRIDGE_STOP_WORDS = new Set([
+  "about",
+  "after",
+  "again",
+  "also",
+  "answer",
+  "before",
+  "being",
+  "could",
+  "does",
+  "from",
+  "have",
+  "into",
+  "only",
+  "question",
+  "that",
+  "their",
+  "there",
+  "this",
+  "using",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+]);
+
+function extractBridgeTerms(text: string): string[] {
+  const terms: string[] = [];
+  const seen = new Set<string>();
+  for (const match of text.matchAll(/[A-Za-z][A-Za-z'-]{2,}/g)) {
+    const raw = match[0]!;
+    const term = raw.toLowerCase().replace(/'s$/g, "");
+    if (term.length < 4 && raw[0] !== raw[0]?.toUpperCase()) continue;
+    if (BRIDGE_STOP_WORDS.has(term)) continue;
+    if (seen.has(term)) continue;
+    seen.add(term);
+    terms.push(term);
+  }
+  return terms.slice(0, 12);
+}
+
+function bridgeScore(content: string, terms: string[]): number {
+  const low = content.toLowerCase();
+  let score = 0;
+  for (const term of terms) {
+    const re = new RegExp(`\\b${escapeRegExp(term)}\\b`, "i");
+    if (re.test(low)) score++;
+  }
+  return score;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function round2(x: number): number {

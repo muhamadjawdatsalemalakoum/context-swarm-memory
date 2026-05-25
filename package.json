@@ -23,6 +23,8 @@
     "bench:sota:scaling": "tsx scripts/sota-scaling.ts",
     "bench:sota:smoke": "tsx src/cli/index.ts bench run --systems csm,lightrag --trials 1 --corpus-sizes 100K --model-contexts 8K --queries q01,q11,q28",
     "bench:sota:sidecars": "tsx src/cli/index.ts bench run --systems csm,lightrag,mem0,hipporag --trials 1 --corpus-sizes 100K --model-contexts 8K",
+    "bench:babilong:fetch": "tsx scripts/fetch-babilong.ts",
+    "bench:babilong:csm": "tsx scripts/run-babilong-standard.ts --systems csm",
     "bench:fill-cache": "tsx src/cli/index.ts bench fill-cache",
     "bench:replay": "tsx src/cli/index.ts bench replay",
     "bench:report": "tsx src/cli/index.ts bench report",

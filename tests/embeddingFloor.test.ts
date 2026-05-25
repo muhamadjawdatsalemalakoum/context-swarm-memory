@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   applyEmbeddingFloor,
   applyShardLocalExpansion,
+  buildEntityBridgeGroups,
+  buildLocalLexicalBridgeGroups,
   resolveEmbeddingFloorK,
+  resolveEntityBridgeK,
+  resolveEntityBridgeMax,
+  resolveLexicalBridgeK,
+  resolveLexicalBridgeMax,
   resolveShardExpandK,
   resolveShardExpandMax,
 } from "../src/eval/baselines/csm.js";
@@ -167,5 +173,92 @@ describe("resolveShardExpandK / resolveShardExpandMax", () => {
   it("falls back to defaults for invalid input", () => {
     expect(resolveShardExpandK("nope")).toBe(3);
     expect(resolveShardExpandMax("nope")).toBe(16);
+  });
+});
+
+describe("buildEntityBridgeGroups (entity-chain recall)", () => {
+  it("bridges from an item foothold to later same-shard entity facts", () => {
+    const events = [
+      {
+        id: "e1",
+        shardId: "s",
+        content: "Mary got the milk there.",
+      },
+      {
+        id: "e2",
+        shardId: "s",
+        content: "Sandra went to the kitchen.",
+      },
+      {
+        id: "e3",
+        shardId: "s",
+        content: "Mary travelled to the hallway.",
+      },
+    ];
+    const byId = new Map(events.map((event) => [event.id, event]));
+    const byShard = new Map([["s", events]]);
+
+    const groups = buildEntityBridgeGroups(
+      ["e1"],
+      byId,
+      byShard,
+      "Where is the milk?",
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.afterEventId).toBe("e1");
+    expect(groups[0]?.rankedIds).toContain("e3");
+    expect(groups[0]?.rankedIds).not.toContain("e2");
+  });
+
+  it("defaults to conservative entity bridge settings", () => {
+    expect(resolveEntityBridgeK(undefined)).toBe(6);
+    expect(resolveEntityBridgeMax(undefined)).toBe(24);
+  });
+
+  it("allows disabling entity bridge expansion", () => {
+    expect(resolveEntityBridgeK("0")).toBe(0);
+    expect(resolveEntityBridgeMax("0")).toBe(0);
+  });
+});
+
+describe("buildLocalLexicalBridgeGroups (same-shard exact-term recall)", () => {
+  it("finds query-term footholds inside an already-touched shard", () => {
+    const events = [
+      {
+        id: "e1",
+        shardId: "s",
+        content: "A generic filler sentence about a room.",
+      },
+      {
+        id: "e2",
+        shardId: "s",
+        content: "Mary got the milk there.",
+      },
+      {
+        id: "e3",
+        shardId: "s",
+        content: "Sandra went to the kitchen.",
+      },
+    ];
+    const byId = new Map(events.map((event) => [event.id, event]));
+    const byShard = new Map([["s", events]]);
+
+    const groups = buildLocalLexicalBridgeGroups(
+      ["e1"],
+      byId,
+      byShard,
+      "Where is the milk?",
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.afterEventId).toBe("e1");
+    expect(groups[0]?.rankedIds).toContain("e2");
+    expect(groups[0]?.rankedIds).not.toContain("e3");
+  });
+
+  it("keeps lexical bridge opt-in by default", () => {
+    expect(resolveLexicalBridgeK(undefined)).toBe(0);
+    expect(resolveLexicalBridgeMax(undefined)).toBe(20);
   });
 });
