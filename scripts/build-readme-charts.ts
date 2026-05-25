@@ -8,6 +8,8 @@
  *           docs/assets/gemini-accuracy-scaling.svg
  *           docs/assets/gemini-citation-grounding.svg
  *           docs/assets/gemini-babilong-ablation.svg
+ *           docs/assets/babilong-official-leaderboard.svg
+ *           docs/assets/babilong-shared-sota-slice.svg
  *
  * Numbers are the committed benchmark values (sources in comments). Regenerate:
  *   npx tsx scripts/build-readme-charts.ts
@@ -49,6 +51,11 @@ interface SummaryCell {
 interface BenchSummary {
   cells: SummaryCell[];
 }
+
+type LeaderboardRow = Record<string, string> & {
+  model_name: string;
+  task: string;
+};
 
 function readSummary(runId: string): BenchSummary {
   return JSON.parse(
@@ -185,6 +192,114 @@ const babilongAblation = [
   ...babilongCells(
     "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
     "entity bridge",
+  ),
+];
+
+function parseSimpleCsv(path: string): LeaderboardRow[] {
+  const [headerLine, ...lines] = readFileSync(path, "utf8")
+    .trim()
+    .split(/\r?\n/);
+  const headers = headerLine.split(",");
+  return lines.map((line) => {
+    const cells = line.split(",");
+    return Object.fromEntries(
+      headers.map((header, index) => [header, cells[index] ?? ""]),
+    ) as LeaderboardRow;
+  });
+}
+
+function metric(row: LeaderboardRow, field: string): number | undefined {
+  const raw = row[field];
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function lengthLabel(field: string): string {
+  return field.endsWith("k") ? field.toUpperCase() : field;
+}
+
+const leaderboard = parseSimpleCsv(
+  join("data", "eval", "external", "babilong-leaderboard-v0_results.csv"),
+);
+
+function leaderboardCell(model: string, task: string): LeaderboardRow {
+  const row = leaderboard.find((r) => r.model_name === model && r.task === task);
+  if (!row) {
+    throw new Error(`Missing BABILong leaderboard row: ${model}/${task}`);
+  }
+  return row;
+}
+
+const officialAvgModels = [
+  { model: "~ ARMT (137M) fine-tune", label: "ARMT fine-tune" },
+  { model: "~ Mamba (130M) fine-tune", label: "Mamba fine-tune" },
+  { model: "~ RMT (137M) fine-tune", label: "RMT fine-tune" },
+  { model: "gpt-4-0125-preview", label: "GPT-4" },
+  { model: "Meta-Llama-3.1-70B-Instruct", label: "Llama 3.1 70B" },
+  { model: "Llama3-ChatQA-1.5-8B + RAG", label: "ChatQA + RAG" },
+];
+const officialAvgLengths = ["4k", "8k", "32k", "128k", "1M", "10M"];
+
+const officialBabilongAvg = officialAvgModels.flatMap((model) => {
+  const row = leaderboardCell(model.model, "avg");
+  return officialAvgLengths.flatMap((length) => {
+    const acc = metric(row, length);
+    return acc === undefined
+      ? []
+      : [
+          {
+            system: model.label,
+            length: lengthLabel(length),
+            acc,
+          },
+        ];
+  });
+});
+
+function csmBabilongAcc(task: string, length: string): number {
+  const summary = readSummary("babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge");
+  const cell = summary.cells.find((c) => c.task === task && c.length === length);
+  if (!cell) {
+    throw new Error(`Missing CSM BABILong cell: ${task}/${length}`);
+  }
+  return pct(cell.accuracy);
+}
+
+const sharedSliceModels = [
+  { model: "~ ARMT (137M) fine-tune", label: "ARMT fine-tune" },
+  { model: "~ Mamba (130M) fine-tune", label: "Mamba fine-tune" },
+  { model: "~ RMT (137M) fine-tune", label: "RMT fine-tune" },
+  { model: "gpt-4-0125-preview", label: "GPT-4" },
+  { model: "Llama3-ChatQA-1.5-8B + RAG", label: "ChatQA + RAG" },
+];
+
+const babilongSharedSota = [
+  ...["qa1", "qa2"].flatMap((task) =>
+    ["4k", "8k"].map((length) => ({
+      system: "CSM (ours, n=30)",
+      task: task.toUpperCase(),
+      length: lengthLabel(length),
+      acc: csmBabilongAcc(`task${task.slice(2)}`, lengthLabel(length)),
+    })),
+  ),
+  ...sharedSliceModels.flatMap((model) =>
+    ["qa1", "qa2"].flatMap((task) => {
+      const row = leaderboardCell(model.model, task);
+      return ["4k", "8k"].flatMap((length) => {
+        const acc = metric(row, length);
+        return acc === undefined
+          ? []
+          : [
+              {
+                system: model.label,
+                task: task.toUpperCase(),
+                length: lengthLabel(length),
+                acc,
+              },
+            ];
+      });
+    }),
   ),
 ];
 
@@ -540,6 +655,157 @@ const babilongAblationSpec: TopLevelSpec = {
   ],
 };
 
+const babilongOfficialLeaderboardSpec: TopLevelSpec = {
+  $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+  width: 620,
+  height: 330,
+  background: "white",
+  padding: 8,
+  title: {
+    text: "BABILong v0 historical leaderboard",
+    subtitle:
+      "avg(QA1-QA5), HF Space snapshot; not a current 2026 frontier-model board",
+    fontSize: 15,
+    subtitleFontSize: 11,
+    subtitleColor: "#6b7280",
+    anchor: "start",
+  },
+  data: { values: officialBabilongAvg },
+  encoding: {
+    x: {
+      field: "length",
+      type: "ordinal",
+      sort: ["4K", "8K", "32K", "128K", "1M", "10M"],
+      title: "Context length",
+      axis: {
+        labelAngle: 0,
+        labelFontSize: 12,
+        titleFontSize: 12,
+        domain: false,
+        ticks: false,
+      },
+    },
+    y: {
+      field: "acc",
+      type: "quantitative",
+      scale: { domain: [0, 100] },
+      title: "Accuracy (%)",
+      axis: {
+        labelFontSize: 11,
+        titleFontSize: 12,
+        values: [0, 20, 40, 60, 80, 100],
+        gridColor: "#eef2f7",
+      },
+    },
+    color: {
+      field: "system",
+      type: "nominal",
+      scale: {
+        domain: [
+          "ARMT fine-tune",
+          "Mamba fine-tune",
+          "RMT fine-tune",
+          "GPT-4",
+          "Llama 3.1 70B",
+          "ChatQA + RAG",
+        ],
+        range: [C.csm, "#f59e0b", "#8b5cf6", "#2563eb", "#64748b", "#94a3b8"],
+      },
+      legend: {
+        orient: "bottom",
+        direction: "horizontal",
+        columns: 3,
+        title: null,
+        labelFontSize: 11,
+        symbolType: "stroke",
+        symbolStrokeWidth: 3,
+      },
+    },
+  },
+  layer: [
+    { mark: { type: "line", strokeWidth: 2.8 } },
+    { mark: { type: "point", filled: true, size: 55 } },
+  ],
+};
+
+const babilongSharedSotaSpec: TopLevelSpec = {
+  $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+  background: "white",
+  padding: 8,
+  title: {
+    text: "BABILong historical shared slice",
+    subtitle:
+      "QA1/QA2 at 4K and 8K only; CSM uses 30 rows/cell, comparators are from the v0 HF leaderboard",
+    fontSize: 15,
+    subtitleFontSize: 11,
+    subtitleColor: "#6b7280",
+    anchor: "start",
+  },
+  data: { values: babilongSharedSota },
+  facet: {
+    column: {
+      field: "task",
+      type: "nominal",
+      sort: ["QA1", "QA2"],
+      title: null,
+      header: { labelFontSize: 13, labelFontWeight: "bold" },
+    },
+  },
+  spec: {
+    width: 280,
+    height: 300,
+    encoding: {
+      x: {
+        field: "length",
+        type: "ordinal",
+        sort: ["4K", "8K"],
+        title: "Length",
+        axis: { labelAngle: 0, labelFontSize: 12, domain: false, ticks: false },
+      },
+      y: {
+        field: "acc",
+        type: "quantitative",
+        scale: { domain: [0, 100] },
+        title: "Accuracy (%)",
+        axis: {
+          labelFontSize: 11,
+          titleFontSize: 12,
+          values: [0, 20, 40, 60, 80, 100],
+          gridColor: "#eef2f7",
+        },
+      },
+      color: {
+        field: "system",
+        type: "nominal",
+        scale: {
+          domain: [
+            "CSM (ours, n=30)",
+            "ARMT fine-tune",
+            "Mamba fine-tune",
+            "RMT fine-tune",
+            "GPT-4",
+            "ChatQA + RAG",
+          ],
+          range: [C.csm, "#f59e0b", "#8b5cf6", "#64748b", "#2563eb", "#94a3b8"],
+        },
+        legend: {
+          orient: "bottom",
+          direction: "horizontal",
+          columns: 3,
+          title: null,
+          labelFontSize: 11,
+          symbolType: "stroke",
+          symbolStrokeWidth: 3,
+        },
+      },
+    },
+    layer: [
+      { mark: { type: "line", strokeWidth: 2.8 } },
+      { mark: { type: "point", filled: true, size: 60 } },
+    ],
+  },
+};
+
 async function render(spec: TopLevelSpec, file: string): Promise<void> {
   const { spec: vgSpec } = compile(spec);
   const view = new vega.View(vega.parse(vgSpec), { renderer: "none" });
@@ -555,6 +821,8 @@ async function main(): Promise<void> {
   await render(geminiAccuracySpec, "gemini-accuracy-scaling.svg");
   await render(geminiCitationSpec, "gemini-citation-grounding.svg");
   await render(babilongAblationSpec, "gemini-babilong-ablation.svg");
+  await render(babilongOfficialLeaderboardSpec, "babilong-official-leaderboard.svg");
+  await render(babilongSharedSotaSpec, "babilong-shared-sota-slice.svg");
 }
 
 main().catch((e) => {

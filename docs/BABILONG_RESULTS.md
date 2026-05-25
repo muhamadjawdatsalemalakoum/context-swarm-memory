@@ -37,6 +37,31 @@ npm run bench:babilong:csm -- --tasks 1,2 --lengths 4K,8K --limit 30 --model-con
 | CSM | 2 | 4K | 30 | 60.0% | 0.026 | 0 |
 | CSM | 2 | 8K | 30 | 53.3% | 0.005 | 0 |
 
+## Historical Leaderboard Comparison
+
+The public BABILong Space leaderboard is a historical v0 snapshot, not a current
+2026 frontier-model leaderboard. CSM has not run QA3-QA5 yet, so it also cannot
+honestly be placed on the full avg(QA1-QA5) table. The committed snapshot is
+`data/eval/external/babilong-leaderboard-v0_results.csv`, retrieved from the
+Hugging Face Space:
+<https://huggingface.co/spaces/RMT-team/babilong>.
+
+On the overlapping QA1/QA2 4K/8K cells:
+
+| Cell | CSM | ARMT fine-tune | Mamba fine-tune | RMT fine-tune | GPT-4 | ChatQA + RAG |
+|---|---:|---:|---:|---:|---:|---:|
+| QA1 / 4K | 100.0 | 100.0 | 100.0 | 100.0 | 95.0 | 58.0 |
+| QA1 / 8K | 100.0 | 100.0 | 100.0 | 100.0 | 93.0 | 58.0 |
+| QA2 / 4K | 60.0 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
+| QA2 / 8K | 53.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
+
+Interpretation: CSM is not BABILong SOTA today, and this snapshot is not a 2026
+SOTA source. CSM is perfect on QA1 in this small slice and beats the historical
+ChatQA + RAG line on QA2, but it trails the fine-tuned memory models and GPT-4
+on QA2. That makes the next research target concrete: full QA1-QA5 coverage,
+stronger multi-hop/entity tracking, and fresh 2026 model rows run under the same
+scoring harness.
+
 ## R&D Finding
 
 The first run, before entity-bridge recall, exposed a real failure:

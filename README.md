@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-204%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-216%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -25,23 +25,46 @@ At 1M tokens, CSM **overtakes vanilla RAG** (they were tied at 100K) and beats l
 
 > Honest calibration: single-trial; CSM's absolute accuracy is ~27–30/30 across runs (Gemma at temp=0 is not bitwise-deterministic across processes), so the robust claim is **"does not degrade as memory grows, while the alternatives do"** — not that its raw score climbs.
 
-## Results — current SOTA status
+## Results — current evidence status
 
-Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answering for **every** system (8K context, temp 0) — only the retrieval/memory layer differs. CSM beats **LightRAG**, a 2025 graph-RAG SOTA, on accuracy (paired exact McNemar **p=0.031**) and leads clearly on **citation grounding quality**:
+Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answering for **every** system (8K context, temp 0) — only the retrieval/memory layer differs. CSM beats **LightRAG**, a 2025 graph-RAG comparator, on accuracy (paired exact McNemar **p=0.031**) and leads clearly on **citation grounding quality**:
 
 <p align="center"><img src="docs/assets/citation-f1.svg" width="560" alt="Citation F1 by system at 100K: CSM 0.505, hybrid RAG 0.455, vanilla RAG 0.446, LightRAG 0.265, long-context 0.067"></p>
 
-- **vs LightRAG (2025 SOTA): CSM wins** — citation F1 0.505 vs 0.265, accuracy ≥27/30 vs 24/30 (p=0.031). Mem0 and HippoRAG could not be made to run locally on consumer hardware — documented as **blocked, not beaten** ([`SOTA_COMPARISON.md`](SOTA_COMPARISON.md)).
+- **vs LightRAG (2025 graph-RAG): CSM wins** — citation F1 0.505 vs 0.265, accuracy ≥27/30 vs 24/30 (p=0.031). Mem0 and HippoRAG could not be made to run locally on consumer hardware — documented as **blocked, not beaten** ([`SOTA_COMPARISON.md`](SOTA_COMPARISON.md)).
 - **vs vanilla / hybrid RAG: accuracy is a statistical tie** (overlapping CIs; the lead flips run-to-run within nondeterministic noise). CSM's honest edge is *citation quality* + **zero-LLM indexing**, not an accuracy gap — we don't dress a near-tie as a rout.
 - **The cost is latency:** CSM is ~3.5× slower than RAG per query (the probe → recall → synth → answer chain). Fine for offline project memory; the open problem for interactive use.
 
 Full numbers, per-query breakdown, significance, and methodology: [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) · [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md).
 
-This is a real SOTA head-to-head, but not the end of the story. The current
-SOTA ladder also needs Graphiti/Zep, Microsoft GraphRAG, APEX-MEM,
-LightMem/BEAM, LongMemEval, LoCoMo, BABILong, A-MEM/AgeMem, MemOS, and ShardMemo coverage
-before CSM can claim field-wide uniqueness. The explicit plan and go/no-go rules
-live in [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md).
+## BABILong external status
+
+BABILong is useful external evidence, but its public Space leaderboard is a
+historical v0 snapshot, not a fresh 2026 frontier-model board. It does not track
+the current best models, so this repo must not use it as proof of 2026 SOTA. The
+chart below is kept only to show the old published bar on avg(QA1-QA5).
+
+<p align="center"><img src="docs/assets/babilong-official-leaderboard.svg" width="760" alt="Historical BABILong v0 leaderboard top systems: ARMT and Mamba fine-tunes are near 98 percent at 4K and 8K, RMT is around 90 percent, GPT-4 is in the low 70s, and ChatQA plus RAG is around 45 percent"></p>
+
+On the exact slice CSM has run so far - QA1/QA2 at 4K and 8K - the honest result
+is: **CSM is promising, but not BABILong SOTA, and not 2026 SOTA evidence.** It
+ties the historical top systems on QA1, but QA2 still trails ARMT/Mamba/RMT and
+GPT-4. It does beat the historical ChatQA + RAG line on QA2, which is useful
+evidence that the shard-memory route is not just a toy RAG wrapper.
+
+<p align="center"><img src="docs/assets/babilong-shared-sota-slice.svg" width="820" alt="BABILong shared QA1 and QA2 slice comparing CSM against ARMT, Mamba, RMT, GPT-4, and ChatQA plus RAG at 4K and 8K"></p>
+
+| BABILong shared slice | CSM | ARMT fine-tune | Mamba fine-tune | RMT fine-tune | GPT-4 | ChatQA + RAG |
+|---|---:|---:|---:|---:|---:|---:|
+| QA1 / 4K | 100.0 | 100.0 | 100.0 | 100.0 | 95.0 | 58.0 |
+| QA1 / 8K | 100.0 | 100.0 | 100.0 | 100.0 | 93.0 | 58.0 |
+| QA2 / 4K | 60.0 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
+| QA2 / 8K | 53.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
+
+The next scientific milestone is therefore concrete: run the full BABILong
+QA1-QA5 suite and add fresh 2026 frontier-model rows ourselves, or move the
+headline to a benchmark that already tracks current models. The freshness gate is
+documented in [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md).
 
 ## How it works
 
@@ -101,11 +124,11 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 204 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 216 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
-| `npm run bench:sota:headline` | Regenerates the committed CSM-vs-SOTA comparison table from saved result rows | No |
+| `npm run bench:sota:headline` | Regenerates the committed comparator table from saved result rows | No |
 | `npm run bench:sota:scaling` | Reports whether systems improve, stay stable, or degrade as corpus size grows | No |
 | `npm run bench:babilong:fetch` | Fetches the public BABILong external benchmark subset as JSONL | Yes |
 | `npm run bench:babilong:csm` | Runs CSM row-wise on BABILong with exact-match free-form scoring | Yes |
@@ -133,10 +156,6 @@ Hosted cross-model check, kept separate from the Gemma headline:
 - **Setup:** same 30 questions over 100K, 1M, and 2M corpus sizes, with native model context capped at 160K tokens
 - **2M result:** CSM 28/30 at ~18K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens. The run completed 360/360 cells with zero provider errors.
 
-<p align="center"><img src="docs/assets/gemini-accuracy-scaling.svg" width="680" alt="Gemini 3.5 Flash accuracy across 100K, 1M, and 2M: CSM stays at 28 to 29 correct out of 30 while long-context falls to 15 out of 30 at 2M"></p>
-
-<p align="center"><img src="docs/assets/gemini-citation-grounding.svg" width="820" alt="Gemini 3.5 Flash citation precision, recall, and F1 across 100K, 1M, and 2M for CSM, hybrid RAG, vanilla RAG, and long-context"></p>
-
 | Gemini 3.5 Flash system | 100K | 1M | 2M | 2M citation P/R/F1 | 2M mean input |
 |---|---:|---:|---:|---:|---:|
 | CSM | 28/30 | 29/30 | 28/30 | 0.789 / 0.446 / 0.515 | 18.1K |
@@ -144,7 +163,11 @@ Hosted cross-model check, kept separate from the Gemma headline:
 | vanilla RAG | 28/30 | 26/30 | 26/30 | 0.600 / 0.315 / 0.334 | 5.4K |
 | long-context | 30/30 | 27/30 | 15/30 | 0.211 / 0.122 / 0.086 | 170.5K |
 
-External benchmark check, also Gemini 3.5 Flash:
+Internal cross-model note: these Gemini rows are retained as an API-model
+sanity check, not as the SOTA comparison. A real 2026 SOTA claim needs current
+frontier-model rows on the same benchmark, not the historical BABILong v0 board.
+
+BABILong CSM ablation, also Gemini 3.5 Flash:
 
 - **Runs:** `babilong-csm-gemini35-4k8k-t1t2-30q-v1/` and `babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/`
 - **Benchmark:** BABILong public subset, tasks 1-2, lengths 4K and 8K, 30 rows per cell
@@ -156,7 +179,7 @@ External benchmark check, also Gemini 3.5 Flash:
 
 ```bash
 npm install
-npm test                       # 204 tests, no API keys (deterministic MockProvider)
+npm test                       # 216 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -169,9 +192,9 @@ The default provider is a deterministic MockProvider (no network). To run the re
 ## Evaluation
 
 - **Corpora:** PaySwift is a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations, released **CC0**. BABILong is now driven as a public external benchmark subset; see [`docs/BABILONG_RESULTS.md`](docs/BABILONG_RESULTS.md).
-- **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally; Graphiti/Zep, Microsoft GraphRAG, APEX-MEM, LightMem/BEAM, and LongMemEval/LoCoMo are the next comparison targets).
+- **Baselines/comparators:** PaySwift uses long-context, vanilla RAG, hybrid RAG, CSM, and LightRAG. BABILong uses a historical Hugging Face leaderboard snapshot for diagnostic comparison on the overlapping QA1/QA2 4K/8K cells; it is not treated as current 2026 SOTA.
 - **Scoring is programmatic:** exact-match accuracy + citation precision/recall/F1 + bootstrap 95% CIs + paired exact McNemar. The same answering model is used for every system, so only retrieval differs.
-- **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus, harness, and canonical published result rows are in git; larger local caches and sidecar indexes stay ignored. Charts regenerate from committed summaries via `npx tsx scripts/build-readme-charts.ts`.
+- **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus, harness, canonical published result rows, and BABILong leaderboard snapshot are in git; larger local caches and sidecar indexes stay ignored. Charts regenerate from committed summaries via `npm run charts:readme`.
 
 ## Limitations
 
@@ -183,10 +206,11 @@ The default provider is a deterministic MockProvider (no network). To run the re
 
 | Doc | What |
 |---|---|
-| [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) | CSM vs 2025 SOTA — LightRAG head-to-head, Mem0/HippoRAG findings, McNemar significance, integration audit |
+| [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) | CSM vs 2025 graph-RAG comparator — LightRAG head-to-head, Mem0/HippoRAG findings, McNemar significance, integration audit |
 | [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) | Full results — per-query breakdown, scaling table, embedding-floor analysis |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 5-minute architecture overview |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
+| [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md) | 2026 freshness gate for any future SOTA claim |
 | [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md) | Current SOTA ladder, benchmark axes, go/no-go rules, and next integrations |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
 | [`docs/GEMINI.md`](docs/GEMINI.md) | Hosted Gemini provider setup and cross-model confirmation workflow |
