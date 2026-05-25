@@ -61,10 +61,14 @@ evidence that the shard-memory route is not just a toy RAG wrapper.
 | QA2 / 4K | 60.0 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
 | QA2 / 8K | 53.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
 
-The next scientific milestone is therefore concrete: run the full BABILong
-QA1-QA5 suite and add fresh 2026 frontier-model rows ourselves, or move the
-headline to a benchmark that already tracks current models. The freshness gate is
-documented in [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md).
+The next scientific milestone is therefore concrete: move the SOTA headline to
+**Agent Memory Benchmark / BEAM** for memory-at-scale, then **Microsoft
+STATE-Bench Memory Track** for agentic task improvement. BABILong stays as a
+diagnostic long-context check unless fresh frontier-model rows are added. The
+freshness gate is documented in
+[`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md), and the selected
+benchmark ladder is tracked in
+[`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md).
 
 ## How it works
 
