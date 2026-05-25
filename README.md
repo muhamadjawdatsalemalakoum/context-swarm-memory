@@ -54,6 +54,48 @@ flowchart TD
 - **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
 - **Indexing is LLM-free.** Routing is a keyword/tag scorer, so index cost stays ~0 regardless of corpus size — which is *why* CSM scales where LLM-indexed systems (LightRAG, Mem0, HippoRAG) cannot on consumer hardware.
 
+## Tech stack
+
+CSM is intentionally small and inspectable. The core system is TypeScript, local-file backed, and provider-agnostic.
+
+| Layer | What CSM uses |
+|---|---|
+| Runtime | Node.js 20+, TypeScript, ES modules / NodeNext |
+| CLI | `src/cli/index.ts`, run through `tsx` in development and compiled with `tsc` |
+| Storage | Local JSON / JSONL under `data/`: directory, chronicle, immutable shard snapshots, query-run logs |
+| Validation | Zod schemas for structured LLM JSON outputs and storage-facing data contracts |
+| LLM provider seam | `LlmProvider` interface with `MockProvider` default; OpenAI-compatible, Ollama, llama.cpp `llama-server`, OpenAI, and Anthropic wiring live behind the same seam |
+| Embeddings | `@huggingface/transformers` with `Xenova/all-MiniLM-L6-v2` for local RAG / hybrid-RAG embedding baselines |
+| Benchmark harness | Programmatic MCQ/free-form scoring, citation precision/recall/F1, bootstrap CIs, exact paired McNemar tests |
+| SOTA sidecars | Python FastAPI sidecars for LightRAG, Mem0, and HippoRAG integration experiments |
+| Site/docs | Static GitHub Pages site in `docs/`, generated charts as checked-in SVG assets |
+| CI | GitHub Actions on Node 20 and 22: install, type-check, test, build, mock smoke benchmark |
+
+## Testing and evidence
+
+The trust model is simple: invariants are tested in code, benchmark scoring is programmatic, and the README claims point to reproducible artifacts.
+
+| Check | What it proves | Runs Gemma? |
+|---|---|---|
+| `npm test` | 196 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm run lint` | Full TypeScript type-check across `src/` | No |
+| `npm run build` | The CLI and library code compile from source | No |
+| `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
+| `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
+| `npx tsx scripts/verify-corpus.ts` | The shipped PaySwift corpus loads, totals ~9M tokens, and preserves the core/filler structure | No |
+| `npx tsx scripts/verify-no-leakage.ts` | Filler events do not leak banned answer-bearing terms from the hand-authored core facts | No |
+| `npm audit` | Current package lock has no reported npm vulnerabilities | No |
+
+What was used for the headline benchmark claims:
+
+- **Answering model:** Gemma 4 31B Q4_K_M via local Ollama, 8K context, temperature 0, seed 42. CSM uses the smaller `gemma4:e4b` for probe calls and `gemma4:31b` for recall/synthesis/answering; the comparison systems use the same `gemma4:31b` answering model.
+- **Hardware:** one RTX 4090-class local machine. Latency numbers are hardware-specific; accuracy/citation scoring is replayable from saved result artifacts.
+- **Corpus:** PaySwift synthetic project-memory corpus, 22,363 events / ~9.0M tokens, released CC0 under `data/eval/corpus-synthetic/`.
+- **Questions:** 30 multiple-choice queries with 40 options each and gold citation event IDs. Scoring is exact option match plus citation precision/recall/F1. No LLM judge is used.
+- **Systems compared:** CSM, long-context, vanilla RAG, hybrid RAG, and LightRAG. Mem0 and HippoRAG are documented as locally blocked, not claimed as beaten.
+- **Statistics:** bootstrap 95% confidence intervals and paired exact McNemar tests over the same query set.
+- **Replay:** source, corpus, and harness are in git. Exact no-LLM replay of published numbers needs the saved run artifact bundle from the release page because `data/eval/runs/` is intentionally ignored.
+
 ## Quickstart
 
 ```bash
