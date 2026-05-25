@@ -1,0 +1,95 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "values": [
+      {
+        "maxCorpusAtThreshold": 2000000,
+        "modelContext": 160000,
+        "multiplier": 12.5,
+        "system": "csm"
+      },
+      {
+        "maxCorpusAtThreshold": 2000000,
+        "modelContext": 160000,
+        "multiplier": 12.5,
+        "system": "hybrid"
+      },
+      {
+        "maxCorpusAtThreshold": 2000000,
+        "modelContext": 160000,
+        "multiplier": 12.5,
+        "system": "rag"
+      },
+      {
+        "maxCorpusAtThreshold": 1000000,
+        "modelContext": 160000,
+        "multiplier": 6.25,
+        "system": "longctx"
+      }
+    ]
+  },
+  "description": "Graph C — Effective context multiplier (threshold=0.8, model_ctx=160K tokens)",
+  "encoding": {
+    "color": {
+      "field": "system",
+      "legend": null,
+      "type": "nominal"
+    },
+    "tooltip": [
+      {
+        "field": "system",
+        "type": "nominal"
+      },
+      {
+        "field": "multiplier",
+        "format": ".2f",
+        "title": "× multiplier",
+        "type": "quantitative"
+      },
+      {
+        "field": "maxCorpusAtThreshold",
+        "format": ",d",
+        "title": "Max corpus",
+        "type": "quantitative"
+      },
+      {
+        "field": "modelContext",
+        "format": ",d",
+        "title": "Model ctx",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "format": ".2~s",
+        "title": "Effective context multiplier (× native, log scale)"
+      },
+      "field": "multiplier",
+      "scale": {
+        "type": "log"
+      },
+      "type": "quantitative"
+    },
+    "y": {
+      "axis": {
+        "labelFontSize": 13,
+        "title": null
+      },
+      "field": "system",
+      "sort": "-x",
+      "type": "nominal"
+    }
+  },
+  "height": {
+    "step": 40
+  },
+  "mark": {
+    "cornerRadiusEnd": 3,
+    "type": "bar"
+  },
+  "title": {
+    "subtitle": "How many times the model's native context (160K tokens) each system can stretch at ≥80% accuracy",
+    "text": "Effective Context Multiplier"
+  },
+  "width": 600
+}

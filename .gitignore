@@ -47,6 +47,14 @@ data/eval/runs/**
 !data/eval/runs/sota-combined/headline.md
 !data/eval/runs/sota-combined/plots/
 !data/eval/runs/sota-combined/plots/sota-cost-vs-quality.vl.json
+!data/eval/runs/gemini35-160k-30q-v1/
+!data/eval/runs/gemini35-160k-30q-v1/config.json
+!data/eval/runs/gemini35-160k-30q-v1/results.jsonl
+!data/eval/runs/gemini35-160k-30q-v1/summary.json
+!data/eval/runs/gemini35-160k-30q-v1/report.md
+!data/eval/runs/gemini35-160k-30q-v1/trial-summary.md
+!data/eval/runs/gemini35-160k-30q-v1/plots/
+!data/eval/runs/gemini35-160k-30q-v1/plots/*.vl.json
 data/eval/embeddings/
 data/eval/*-indexes/
 data/eval/*.log

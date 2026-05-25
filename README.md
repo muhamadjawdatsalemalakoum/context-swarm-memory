@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-200%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-201%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -95,7 +95,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 200 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 201 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
@@ -116,11 +116,18 @@ What was used for the headline benchmark claims:
 - **Statistics:** bootstrap 95% confidence intervals and paired exact McNemar tests over the same query set.
 - **Replay:** source, corpus, harness, and the small canonical v0.2 result rows are in git. `data/eval/runs/` still ignores ad-hoc local runs, caches, embeddings, and sidecar indexes.
 
+Hosted cross-model check, kept separate from the Gemma headline:
+
+- **Run:** `data/eval/runs/gemini35-160k-30q-v1/`
+- **Model:** Gemini 3.5 Flash, temperature 0, `CSM_GEMINI_THINKING=low`
+- **Setup:** same 30 questions over 100K, 1M, and 2M corpus sizes, with native model context capped at 160K tokens
+- **2M result:** CSM 28/30 at ~18K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens. The run completed 360/360 cells with zero provider errors.
+
 ## Quickstart
 
 ```bash
 npm install
-npm test                       # 200 tests, no API keys (deterministic MockProvider)
+npm test                       # 201 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -139,9 +146,9 @@ The default provider is a deterministic MockProvider (no network). To run the re
 
 ## Limitations
 
-- **Single-trial + measured nondeterminism.** CSM is ~27–30/30 across runs (temp=0 is not bitwise-deterministic across processes); `npm run bench:confirm` + `npm run bench:trials` are wired for a 3-trial confirmation, but those rows are not yet part of the public evidence bundle.
+- **Single-trial + measured nondeterminism.** The public bundle includes single-trial Gemma and Gemini 3.5 Flash evidence. CSM is ~27–30/30 across runs (temp=0 is not bitwise-deterministic across processes); `npm run bench:confirm` + `npm run bench:trials` are wired for a 3-trial confirmation, but those rows are not yet part of the public evidence bundle.
 - **Latency.** CSM's pipeline is ~3.5× slower than RAG per query.
-- **Scope.** All numbers are Gemma 4 31B Q4_K_M on one RTX 4090, at 100K + 1M corpus sizes; other models and the full corpus × context sweep are future work.
+- **Scope.** The README headline numbers are Gemma 4 31B Q4_K_M on one RTX 4090; Gemini 3.5 Flash rows are cross-model confirmation evidence and are labeled separately.
 
 ## Documentation
 

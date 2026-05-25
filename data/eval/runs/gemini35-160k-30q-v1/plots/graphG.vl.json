@@ -1,0 +1,133 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "values": [
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5166376216376216,
+        "meanCitationPrecision": 0.7777777777777778,
+        "meanCitationRecall": 0.4515903540903542,
+        "meanInputTokens": 14309.233333333334,
+        "meanLatencyMs": 26533.966666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "csm"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.4471789321789322,
+        "meanCitationPrecision": 0.7422222222222223,
+        "meanCitationRecall": 0.42297008547008547,
+        "meanInputTokens": 5860.4,
+        "meanLatencyMs": 3240.9666666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "hybrid"
+      },
+      {
+        "accuracy": 1,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 1,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5590522440522441,
+        "meanCitationPrecision": 0.8272222222222223,
+        "meanCitationRecall": 0.5321062271062271,
+        "meanInputTokens": 107437.46666666666,
+        "meanLatencyMs": 4813,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "longctx"
+      },
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.4468955663073309,
+        "meanCitationPrecision": 0.7333333333333333,
+        "meanCitationRecall": 0.4173504273504273,
+        "meanInputTokens": 5677.133333333333,
+        "meanLatencyMs": 2897.9666666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "rag"
+      }
+    ]
+  },
+  "description": "Graph G — Mean input tokens per LLM call, per system",
+  "encoding": {
+    "color": {
+      "field": "system",
+      "legend": null,
+      "type": "nominal"
+    },
+    "tooltip": [
+      {
+        "field": "system",
+        "type": "nominal"
+      },
+      {
+        "field": "meanInputTokens",
+        "format": ",d",
+        "title": "Input tokens",
+        "type": "quantitative"
+      },
+      {
+        "field": "accuracy",
+        "format": ".1%",
+        "type": "quantitative"
+      },
+      {
+        "field": "meanCitationF1",
+        "format": ".3f",
+        "title": "Citation F1",
+        "type": "quantitative"
+      },
+      {
+        "field": "meanLatencyMs",
+        "format": ",d",
+        "title": "Latency (ms)",
+        "type": "quantitative"
+      }
+    ],
+    "x": {
+      "axis": {
+        "format": ",d",
+        "title": "Mean input tokens per answering call"
+      },
+      "field": "meanInputTokens",
+      "type": "quantitative"
+    },
+    "y": {
+      "axis": {
+        "labelFontSize": 13,
+        "title": null
+      },
+      "field": "system",
+      "sort": "-x",
+      "type": "nominal"
+    }
+  },
+  "height": {
+    "step": 40
+  },
+  "mark": {
+    "cornerRadiusEnd": 3,
+    "type": "bar"
+  },
+  "title": {
+    "subtitle": "Mean input tokens per answering call (corpus 100K tokens, model ctx 160K tokens) — lower is cheaper",
+    "text": "Token Cost per System"
+  },
+  "width": 600
+}

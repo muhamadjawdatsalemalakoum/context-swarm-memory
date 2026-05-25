@@ -751,10 +751,7 @@ async function cmdBenchReport(rest: string[]): Promise<number> {
   }
   const outputDir =
     flagString(args, "output-dir") ?? join("data", "eval", "runs", runId);
-  const headlineCtx = Number.parseInt(
-    flagString(args, "headline-ctx") ?? "8192",
-    10,
-  );
+  const headlineCtx = parseHumanSize(flagString(args, "headline-ctx") ?? "8192");
   const headlineCorpus = parseHumanSize(
     flagString(args, "headline-corpus") ?? "1M",
   );

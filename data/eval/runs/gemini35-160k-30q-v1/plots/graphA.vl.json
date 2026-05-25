@@ -1,0 +1,315 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "values": [
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5166376216376216,
+        "meanCitationPrecision": 0.7777777777777778,
+        "meanCitationRecall": 0.4515903540903542,
+        "meanInputTokens": 14309.233333333334,
+        "meanLatencyMs": 26533.966666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "csm"
+      },
+      {
+        "accuracy": 0.9666666666666667,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.9,
+        "corpusSize": 1000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5225228475228475,
+        "meanCitationPrecision": 0.7722222222222223,
+        "meanCitationRecall": 0.45492368742368755,
+        "meanInputTokens": 18998.733333333334,
+        "meanLatencyMs": 30702.3,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "csm"
+      },
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5147272902536061,
+        "meanCitationPrecision": 0.788888888888889,
+        "meanCitationRecall": 0.44582112332112345,
+        "meanInputTokens": 18075.733333333334,
+        "meanLatencyMs": 30003.466666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "csm"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.4471789321789322,
+        "meanCitationPrecision": 0.7422222222222223,
+        "meanCitationRecall": 0.42297008547008547,
+        "meanInputTokens": 5860.4,
+        "meanLatencyMs": 3240.9666666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "hybrid"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 1000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.38588726088726083,
+        "meanCitationPrecision": 0.6544444444444445,
+        "meanCitationRecall": 0.3755341880341881,
+        "meanInputTokens": 5613.866666666667,
+        "meanLatencyMs": 3474.4333333333334,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "hybrid"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.3863369963369963,
+        "meanCitationPrecision": 0.6766666666666666,
+        "meanCitationRecall": 0.364423076923077,
+        "meanInputTokens": 5632.666666666667,
+        "meanLatencyMs": 3662.766666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "hybrid"
+      },
+      {
+        "accuracy": 1,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 1,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5590522440522441,
+        "meanCitationPrecision": 0.8272222222222223,
+        "meanCitationRecall": 0.5321062271062271,
+        "meanInputTokens": 107437.46666666666,
+        "meanLatencyMs": 4813,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "longctx"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 1000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.16251563251563256,
+        "meanCitationPrecision": 0.29444444444444445,
+        "meanCitationRecall": 0.18821428571428572,
+        "meanInputTokens": 170121.63333333333,
+        "meanLatencyMs": 10933,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "longctx"
+      },
+      {
+        "accuracy": 0.5,
+        "accuracyCiHigh": 0.6666666666666666,
+        "accuracyCiLow": 0.3333333333333333,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.08628306878306878,
+        "meanCitationPrecision": 0.2111111111111111,
+        "meanCitationRecall": 0.12208791208791209,
+        "meanInputTokens": 170474.86666666667,
+        "meanLatencyMs": 11561.333333333334,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "longctx"
+      },
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 100000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.4468955663073309,
+        "meanCitationPrecision": 0.7333333333333333,
+        "meanCitationRecall": 0.4173504273504273,
+        "meanInputTokens": 5677.133333333333,
+        "meanLatencyMs": 2897.9666666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "rag"
+      },
+      {
+        "accuracy": 0.8666666666666667,
+        "accuracyCiHigh": 0.9666666666666667,
+        "accuracyCiLow": 0.7333333333333333,
+        "corpusSize": 1000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.34462986904163373,
+        "meanCitationPrecision": 0.6333333333333333,
+        "meanCitationRecall": 0.32147741147741155,
+        "meanInputTokens": 5489.3,
+        "meanLatencyMs": 3121.866666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "rag"
+      },
+      {
+        "accuracy": 0.8666666666666667,
+        "accuracyCiHigh": 0.9666666666666667,
+        "accuracyCiLow": 0.7333333333333333,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.3335187579305226,
+        "meanCitationPrecision": 0.6,
+        "meanCitationRecall": 0.31481074481074484,
+        "meanInputTokens": 5441.933333333333,
+        "meanLatencyMs": 3172.633333333333,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "rag"
+      }
+    ]
+  },
+  "description": "Graph A — Effective context window at model_ctx=160K tokens",
+  "height": 400,
+  "layer": [
+    {
+      "encoding": {
+        "color": {
+          "field": "system",
+          "type": "nominal"
+        },
+        "x": {
+          "field": "corpusSize",
+          "scale": {
+            "type": "log"
+          },
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "accuracyCiLow",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "accuracyCiHigh"
+        }
+      },
+      "mark": {
+        "interpolate": "monotone",
+        "opacity": 0.18,
+        "type": "errorband"
+      }
+    },
+    {
+      "encoding": {
+        "color": {
+          "field": "system",
+          "legend": {
+            "title": "System"
+          },
+          "type": "nominal"
+        },
+        "tooltip": [
+          {
+            "field": "system",
+            "type": "nominal"
+          },
+          {
+            "field": "corpusSize",
+            "format": ",d",
+            "type": "quantitative"
+          },
+          {
+            "field": "accuracy",
+            "format": ".1%",
+            "type": "quantitative"
+          },
+          {
+            "field": "accuracyCiLow",
+            "format": ".1%",
+            "title": "CI low",
+            "type": "quantitative"
+          },
+          {
+            "field": "accuracyCiHigh",
+            "format": ".1%",
+            "title": "CI high",
+            "type": "quantitative"
+          },
+          {
+            "field": "n",
+            "title": "trials",
+            "type": "quantitative"
+          }
+        ],
+        "x": {
+          "axis": {
+            "format": "~s",
+            "title": "Corpus size (tokens, log scale)"
+          },
+          "field": "corpusSize",
+          "scale": {
+            "type": "log"
+          },
+          "type": "quantitative"
+        },
+        "y": {
+          "axis": {
+            "format": "%",
+            "title": "Accuracy"
+          },
+          "field": "accuracy",
+          "scale": {
+            "domain": [
+              0,
+              1
+            ]
+          },
+          "type": "quantitative"
+        }
+      },
+      "mark": {
+        "interpolate": "monotone",
+        "point": {
+          "size": 60
+        },
+        "strokeWidth": 2.5,
+        "type": "line"
+      }
+    },
+    {
+      "encoding": {
+        "y": {
+          "datum": 0.8
+        }
+      },
+      "mark": {
+        "color": "#666",
+        "strokeDash": [
+          6,
+          4
+        ],
+        "type": "rule"
+      }
+    }
+  ],
+  "title": {
+    "subtitle": "Where each system can still answer above the accuracy threshold",
+    "text": "Effective Context Window (model context = 160K tokens)"
+  },
+  "width": 720
+}

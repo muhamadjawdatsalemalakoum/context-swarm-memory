@@ -1,0 +1,25 @@
+{
+  "corpusDir": "data/eval/corpus-synthetic",
+  "corpusSizes": [
+    100000,
+    1000000,
+    2000000
+  ],
+  "earlyStopThreshold": 0.5,
+  "maxOutputTokens": 4096,
+  "model": "gemini-3.5-flash",
+  "modelContexts": [
+    160000
+  ],
+  "outputDir": "data\\eval\\runs\\gemini35-160k-30q-v1",
+  "reserveScaffoldingTokens": 512,
+  "runId": "gemini35-160k-30q-v1",
+  "seed": 42,
+  "systemNames": [
+    "csm",
+    "longctx",
+    "rag",
+    "hybrid"
+  ],
+  "trials": 1
+}
