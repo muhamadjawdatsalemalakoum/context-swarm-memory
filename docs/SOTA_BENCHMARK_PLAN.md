@@ -50,6 +50,22 @@ This means the README should stop treating BABILong as the next SOTA headline.
 BABILong remains useful external diagnostic evidence, but the next public SOTA
 benchmark target is **AMB/BEAM first, STATE-Bench second**.
 
+## North Star Comparator
+
+Treat **Hindsight** as the named system to beat. Its public positioning is the
+right bar for CSM: agent memory that learns over time, not just chat-history
+recall; a two-line wrapper path; retain/recall/reflect APIs; and a benchmark
+story centered on state-of-the-art long-term memory performance. The CSM claim
+must therefore be sharper than "better than RAG":
+
+- Beat Hindsight on the same AMB/BEAM rows, or say clearly where it does not.
+- Compare retrieval quality, answer quality, cost, latency, and indexing/update
+  cost.
+- Preserve CSM's differentiators: read-only query path, Committer-only writes,
+  immutable snapshots, event-level citations, and no LLM indexing by default.
+- If Hindsight wins on answer quality, use the row-level failures to improve CSM
+  rather than weakening the benchmark.
+
 ## Current Claim Boundary
 
 The repo already includes one real SOTA head-to-head:
@@ -83,8 +99,9 @@ next comparison ladder. Use primary sources when updating this table.
 | Graphiti / Zep | Temporal context graph for evolving agent memory, provenance, and historical queries. | Not integrated yet. Priority P1 sidecar. | <https://github.com/getzep/graphiti> |
 | APEX-MEM | Conversational memory system combining append-only temporal property graphs with multi-tool retrieval. | Not integrated yet. Priority P1 after Graphiti/GraphRAG because it stresses temporal conflicts directly. | <https://arxiv.org/abs/2604.14362> |
 | LightMem / LIGHT | 2026 memory-augmented generation system focused on accuracy/cost tradeoffs. | Not integrated yet. Priority P1 after code path is verified. | <https://arxiv.org/abs/2510.18866> |
-| Agent Memory Benchmark (AMB) | Open memory-system harness with public datasets, prompts, scoring logic, results, Gemini-based generation/judging, cost/latency tracking, and a live leaderboard. | **Selected P0 SOTA harness.** Add a CSM memory-provider adapter or export-compatible retrieval provider. | <https://github.com/vectorize-io/agent-memory-benchmark> |
-| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | **Selected P0 scale benchmark.** Prefer the AMB BEAM track; otherwise add a direct BEAM driver and snapshot leaderboard rows with retrieval date. | <https://arxiv.org/abs/2510.27246> |
+| Hindsight | North-star agent memory system to beat: retain/recall/reflect, mental-model learning, parallel semantic/keyword/graph/temporal recall, public LongMemEval/AMB-style positioning. | AMB dependency exists but Windows install is blocked by its optional `hindsight-all -> uvloop` chain. Run on macOS/Linux first; then publish CSM-vs-Hindsight paired AMB/BEAM rows. | <https://github.com/vectorize-io/hindsight> |
+| Agent Memory Benchmark (AMB) | Open memory-system harness with public datasets, prompts, scoring logic, results, Gemini-based generation/judging, cost/latency tracking, and a live leaderboard. | **Bridge added:** `integrations/amb/csm_provider.py`, `npm run amb:patch`, and `npm run amb:csm:retrieve`. Next: run BEAM 100K smoke through AMB. | <https://github.com/vectorize-io/agent-memory-benchmark> |
+| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | **Selected P0 scale benchmark.** AMB bridge is in repo; smoke/full rows still pending. | <https://arxiv.org/abs/2510.27246> |
 | Microsoft STATE-Bench | May 2026 benchmark for realistic multi-turn enterprise tasks with stateful tools, deterministic assertions, Memory Track train trajectories, retrieval hook, pass@1/pass^5/UX/cost metrics. | **Selected P0 agentic-memory benchmark.** Add an adapter only after AMB/BEAM smoke results exist. | <https://github.com/microsoft/STATE-Bench> |
 | MemoryAgentBench | ICLR 2026 incremental multi-turn memory benchmark covering accurate retrieval, test-time learning, long-range understanding, and conflict resolution. | Not integrated yet. Priority P1 academic validation after AMB/BEAM. | <https://github.com/HUST-AI-HYZ/MemoryAgentBench> |
 | MemoryArena / AMA-Bench | 2026 agent-memory benchmarks for interdependent multi-session tasks and long-horizon agent trajectories. | Not integrated yet. Priority P1/P2 breadth checks; useful for paper appendix, not the first README headline. | <https://memoryarena.github.io/> |
@@ -172,24 +189,27 @@ or scale, but those dimensions must be measured directly.
 
 ## Next Implementation Order
 
-1. Add a CSM adapter for Agent Memory Benchmark and run the BEAM 100K smoke
-   tier first.
-2. Run AMB/BEAM at 100K, 500K, 1M, and 10M where feasible, saving per-row
+1. Run the AMB/BEAM 100K smoke using the checked-in CSM bridge
+   (`integrations/amb/README.md`), then save the resulting AMB JSON under the
+   evidence bundle if it is clean.
+2. Replace the smoke bridge's per-query Node subprocess with a warm retrieval
+   service before larger BEAM runs.
+3. Run AMB/BEAM at 100K, 500K, 1M, and 10M where feasible, saving per-row
    outputs, prompts, judge responses, token/cost accounting, and leaderboard
    snapshot metadata.
-3. Add Microsoft STATE-Bench Memory Track adapter and run one domain smoke test
+4. Add Microsoft STATE-Bench Memory Track adapter and run one domain smoke test
    before broadening to all 450 tasks.
-4. Add MemoryAgentBench smoke coverage for AR/TTL/LRU/CR as an academic
+5. Add MemoryAgentBench smoke coverage for AR/TTL/LRU/CR as an academic
    validation set.
-5. Extend BABILong beyond the committed task1/task2 4K/8K subset: add task3,
+6. Extend BABILong beyond the committed task1/task2 4K/8K subset: add task3,
    32K/128K lengths, and paired long-context/RAG baselines.
-6. Add a Graphiti/Zep sidecar using the existing `/index` and `/query` protocol.
-7. Add a Microsoft GraphRAG sidecar with global/local/DRIFT modes.
-8. Attempt LightMem with the authors' released code and record install/runtime
+7. Add a Graphiti/Zep sidecar using the existing `/index` and `/query` protocol.
+8. Add a Microsoft GraphRAG sidecar with global/local/DRIFT modes.
+9. Attempt LightMem with the authors' released code and record install/runtime
    blockers if it cannot run cleanly.
-9. Re-run CSM, LightRAG, Graphiti/GraphRAG, Mem0/HippoRAG if unblocked, and
+10. Re-run CSM, LightRAG, Graphiti/GraphRAG, Mem0/HippoRAG if unblocked, and
    baseline controls with 3 trials.
-10. Archive the evidence bundle and update `docs/EVIDENCE.md` only after the
+11. Archive the evidence bundle and update `docs/EVIDENCE.md` only after the
    full result rows are saved.
 
 ## What Would Be Meaningful
