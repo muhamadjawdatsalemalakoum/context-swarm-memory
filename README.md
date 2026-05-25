@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-201%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-204%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -25,7 +25,7 @@ At 1M tokens, CSM **overtakes vanilla RAG** (they were tied at 100K) and beats l
 
 > Honest calibration: single-trial; CSM's absolute accuracy is ~27–30/30 across runs (Gemma at temp=0 is not bitwise-deterministic across processes), so the robust claim is **"does not degrade as memory grows, while the alternatives do"** — not that its raw score climbs.
 
-## Results — beating the 2025 SOTA
+## Results — current SOTA status
 
 Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answering for **every** system (8K context, temp 0) — only the retrieval/memory layer differs. CSM beats **LightRAG**, a 2025 graph-RAG SOTA, on accuracy (paired exact McNemar **p=0.031**) and leads clearly on **citation grounding quality**:
 
@@ -36,6 +36,12 @@ Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answerin
 - **The cost is latency:** CSM is ~3.5× slower than RAG per query (the probe → recall → synth → answer chain). Fine for offline project memory; the open problem for interactive use.
 
 Full numbers, per-query breakdown, significance, and methodology: [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) · [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md).
+
+This is a real SOTA head-to-head, but not the end of the story. The current
+SOTA ladder also needs Graphiti/Zep, Microsoft GraphRAG, APEX-MEM,
+LightMem/BEAM, LongMemEval, LoCoMo, BABILong, A-MEM/AgeMem, MemOS, and ShardMemo coverage
+before CSM can claim field-wide uniqueness. The explicit plan and go/no-go rules
+live in [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md).
 
 ## How it works
 
@@ -95,10 +101,11 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 201 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 204 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
+| `npm run bench:sota:headline` | Regenerates the committed CSM-vs-SOTA comparison table from saved result rows | No |
 | `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
 | `npm run bench:trials -- <runId>` | Multi-trial runs can be summarized as mean +/- sample standard deviation | No |
 | `npm run verify:published` | Hashes the committed evidence rows and recomputes the published headline counts, citation F1, and McNemar checks from `results.jsonl` | No |
@@ -112,7 +119,7 @@ What was used for the headline benchmark claims:
 - **Hardware:** one RTX 4090-class local machine. Latency numbers are hardware-specific; accuracy/citation scoring is replayable from saved result artifacts.
 - **Corpus:** PaySwift synthetic project-memory corpus, 22,363 events / ~9.0M tokens, released CC0 under `data/eval/corpus-synthetic/`.
 - **Questions:** 30 multiple-choice queries with 40 options each and gold citation event IDs. Scoring is exact option match plus citation precision/recall/F1. No LLM judge is used.
-- **Systems compared:** CSM, long-context, vanilla RAG, hybrid RAG, and LightRAG. Mem0 and HippoRAG are documented as locally blocked, not claimed as beaten.
+- **Systems compared:** CSM, long-context, vanilla RAG, hybrid RAG, and LightRAG. Mem0 and HippoRAG are documented as locally blocked, not claimed as beaten. The next SOTA targets are tracked in `docs/SOTA_BENCHMARK_PLAN.md`.
 - **Statistics:** bootstrap 95% confidence intervals and paired exact McNemar tests over the same query set.
 - **Replay:** source, corpus, harness, and the small canonical v0.2 result rows are in git. `data/eval/runs/` still ignores ad-hoc local runs, caches, embeddings, and sidecar indexes.
 
@@ -127,7 +134,7 @@ Hosted cross-model check, kept separate from the Gemma headline:
 
 ```bash
 npm install
-npm test                       # 201 tests, no API keys (deterministic MockProvider)
+npm test                       # 204 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -140,7 +147,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 ## Evaluation
 
 - **Corpus — PaySwift:** a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations. Released **CC0**. (A BABILong free-form path is wired but not yet driven.)
-- **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus 2025-SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally).
+- **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally; Graphiti/Zep, Microsoft GraphRAG, APEX-MEM, LightMem/BEAM, and LongMemEval/LoCoMo are the next comparison targets).
 - **Scoring is programmatic:** exact-match accuracy + citation precision/recall/F1 + bootstrap 95% CIs + paired exact McNemar. The same answering model is used for every system, so only retrieval differs.
 - **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus, harness, and canonical published result rows are in git; larger local caches and sidecar indexes stay ignored. Charts regenerate from committed summaries via `npx tsx scripts/build-readme-charts.ts`.
 
@@ -158,6 +165,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) | Full results — per-query breakdown, scaling table, embedding-floor analysis |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 5-minute architecture overview |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
+| [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md) | Current SOTA ladder, benchmark axes, go/no-go rules, and next integrations |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
 | [`docs/GEMINI.md`](docs/GEMINI.md) | Hosted Gemini provider setup and cross-model confirmation workflow |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) | Step-by-step reproduction on a local 4090 |
