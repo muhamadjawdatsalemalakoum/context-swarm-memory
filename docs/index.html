@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Context Swarm Memory</title>
+    <meta
+      name="description"
+      content="Context Swarm Memory is a cited memory layer for long-running AI agents: bounded shards, read-only recall, and commit-only writes."
+    >
+    <link rel="canonical" href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Context Swarm Memory">
+    <meta
+      property="og:description"
+      content="A calm, cited memory layer for future AI agents. Memory gets sharper as it scales."
+    >
+    <meta
+      property="og:image"
+      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png"
+    >
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Context Swarm Memory">
+    <meta
+      name="twitter:description"
+      content="A cited memory layer for long-running AI agents. Bounded shards. Read-only recall. Commit-only writes."
+    >
+    <meta
+      name="twitter:image"
+      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png"
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="Context Swarm Memory home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </span>
+        <span>
+          <strong>CSM</strong>
+          <small>Context Swarm Memory</small>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+        <span class="nav-toggle-line"></span>
+        <span class="nav-toggle-line"></span>
+        <span class="nav-toggle-line"></span>
+        <span class="sr-only">Menu</span>
+      </button>
+      <nav class="site-nav" id="site-nav" data-nav>
+        <a href="#architecture">Architecture</a>
+        <a href="#evidence">Evidence</a>
+        <a href="#safety">Safety</a>
+        <a href="#run">Run it</a>
+        <a class="nav-github" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="content">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-visual" aria-hidden="true">
+          <img src="assets/context-swarm-memory-cover.png" alt="">
+        </div>
+        <div class="hero-content">
+          <p class="eyebrow">Open-source memory infrastructure</p>
+          <h1 id="hero-title">CSM</h1>
+          <p class="hero-subtitle">Context Swarm Memory</p>
+          <p class="hero-lede">Memory that gets sharper as it scales.</p>
+          <p class="hero-copy">
+            A cited memory layer for long-running AI agents: bounded shards, read-only recall,
+            manager routing, synthesis, and explicit commit-only writes.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">
+              View repository
+            </a>
+            <a class="button button-secondary" href="#run">Run locally</a>
+          </div>
+          <div class="hero-badges" aria-label="Core capabilities">
+            <span>Memory shards</span>
+            <span>Cited answers</span>
+            <span>Commit-only writes</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section thesis" aria-labelledby="thesis-title">
+        <div class="section-inner">
+          <div class="section-kicker">The thesis</div>
+          <h2 id="thesis-title">More memory should mean more clarity, not more noise.</h2>
+          <p class="section-lede">
+            CSM treats memory as bounded, inspectable shards. Queries branch from immutable
+            snapshots, gather cited evidence, synthesize a compact packet, and discard the
+            temporary work. Durable memory changes only through the Committer.
+          </p>
+          <div class="principles">
+            <article>
+              <span class="principle-number">01</span>
+              <h3>Shard the past</h3>
+              <p>Long histories stay organized into bounded witnesses with summaries, tags, and immutable snapshots.</p>
+            </article>
+            <article>
+              <span class="principle-number">02</span>
+              <h3>Recall with sources</h3>
+              <p>Every useful answer carries shard, snapshot, and event IDs so claims can be checked.</p>
+            </article>
+            <article>
+              <span class="principle-number">03</span>
+              <h3>Write deliberately</h3>
+              <p>Read paths never mutate durable memory. New facts go through explicit commit decisions.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section architecture" id="architecture" aria-labelledby="architecture-title">
+        <div class="section-inner architecture-grid">
+          <div>
+            <div class="section-kicker">Architecture</div>
+            <h2 id="architecture-title">A branch-and-discard read path.</h2>
+            <p class="section-lede">
+              The manager routes a query, probes candidate shards, recalls from useful snapshots,
+              and synthesizes a MemoryPacket. The query run is temporary; snapshots and the
+              chronicle remain untouched.
+            </p>
+            <ul class="check-list">
+              <li>Router is keyword and tag based, with no LLM indexing cost.</li>
+              <li>Probe and recall calls stay behind the <code>LlmProvider</code> seam.</li>
+              <li>Committer is the only durable write entry point.</li>
+            </ul>
+          </div>
+
+          <div class="pipeline" aria-label="CSM query pipeline">
+            <div class="pipeline-row">
+              <span class="diagram-node">Directory</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node">Router</span>
+            </div>
+            <div class="pipeline-row">
+              <span class="diagram-node">Probe</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node">Recall</span>
+            </div>
+            <div class="pipeline-row">
+              <span class="diagram-node">Synthesize</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node strong">MemoryPacket</span>
+            </div>
+            <div class="packet">
+              <div class="packet-header">
+                <span>MemoryPacket</span>
+                <span class="packet-dot" aria-hidden="true"></span>
+              </div>
+              <p>Concise answer, grounded in cited event IDs and immutable shard snapshots.</p>
+              <div class="source-row">
+                <span>s-architecture</span>
+                <span>S004</span>
+                <span>e0002</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section evidence" id="evidence" aria-labelledby="evidence-title">
+        <div class="section-inner">
+          <div class="split-heading">
+            <div>
+              <div class="section-kicker">Evidence</div>
+              <h2 id="evidence-title">Measured against retrieval baselines, with receipts.</h2>
+            </div>
+            <p>
+              Same corpus, same 30 questions, same local Gemma answering model. Only the
+              retrieval and memory layer changes.
+            </p>
+          </div>
+
+          <div class="metric-strip" aria-label="Benchmark highlights">
+            <div>
+              <strong>27-30/30</strong>
+              <span>CSM accuracy range across runs</span>
+            </div>
+            <div>
+              <strong>0.505</strong>
+              <span>CSM citation F1</span>
+            </div>
+            <div>
+              <strong>~0</strong>
+              <span>LLM indexing cost for CSM</span>
+            </div>
+          </div>
+
+          <div class="chart-grid">
+            <figure>
+              <img src="assets/scaling.svg" alt="Accuracy as memory scales from 100K to 1M tokens">
+              <figcaption>CSM holds its accuracy as the corpus grows 10x.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/citation-f1.svg" alt="Citation F1 comparison by memory system">
+              <figcaption>CSM leads on citation grounding quality in the reported run.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section safety" id="safety" aria-labelledby="safety-title">
+        <div class="section-inner safety-layout">
+          <div>
+            <div class="section-kicker">Safety invariants</div>
+            <h2 id="safety-title">Designed for memory you can audit.</h2>
+            <p class="section-lede">
+              CSM avoids autonomous writes and tool-using shards. Reads produce evidence; commits
+              produce durable state. The storage layer refuses snapshot overwrites.
+            </p>
+          </div>
+          <div class="invariant-list">
+            <article>
+              <h3>Querying memory must not mutate memory</h3>
+              <p>Mutation-safety tests hash durable files before and after ask runs.</p>
+            </article>
+            <article>
+              <h3>All writes go through Committer</h3>
+              <p>
+                <code>appendEventAndSnapshot</code> and <code>applyCommitDecision</code>
+                are the durable write gates.
+              </p>
+            </article>
+            <article>
+              <h3>Snapshots are immutable</h3>
+              <p>Shard snapshots are versioned and the storage layer refuses overwrite attempts.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section run" id="run" aria-labelledby="run-title">
+        <div class="section-inner run-grid">
+          <div>
+            <div class="section-kicker">Run it</div>
+            <h2 id="run-title">Clone, test, and ask memory locally.</h2>
+            <p class="section-lede">
+              The default provider is deterministic and runs without API keys. Real providers stay
+              behind the same <code>LlmProvider</code> interface.
+            </p>
+          </div>
+          <pre class="terminal" aria-label="CSM quickstart commands"><code>npm install
+npm test
+
+npm run csm -- init
+npm run csm -- shard create --name "Project X" --tags x,architecture
+npm run csm -- remember --shard &lt;shardId&gt; --text "Decision: ..." --tags decision
+npm run csm -- ask "What did we decide about X?"</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <strong>Context Swarm Memory</strong>
+        <span>Built by Mohamad Jawdat Alakoum</span>
+      </div>
+      <nav aria-label="Footer links">
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
+        <a href="ARCHITECTURE.md">Architecture</a>
+        <a href="BENCHMARK_METHODOLOGY.md">Methodology</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE">MIT License</a>
+        <a href="https://www.linkedin.com/in/akoum/">LinkedIn</a>
+      </nav>
+    </footer>
+
+    <script src="site.js" defer></script>
+  </body>
+</html>

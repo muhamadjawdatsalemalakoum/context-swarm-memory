@@ -1,0 +1,12 @@
+# LightRAG sidecar deps. Install into a dedicated venv:
+#   python -m venv .venv-lightrag
+#   .venv-lightrag\Scripts\activate
+#   pip install -r services/lightrag-sidecar/requirements.txt
+#
+# WARNING: first install pulls torch + transformers (~2-3 GB).
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0
+lightrag-hku>=0.1.0
+numpy>=1.24
+openai>=1.10.0

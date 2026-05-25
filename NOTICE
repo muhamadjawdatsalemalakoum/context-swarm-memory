@@ -1,0 +1,32 @@
+Context Swarm Memory (CSM)
+Copyright (c) 2026 Mohamad Jawdat Alakoum
+Licensed under the MIT License — see LICENSE.
+
+----
+
+This project bundles or depends on third-party software. Each dependency
+retains its own license and copyright.
+
+Runtime dependencies:
+- @modelcontextprotocol/sdk     MIT License
+- @xenova/transformers          Apache License 2.0
+- zod                           MIT License
+
+Development dependencies:
+- @types/node                   MIT License
+- tsx                           MIT License
+- typescript                    Apache License 2.0
+- vitest                        MIT License
+
+Model artifacts referenced (downloaded at runtime, not bundled):
+- Xenova/all-MiniLM-L6-v2       Apache License 2.0 — used for RAG-baseline
+                                embeddings. Downloaded via @xenova/transformers.
+- google/gemma-4 (any variant)  Subject to Google's Gemma Terms of Use —
+                                accessed via Ollama. Not redistributed by
+                                this project.
+
+Synthetic benchmark corpus (data/eval/corpus-synthetic/*) is original work
+dedicated to the public domain (CC0 1.0 Universal).
+
+For the full text of each third-party license, consult the corresponding
+package on npm or the linked project page.

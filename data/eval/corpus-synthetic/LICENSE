@@ -1,0 +1,17 @@
+Creative Commons Legal Code
+
+CC0 1.0 Universal
+
+The PaySwift synthetic benchmark corpus (events.jsonl, queries.json,
+decisions.md, and any filler tier files in this directory) is an entirely
+fictional work created for the Context Swarm Memory R&D benchmark. To the
+extent possible under law, the authors have dedicated all copyright and
+related and neighboring rights in this work to the public domain worldwide.
+This work is distributed without any warranty.
+
+You should have received a copy of the CC0 Public Domain Dedication along
+with this work. If not, see <https://creativecommons.org/publicdomain/zero/1.0/>.
+
+All companies, people, products, customers, vendors, dollar amounts, and
+incidents in this corpus are fictional. Any resemblance to real entities is
+coincidental.
