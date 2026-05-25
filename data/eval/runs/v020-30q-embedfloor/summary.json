@@ -1,0 +1,82 @@
+{
+  "cells": [
+    {
+      "accuracy": 1,
+      "accuracyCi95": [
+        1,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.5051242422295055,
+      "meanCitationPrecision": 0.7888888888888889,
+      "meanCitationRecall": 0.4723046398046399,
+      "meanInputTokens": 14206.1,
+      "meanLatencyMs": 337055.3,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "csm"
+    },
+    {
+      "accuracy": 0.9333333333333333,
+      "accuracyCi95": [
+        0.8333333333333334,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.45520126931891625,
+      "meanCitationPrecision": 0.7277777777777779,
+      "meanCitationRecall": 0.4376526251526252,
+      "meanInputTokens": 5669.333333333333,
+      "meanLatencyMs": 89044.46666666666,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "hybrid"
+    },
+    {
+      "accuracy": 0.8,
+      "accuracyCi95": [
+        0.6333333333333333,
+        0.9333333333333333
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.18344877344877344,
+      "meanCitationPrecision": 0.28888888888888886,
+      "meanCitationRecall": 0.17917582417582417,
+      "meanInputTokens": 8663.9,
+      "meanLatencyMs": 234475.6,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "longctx"
+    },
+    {
+      "accuracy": 0.9666666666666667,
+      "accuracyCi95": [
+        0.9,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.4455581696886044,
+      "meanCitationPrecision": 0.7305555555555556,
+      "meanCitationRecall": 0.41170940170940173,
+      "meanInputTokens": 5501.433333333333,
+      "meanLatencyMs": 96389.33333333333,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "rag"
+    }
+  ],
+  "earlyStops": [],
+  "generatedAt": "2026-05-22T10:48:45.739Z",
+  "replay": true,
+  "runId": "v020-30q-embedfloor",
+  "systemNames": [
+    "csm",
+    "longctx",
+    "rag",
+    "hybrid"
+  ]
+}

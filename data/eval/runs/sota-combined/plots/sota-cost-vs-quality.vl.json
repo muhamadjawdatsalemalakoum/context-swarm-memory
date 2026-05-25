@@ -1,0 +1,162 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": {
+    "text": "CSM vs SOTA — Cost vs Citation Quality",
+    "subtitle": "x = mean input tokens/call (log), y = citation F1, point size = accuracy. Up-and-left wins."
+  },
+  "data": {
+    "values": [
+      {
+        "system": "CSM (pipeline + embedding floor)",
+        "accuracy": 1,
+        "citationF1": 0.5051242422295055,
+        "citationPrecision": 0.7888888888888889,
+        "inputTokens": 14206,
+        "latencyMs": 337055
+      },
+      {
+        "system": "vanilla RAG",
+        "accuracy": 0.9666666666666667,
+        "citationF1": 0.4455581696886044,
+        "citationPrecision": 0.7305555555555556,
+        "inputTokens": 5501,
+        "latencyMs": 96389
+      },
+      {
+        "system": "hybrid RAG",
+        "accuracy": 0.9333333333333333,
+        "citationF1": 0.45520126931891625,
+        "citationPrecision": 0.7277777777777779,
+        "inputTokens": 5669,
+        "latencyMs": 89044
+      },
+      {
+        "system": "LightRAG (SOTA — dual-level graph)",
+        "accuracy": 0.8,
+        "citationF1": 0.2653671288453897,
+        "citationPrecision": 0.4511111111111111,
+        "inputTokens": 5451,
+        "latencyMs": 224104
+      },
+      {
+        "system": "long-context",
+        "accuracy": 0.36666666666666664,
+        "citationF1": 0.06666666666666667,
+        "citationPrecision": 0.06666666666666667,
+        "inputTokens": 8786,
+        "latencyMs": 93932
+      }
+    ]
+  },
+  "width": 680,
+  "height": 460,
+  "layer": [
+    {
+      "mark": {
+        "type": "point",
+        "filled": true,
+        "opacity": 0.85
+      },
+      "encoding": {
+        "x": {
+          "field": "inputTokens",
+          "type": "quantitative",
+          "scale": {
+            "type": "log",
+            "nice": false
+          },
+          "axis": {
+            "title": "Mean input tokens per call (log)",
+            "format": ",d"
+          }
+        },
+        "y": {
+          "field": "citationF1",
+          "type": "quantitative",
+          "scale": {
+            "domain": [
+              0,
+              1
+            ]
+          },
+          "axis": {
+            "title": "Citation F1"
+          }
+        },
+        "color": {
+          "field": "system",
+          "type": "nominal",
+          "legend": {
+            "title": "System"
+          }
+        },
+        "size": {
+          "field": "accuracy",
+          "type": "quantitative",
+          "scale": {
+            "range": [
+              80,
+              700
+            ]
+          },
+          "legend": {
+            "title": "Accuracy",
+            "format": "%"
+          }
+        },
+        "tooltip": [
+          {
+            "field": "system",
+            "type": "nominal"
+          },
+          {
+            "field": "accuracy",
+            "type": "quantitative",
+            "format": ".1%"
+          },
+          {
+            "field": "citationF1",
+            "type": "quantitative",
+            "format": ".3f"
+          },
+          {
+            "field": "inputTokens",
+            "type": "quantitative",
+            "format": ",d"
+          }
+        ]
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "dy": -16,
+        "fontSize": 11,
+        "fontWeight": "bold"
+      },
+      "encoding": {
+        "x": {
+          "field": "inputTokens",
+          "type": "quantitative",
+          "scale": {
+            "type": "log",
+            "nice": false
+          }
+        },
+        "y": {
+          "field": "citationF1",
+          "type": "quantitative"
+        },
+        "text": {
+          "field": "system",
+          "type": "nominal"
+        },
+        "color": {
+          "field": "system",
+          "type": "nominal",
+          "legend": null
+        }
+      }
+    }
+  ]
+}

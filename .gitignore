@@ -21,9 +21,32 @@ data/chronicle.jsonl
 data/query-runs.jsonl
 data/shards/
 
-# Eval artifacts — reproducible from cache + source, do not ship
+# Eval artifacts — ship only the canonical v0.2 evidence rows; keep ad-hoc
+# local runs, caches, indexes, logs, and embeddings out of git.
 data/eval/cache/
-data/eval/runs/
+data/eval/runs/**
+!data/eval/runs/
+!data/eval/runs/v020-30q-embedfloor/
+!data/eval/runs/v020-30q-embedfloor/config.json
+!data/eval/runs/v020-30q-embedfloor/results.jsonl
+!data/eval/runs/v020-30q-embedfloor/summary.json
+!data/eval/runs/v020-30q-embedfloor/report.md
+!data/eval/runs/lightrag-30q/
+!data/eval/runs/lightrag-30q/config.json
+!data/eval/runs/lightrag-30q/results.jsonl
+!data/eval/runs/lightrag-30q/summary.json
+!data/eval/runs/scaling-rq1/
+!data/eval/runs/scaling-rq1/config.json
+!data/eval/runs/scaling-rq1/results.jsonl
+!data/eval/runs/scaling-rq1/summary.json
+!data/eval/runs/scaling-1m/
+!data/eval/runs/scaling-1m/config.json
+!data/eval/runs/scaling-1m/results.jsonl
+!data/eval/runs/scaling-1m/summary.json
+!data/eval/runs/sota-combined/
+!data/eval/runs/sota-combined/headline.md
+!data/eval/runs/sota-combined/plots/
+!data/eval/runs/sota-combined/plots/sota-cost-vs-quality.vl.json
 data/eval/embeddings/
 data/eval/*-indexes/
 data/eval/*.log

@@ -70,9 +70,11 @@ retrieval/memory layer differs. Citation P/R/F1 are post-parser-fix (see above).
   specific, traceable decision-events, graph-RAG's entity/relation retrieval misses
   factual events that plain embedding top-k surfaces directly.
 
-_(CSM + RAG-baseline numbers from `v020-30q-embedfloor`; LightRAG from
-`lightrag-30q`; all re-scored post-fix. Combined table + CIs + McNemar via
-`npx tsx scripts/sota-headline.ts`; see `PHASE_30Q_RESULTS.md`.)_
+_(CSM + RAG-baseline numbers from `v020-30q-embedfloor`; representative
+long-context from `scaling-rq1`; LightRAG from `lightrag-30q`; all re-scored
+post-fix. Combined table + CIs + McNemar via
+`npx tsx scripts/sota-headline.ts`; see `PHASE_30Q_RESULTS.md` and
+`docs/EVIDENCE.md`.)_
 
 ---
 

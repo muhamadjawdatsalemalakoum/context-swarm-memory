@@ -34,7 +34,9 @@ const DEFAULT_RUN_MAP: Record<string, string> = {
   csm: "v020-30q-embedfloor",
   rag: "v020-30q-embedfloor",
   hybrid: "v020-30q-embedfloor",
-  longctx: "v020-30q-embedfloor",
+  // Use the representative-slice long-context run. The v020 run still contains
+  // the earlier id-sorted packing artifact, which front-loaded core facts.
+  longctx: "scaling-rq1",
   mem0: "mem0-30q",
   lightrag: "lightrag-30q",
   hipporag: "hipporag-30q",
