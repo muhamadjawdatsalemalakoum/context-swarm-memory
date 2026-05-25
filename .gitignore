@@ -45,6 +45,7 @@ data/eval/runs/**
 !data/eval/runs/scaling-1m/summary.json
 !data/eval/runs/sota-combined/
 !data/eval/runs/sota-combined/headline.md
+!data/eval/runs/sota-combined/scaling.md
 !data/eval/runs/sota-combined/plots/
 !data/eval/runs/sota-combined/plots/sota-cost-vs-quality.vl.json
 !data/eval/runs/gemini35-160k-30q-v1/

@@ -54,7 +54,7 @@ No single benchmark proves the thesis. Use a ladder:
 | Axis | Question answered | Required metrics |
 |---|---|---|
 | Traceable project-memory QA | Can the system find exact decision facts in an evolving project corpus? | accuracy, citation precision/recall/F1, paired McNemar, per-query rows |
-| Scale under fixed context | Does performance degrade as corpus grows beyond the model window? | 100K/1M/2M/9M accuracy, citation F1, input tokens, latency |
+| Scale under fixed context | Does performance degrade as corpus grows beyond the model window? | 100K/1M/2M/9M accuracy, citation precision/recall/F1 slopes, input tokens, latency |
 | Indexing and update cost | Does the system require expensive LLM indexing or full graph recomputation? | index wall time, index input/output tokens, disk size, cache hit rate, incremental update time |
 | Long conversational memory | Does it handle multi-session, temporal, update, and abstention questions? | LongMemEval/LoCoMo/BEAM category scores, judge prompts if any, raw answers |
 | Mutation safety | Does asking mutate durable memory? | before/after hashes, write-path audit, query-run-only log proof |
@@ -67,6 +67,13 @@ Summarize the committed SOTA evidence:
 
 ```bash
 npm run bench:sota:headline
+```
+
+Summarize whether each system improves, stays stable, or degrades as corpus
+size grows:
+
+```bash
+npm run bench:sota:scaling
 ```
 
 Smoke-test the CSM-vs-LightRAG SOTA path once the LightRAG sidecar is running:
@@ -99,6 +106,16 @@ A public "SOTA" claim is allowed only when:
 - citation claims use source-event IDs, not LLM-judge vibes;
 - cost claims include indexing cost, not only query-time cost;
 - any judge-based benchmark saves raw judge prompts and responses.
+
+For the stronger scaling claim ("CSM gets better or more precise with more
+data"), the bar is higher:
+
+- at least two corpus sizes per compared system in the same model/context track;
+- accuracy, citation precision, citation recall, and citation F1 reported
+  separately;
+- no "better with scale" claim if accuracy rises but citation F1/recall falls
+  without saying so;
+- no SOTA scaling claim while the SOTA comparator has only one corpus-size row.
 
 If CSM only ties on accuracy, the claim must say so. The unique value can still
 be real if CSM wins on citation grounding, write safety, indexing/update cost,
