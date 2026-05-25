@@ -79,6 +79,10 @@ const HASHES: Record<string, string> = {
     "635d43d08eb6409295462a2d10c51f1240e32497ccdf0b2e2e4a7b459de3d89e",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/report.md":
     "42ea7ef23e87643c9b76167fc83887116b9582b23b9ae00ff8cbc830f8efa55a",
+  "data/eval/external/babilong-leaderboard-v0_results.csv":
+    "584b7daf5f8cfcab96a005dabe6e6df189acd545a093dfc48f223af15ca6e196",
+  "data/eval/external/babilong-leaderboard-v0_SOURCE.md":
+    "87418e7d69d57c7beb3c94cfa14630b0a2f97b01348d3dca384180d8fe69a658",
 };
 
 const EXPECTED: ExpectedMetric[] = [

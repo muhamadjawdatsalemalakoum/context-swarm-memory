@@ -9,14 +9,26 @@ Short answer: RAG and hybrid RAG are controls, not the SOTA bar. The credible
 claim must be tested against current memory and graph-memory systems, plus
 long-memory benchmarks that stress scale, updates, and provenance.
 
+## 2026 Freshness Gate
+
+As of 2026-05-25, the repo does **not** have enough current frontier-model
+coverage to claim 2026 SOTA. LightRAG is a useful 2025 graph-RAG comparator, and
+BABILong is useful external evidence, but the committed BABILong Space
+leaderboard snapshot is historical rather than a live 2026 frontier-model board.
+
+Any future SOTA claim must pass `docs/BENCHMARK_FRESHNESS.md`: current model
+families, exact model IDs, run dates, same-harness rows where possible, and
+stale leaderboards labeled as stale.
+
 ## Current Claim Boundary
 
 The repo already includes one real SOTA head-to-head:
 
 - LightRAG ran on the same 30-query PaySwift benchmark and CSM won on that
   saved run.
-- BABILong is now driven as public external evidence on a 120-row task1/task2
-  subset with Gemini 3.5 Flash and 4K physical context. See
+- BABILong is now driven as public external diagnostic evidence on a 120-row
+  task1/task2 subset with Gemini 3.5 Flash and 4K physical context. The public
+  Space leaderboard snapshot is not current 2026 SOTA. See
   [`docs/BABILONG_RESULTS.md`](BABILONG_RESULTS.md).
 - Mem0 and HippoRAG 2 sidecars are wired, but the public evidence treats their
   local failures as blocked integrations, not as CSM wins.
@@ -44,7 +56,7 @@ next comparison ladder. Use primary sources when updating this table.
 | BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2510.27246> |
 | LongMemEval | ICLR 2025 long-term chat memory benchmark with information extraction, multi-session reasoning, temporal reasoning, updates, and abstention. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2410.10813> |
 | LoCoMo | Common long-term conversational memory benchmark used by Mem0, A-MEM, and related systems. | Not integrated yet; useful but should be treated carefully because it is partly judge-based. | <https://arxiv.org/abs/2402.17753> |
-| BABILong | Long-context reasoning-in-haystack benchmark up to 10M tokens; already partially wired as free-form support. | **Driven:** task1/task2 at 4K/8K, 30 rows/cell, CSM only. Task1 is solved; task2 exposed and then improved by entity-bridge recall. | <https://arxiv.org/abs/2406.10149> |
+| BABILong | Long-context reasoning-in-haystack benchmark up to 10M tokens; useful but the public Space leaderboard snapshot is not current 2026 SOTA. | **Driven:** task1/task2 at 4K/8K, 30 rows/cell, CSM only. Task1 is solved; task2 exposed and then improved by entity-bridge recall. Needs full QA1-QA5 plus fresh frontier-model rows before any SOTA claim. | <https://arxiv.org/abs/2406.10149> |
 | A-MEM | NeurIPS 2025 agentic Zettelkasten-style memory with dynamic linking/evolution. | Not integrated yet; benchmark if the released code can ingest our corpus. | <https://arxiv.org/abs/2502.12110> |
 | AgeMem | 2026 RL-trained agentic memory policy for long/short-term memory actions. | Not integrated yet; likely not apples-to-apples unless a runnable inference system is released. | <https://arxiv.org/abs/2601.01885> |
 | MemOS / MemoryOS | Memory-as-OS architecture and lifecycle/governance comparator. | Not integrated yet; first compare feature/operational surface, then benchmark if runnable. | <https://arxiv.org/abs/2505.22101> |

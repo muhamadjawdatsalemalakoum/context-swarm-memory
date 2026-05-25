@@ -176,23 +176,23 @@
           <div class="split-heading">
             <div>
               <div class="section-kicker">Evidence</div>
-              <h2 id="evidence-title">Measured against retrieval and SOTA baselines, with receipts.</h2>
+              <h2 id="evidence-title">Measured evidence, with stale leaderboards labeled stale.</h2>
             </div>
             <p>
-              Same corpus, same 30 questions, same local Gemma answering model. Only the
-              retrieval and memory layer changes. The current SOTA ladder is explicit:
-              LightRAG is published; the next comparators are tracked in the repo.
+              PaySwift isolates the memory layer under the same answering model. BABILong
+              is useful external evidence, but its public leaderboard is historical, not
+              a current 2026 frontier-model board.
             </p>
           </div>
 
           <div class="metric-strip" aria-label="Benchmark highlights">
             <div>
-              <strong>27-30/30</strong>
-              <span>CSM accuracy range across runs</span>
+              <strong>100%</strong>
+              <span>BABILong QA1 at 4K/8K</span>
             </div>
             <div>
-              <strong>0.505</strong>
-              <span>CSM citation F1</span>
+              <strong>60 / 53%</strong>
+              <span>BABILong QA2 at 4K / 8K</span>
             </div>
             <div>
               <strong>~0</strong>
@@ -208,6 +208,14 @@
             <figure>
               <img src="assets/citation-f1.svg" alt="Citation F1 comparison by memory system">
               <figcaption>CSM leads on citation grounding quality in the reported run.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/babilong-official-leaderboard.svg" alt="Historical BABILong leaderboard top systems">
+              <figcaption>BABILong v0 is an external diagnostic, not current 2026 SOTA.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/babilong-shared-sota-slice.svg" alt="CSM compared with top BABILong systems on QA1 and QA2">
+              <figcaption>On the historical QA1/QA2 slice, CSM is useful but not yet SOTA.</figcaption>
             </figure>
           </div>
         </div>
