@@ -56,6 +56,16 @@ data/eval/runs/**
 !data/eval/runs/gemini35-160k-30q-v1/trial-summary.md
 !data/eval/runs/gemini35-160k-30q-v1/plots/
 !data/eval/runs/gemini35-160k-30q-v1/plots/*.vl.json
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/config.json
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/results.jsonl
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/summary.json
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/report.md
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/config.json
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/results.jsonl
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/summary.json
+!data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/report.md
 data/eval/embeddings/
 data/eval/*-indexes/
 data/eval/*.log

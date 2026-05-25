@@ -1,4 +1,4 @@
-# SOTA Benchmark Plan
+# SOTA Benchmark Status
 
 This is the public bar for answering the uncomfortable question:
 
@@ -15,6 +15,9 @@ The repo already includes one real SOTA head-to-head:
 
 - LightRAG ran on the same 30-query PaySwift benchmark and CSM won on that
   saved run.
+- BABILong is now driven as public external evidence on a 120-row task1/task2
+  subset with Gemini 3.5 Flash and 4K physical context. See
+  [`docs/BABILONG_RESULTS.md`](BABILONG_RESULTS.md).
 - Mem0 and HippoRAG 2 sidecars are wired, but the public evidence treats their
   local failures as blocked integrations, not as CSM wins.
 - The present public claim is therefore: CSM beats LightRAG on this traceable
@@ -41,7 +44,7 @@ next comparison ladder. Use primary sources when updating this table.
 | BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2510.27246> |
 | LongMemEval | ICLR 2025 long-term chat memory benchmark with information extraction, multi-session reasoning, temporal reasoning, updates, and abstention. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2410.10813> |
 | LoCoMo | Common long-term conversational memory benchmark used by Mem0, A-MEM, and related systems. | Not integrated yet; useful but should be treated carefully because it is partly judge-based. | <https://arxiv.org/abs/2402.17753> |
-| BABILong | Long-context reasoning-in-haystack benchmark up to 10M tokens; already partially wired as free-form support. | Fetch/run path exists; needs canonical public run. | <https://arxiv.org/abs/2406.10149> |
+| BABILong | Long-context reasoning-in-haystack benchmark up to 10M tokens; already partially wired as free-form support. | **Driven:** task1/task2 at 4K/8K, 30 rows/cell, CSM only. Task1 is solved; task2 exposed and then improved by entity-bridge recall. | <https://arxiv.org/abs/2406.10149> |
 | A-MEM | NeurIPS 2025 agentic Zettelkasten-style memory with dynamic linking/evolution. | Not integrated yet; benchmark if the released code can ingest our corpus. | <https://arxiv.org/abs/2502.12110> |
 | AgeMem | 2026 RL-trained agentic memory policy for long/short-term memory actions. | Not integrated yet; likely not apples-to-apples unless a runnable inference system is released. | <https://arxiv.org/abs/2601.01885> |
 | MemOS / MemoryOS | Memory-as-OS architecture and lifecycle/governance comparator. | Not integrated yet; first compare feature/operational surface, then benchmark if runnable. | <https://arxiv.org/abs/2505.22101> |
@@ -124,7 +127,8 @@ or scale, but those dimensions must be measured directly.
 ## Next Implementation Order
 
 1. Add public LongMemEval and BEAM dataset drivers.
-2. Finish the BABILong public run path already sketched in the repo.
+2. Extend BABILong beyond the committed task1/task2 4K/8K subset: add task3,
+   32K/128K lengths, and paired long-context/RAG baselines.
 3. Add a Graphiti/Zep sidecar using the existing `/index` and `/query` protocol.
 4. Add a Microsoft GraphRAG sidecar with global/local/DRIFT modes.
 5. Attempt LightMem with the authors' released code and record install/runtime

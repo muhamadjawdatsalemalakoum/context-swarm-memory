@@ -1,0 +1,19 @@
+{
+  "tasks": [
+    1,
+    2
+  ],
+  "lengths": [
+    "4K",
+    "8K"
+  ],
+  "systems": [
+    "csm"
+  ],
+  "limit": 30,
+  "seed": 42,
+  "model": "gemini-3.5-flash",
+  "modelContext": 4000,
+  "runId": "babilong-csm-gemini35-4k8k-t1t2-30q-v1",
+  "benchmark": "BABILong"
+}
