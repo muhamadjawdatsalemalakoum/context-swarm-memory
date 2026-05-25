@@ -133,6 +133,25 @@ Hosted cross-model check, kept separate from the Gemma headline:
 - **Setup:** same 30 questions over 100K, 1M, and 2M corpus sizes, with native model context capped at 160K tokens
 - **2M result:** CSM 28/30 at ~18K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens. The run completed 360/360 cells with zero provider errors.
 
+<p align="center"><img src="docs/assets/gemini-accuracy-scaling.svg" width="680" alt="Gemini 3.5 Flash accuracy across 100K, 1M, and 2M: CSM stays at 28 to 29 correct out of 30 while long-context falls to 15 out of 30 at 2M"></p>
+
+<p align="center"><img src="docs/assets/gemini-citation-grounding.svg" width="820" alt="Gemini 3.5 Flash citation precision, recall, and F1 across 100K, 1M, and 2M for CSM, hybrid RAG, vanilla RAG, and long-context"></p>
+
+| Gemini 3.5 Flash system | 100K | 1M | 2M | 2M citation P/R/F1 | 2M mean input |
+|---|---:|---:|---:|---:|---:|
+| CSM | 28/30 | 29/30 | 28/30 | 0.789 / 0.446 / 0.515 | 18.1K |
+| hybrid RAG | 27/30 | 27/30 | 27/30 | 0.677 / 0.364 / 0.386 | 5.6K |
+| vanilla RAG | 28/30 | 26/30 | 26/30 | 0.600 / 0.315 / 0.334 | 5.4K |
+| long-context | 30/30 | 27/30 | 15/30 | 0.211 / 0.122 / 0.086 | 170.5K |
+
+External benchmark check, also Gemini 3.5 Flash:
+
+- **Runs:** `babilong-csm-gemini35-4k8k-t1t2-30q-v1/` and `babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/`
+- **Benchmark:** BABILong public subset, tasks 1-2, lengths 4K and 8K, 30 rows per cell
+- **Result:** CSM is 30/30 on task1 at both lengths; the entity bridge moves task2 from 3/30 to 18/30 at 4K and from 0/30 to 16/30 at 8K.
+
+<p align="center"><img src="docs/assets/gemini-babilong-ablation.svg" width="680" alt="Gemini 3.5 Flash plus CSM on BABILong: entity bridge keeps task1 at 100 percent and improves task2 from 10 percent to 60 percent at 4K and 0 percent to 53 percent at 8K"></p>
+
 ## Quickstart
 
 ```bash

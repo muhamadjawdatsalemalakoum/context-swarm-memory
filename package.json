@@ -30,6 +30,7 @@
     "bench:report": "tsx src/cli/index.ts bench report",
     "bench:trials": "tsx scripts/trial-summary.ts",
     "bench:compare": "tsx scripts/compare-runs.ts",
+    "charts:readme": "tsx scripts/build-readme-charts.ts",
     "verify:published": "tsx scripts/verify-published-claims.ts",
     "proxy:start": "tsx scripts/start-llm-cache-proxy.ts"
   },
