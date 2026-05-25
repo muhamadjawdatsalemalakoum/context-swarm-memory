@@ -29,7 +29,7 @@ Requirements:
 npm install
 ```
 
-That installs `zod`, `vitest`, `tsx`, `typescript`, and `@xenova/transformers`. No global tools are required.
+That installs `zod`, `vitest`, `tsx`, `typescript`, and `@huggingface/transformers`. No global tools are required.
 
 Optional, for running real benchmarks against local models:
 
@@ -66,7 +66,7 @@ npx vitest run -t "router_recall"          # one test by name
 - **All LLM JSON outputs go through a Zod schema** in `src/core/schemas.ts` and the `providerJson` retry/parse helper. Never call `JSON.parse` on provider output directly. The retry/parse helper handles `extractJson`, Zod validation, and one repair-prompt retry on schema failure.
 - **Small files with explicit interfaces.** Most modules in `src/core/` are well under 300 lines. Prefer adding a sibling file over growing an existing one past that.
 - **The lint is the type-check.** There is no ESLint, Prettier, or formatter in this repo. Match the style of the surrounding code: 2-space indent, double quotes, semicolons, trailing newline.
-- **No new dependencies without discussion.** The MVP stack is intentionally small (zod, vitest, tsx, typescript, plus `@xenova/transformers` for the eval embeddings).
+- **No new dependencies without discussion.** The MVP stack is intentionally small (zod, vitest, tsx, typescript, plus `@huggingface/transformers` for the eval embeddings).
 
 ## Invariants that must not be broken
 

@@ -73,7 +73,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 - **Corpus — PaySwift:** a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations. Released **CC0**. (A BABILong free-form path is wired but not yet driven.)
 - **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus 2025-SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally).
 - **Scoring is programmatic:** exact-match accuracy + citation precision/recall/F1 + bootstrap 95% CIs + paired exact McNemar. The same answering model is used for every system, so only retrieval differs.
-- **Reproducible + cached:** every (model, prompt) is content-hashed, so replays cost zero LLM calls (`npm run bench:replay -- <runId>`). Charts regenerate via `npx tsx scripts/build-readme-charts.ts`.
+- **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus and harness are in git; exact published run artifacts are distributed separately with releases. Charts regenerate via `npx tsx scripts/build-readme-charts.ts`.
 
 ## Limitations
 

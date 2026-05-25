@@ -28,7 +28,7 @@ Driven by a multi-agent research sweep: four parallel agents surveyed the 2024-2
 
 #### Hybrid RAG upgrade — cross-encoder reranker (`src/eval/rerank.ts`)
 
-- **Optional cross-encoder rerank** for the `hybridRag` baseline, gated on `CSM_HYBRID_RERANK=1` env var (default off → existing replays unchanged). Drop-in cross-encoder reranks the RRF top-K via `@xenova/transformers`'s `text-classification` pipeline. Default model: `Xenova/ms-marco-MiniLM-L-6-v2` (22M params, CPU-friendly); upgrade target is `Xenova/bge-reranker-base` or `bge-reranker-v2-m3` via `CSM_RERANKER_MODEL` env var.
+- **Optional cross-encoder rerank** for the `hybridRag` baseline, gated on `CSM_HYBRID_RERANK=1` env var (default off → existing replays unchanged). Drop-in cross-encoder reranks the RRF top-K via `@huggingface/transformers`'s `text-classification` pipeline. Default model: `Xenova/ms-marco-MiniLM-L-6-v2` (22M params, CPU-friendly); upgrade target is `Xenova/bge-reranker-base` or `bge-reranker-v2-m3` via `CSM_RERANKER_MODEL` env var.
 - **Graceful fallback.** If the model fails to load (or inference errors mid-call), the path falls back to RRF order with logged warning. Hybrid RAG never breaks because of reranker issues — it just loses the upgrade.
 - **Rationale.** Our prior `hybridRag` was 2023-vintage hybrid (BM25 + dense + RRF). Every 2025 production-RAG paper makes a cross-encoder reranker non-negotiable. Without one, "CSM beats hybrid RAG" is steel-manning a weak baseline. With the reranker, we measure against the actual 2025 hybrid pattern.
 

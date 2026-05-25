@@ -2,13 +2,16 @@
 
 ## What this guide does
 
-This guide takes you from a fresh clone of the repository to a regenerated copy of the published benchmark summary, without any LLM API calls. The harness is cache-first: every prompt sent to Ollama during the published bench run is content-hashed and the responses are stored under `data/eval/runs/<runId>/`. Replay reads from that cache, so you can recompute headline accuracy / citation / token / latency numbers and re-render the plots deterministically. The fresh-bench instructions are also included for anyone who wants to re-run the sweep on their own 4090.
+This guide takes you from a fresh clone of the repository to a source-level validation of the benchmark harness without any LLM API calls. The source code, tests, synthetic corpus, queries, and plotting/report scripts are versioned in git. Exact replay of the published benchmark additionally requires the saved run artifact bundle for the published `runId` because `data/eval/runs/` is intentionally ignored; those artifacts belong on the release page, not in the repository history.
+
+The harness is cache-first: every prompt sent to Ollama during a bench run is content-hashed and the responses are stored under `data/eval/runs/<runId>/`. Replay reads from that cache, so with a saved run artifact you can recompute headline accuracy / citation / token / latency numbers and re-render the plots deterministically. Fresh-bench instructions are also included for anyone who wants to re-run the sweep on their own 4090.
 
 ## Prerequisites
 
 - **Node.js ≥ 20** and **npm** (Node 20 is the engine declared in `package.json`).
 - **PowerShell or bash.** Examples below use PowerShell syntax (`$env:VAR="value"`); bash users substitute `export VAR=value`.
-- **No GPU required for replay.** `npm test`, `npm run bench:smoke`, and `npm run bench:replay` all run on CPU with no API key.
+- **No GPU required for source validation.** `npm test` and `npm run bench:smoke` run on CPU with no API key.
+- **No GPU required for replay once artifacts are present.** `npm run bench:replay -- <runId>` only reads the saved run's `results.jsonl`.
 - **For a fresh bench run only:** an **NVIDIA RTX 4090** (or equivalent 24 GB VRAM card) and a local **Ollama** install. The published numbers were gathered on a single 4090 — other hardware will produce different latency and may have different throughput characteristics.
 
 ## 1. Clone, install, and test
@@ -38,7 +41,7 @@ Outputs land under `data/eval/runs/run-<timestamp>/`:
 
 ## 3. Replay the published benchmark from cache
 
-The headline numbers in the README / paper come from a specific `runId` whose response cache and `results.jsonl` are present under `data/eval/runs/<runId>/`. Pick the published `runId` (check `CHANGELOG.md` or the release notes for the canonical one) and run:
+The headline numbers in the README / paper come from a specific `runId` whose response cache and `results.jsonl` live under `data/eval/runs/<runId>/` after you download the release artifact bundle. Pick the published `runId` from the release notes and run:
 
 ```powershell
 npm run bench:replay -- <runId>
@@ -58,7 +61,7 @@ If the run directory is missing, replay will fail. Verify with:
 ls data/eval/runs/<runId>
 ```
 
-You should see `results.jsonl` and the run config. If `results.jsonl` is absent, the cache wasn't checked into your clone — fetch it from the release artifacts (see the project release page) and drop it under `data/eval/runs/<runId>/` before re-running.
+You should see `results.jsonl` and the run config. If `results.jsonl` is absent, fetch the published run artifact from the release page and drop it under `data/eval/runs/<runId>/` before re-running.
 
 ## 4. Fresh bench on your own 4090
 
@@ -152,7 +155,7 @@ npm run bench:report -- <runId> --headline-ctx 8K --headline-corpus 1M
 
 ## 6. Troubleshooting
 
-**`Cannot find module @xenova/transformers`** — run `npm install` first. This dependency is required by the corpus tokenizer and isn't optional.
+**`Cannot find module @huggingface/transformers`** — run `npm install` first. This dependency powers the local embedding baselines and is installed from `package-lock.json`.
 
 **`ECONNREFUSED localhost:11434`** — Ollama isn't running. Start it with `ollama serve` (or restart the Ollama desktop app). The default base URL the provider uses is `http://localhost:11434/v1`.
 

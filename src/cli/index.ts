@@ -62,7 +62,7 @@ async function main(): Promise<number> {
       case "version":
       case "--version":
       case "-v":
-        console.log("csm 0.1.0");
+        console.log("csm 0.2.0");
         return 0;
       default:
         console.error(`Unknown command: ${cmd}`);
@@ -105,7 +105,7 @@ Usage:
 
 Environment:
   CSM_HOME              Storage root (default: cwd)
-  CSM_PROVIDER          mock | ollama | openai | anthropic    (default: mock)
+  CSM_PROVIDER          mock | ollama | llama-server | openai | anthropic    (default: mock)
   CSM_OPENAI_BASE_URL   default https://api.openai.com/v1; for Ollama: http://localhost:11434/v1
   OPENAI_API_KEY        required for hosted OpenAI; "ollama" auto-applied for local
   CSM_OPENAI_MODEL      default model when stage models aren't set

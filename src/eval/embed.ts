@@ -7,13 +7,13 @@ import { getPaths } from "../storage/paths.js";
 
 /**
  * Default sentence embedding model used by `vanillaRag` and `hybridRag`.
- * 384-dim, ~80 MB to download once via `@xenova/transformers`. Runs entirely
+ * 384-dim, ~80 MB to download once via `@huggingface/transformers`. Runs entirely
  * locally — no API key, no GPU required.
  */
 export const EMBED_MODEL_NAME = "Xenova/all-MiniLM-L6-v2";
 export const EMBED_DIM = 384;
 
-// `@xenova/transformers` is dynamically imported so users who don't run the
+// `@huggingface/transformers` is dynamically imported so users who don't run the
 // RAG baselines never pay the load cost or require the dep at type-check
 // time. The pipeline is lazy-initialized once per process and reused.
 type FeaturePipeline = (
@@ -25,7 +25,7 @@ let pipelinePromise: Promise<FeaturePipeline> | null = null;
 
 async function getPipeline(modelName: string): Promise<FeaturePipeline> {
   if (!pipelinePromise) {
-    const tx = await import("@xenova/transformers");
+    const tx = await import("@huggingface/transformers");
     pipelinePromise = tx.pipeline("feature-extraction", modelName) as Promise<FeaturePipeline>;
   }
   return pipelinePromise;
