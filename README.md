@@ -58,7 +58,7 @@ flowchart TD
 
 - **The read path is branch-and-discard.** `ask()` never mutates durable memory — it only appends a query-run log. Enforced by `tests/mutationSafety.test.ts` with SHA-256 file hashes.
 - **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
-- **Indexing is LLM-free.** Routing starts with a keyword/tag scorer, and starved packets use a local `all-MiniLM-L6-v2` embedding recall floor. No LLM-generated index is built; embedding vectors are disk-cached.
+- **Indexing is LLM-free.** Routing starts with a keyword/tag scorer, starved packets use a local `all-MiniLM-L6-v2` embedding recall floor, and retrieved shards get shard-local semantic expansion so sibling evidence can recover before filler swamps recall. No LLM-generated index is built; embedding vectors are disk-cached.
 
 ## Training direction
 
