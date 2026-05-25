@@ -106,6 +106,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
 | `npm run bench:sota:headline` | Regenerates the committed CSM-vs-SOTA comparison table from saved result rows | No |
+| `npm run bench:sota:scaling` | Reports whether systems improve, stay stable, or degrade as corpus size grows | No |
 | `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
 | `npm run bench:trials -- <runId>` | Multi-trial runs can be summarized as mean +/- sample standard deviation | No |
 | `npm run verify:published` | Hashes the committed evidence rows and recomputes the published headline counts, citation F1, and McNemar checks from `results.jsonl` | No |
@@ -120,7 +121,7 @@ What was used for the headline benchmark claims:
 - **Corpus:** PaySwift synthetic project-memory corpus, 22,363 events / ~9.0M tokens, released CC0 under `data/eval/corpus-synthetic/`.
 - **Questions:** 30 multiple-choice queries with 40 options each and gold citation event IDs. Scoring is exact option match plus citation precision/recall/F1. No LLM judge is used.
 - **Systems compared:** CSM, long-context, vanilla RAG, hybrid RAG, and LightRAG. Mem0 and HippoRAG are documented as locally blocked, not claimed as beaten. The next SOTA targets are tracked in `docs/SOTA_BENCHMARK_PLAN.md`.
-- **Statistics:** bootstrap 95% confidence intervals and paired exact McNemar tests over the same query set.
+- **Statistics:** bootstrap 95% confidence intervals, paired exact McNemar tests over the same query set, and scaling-slope reports for accuracy and citation precision/recall/F1.
 - **Replay:** source, corpus, harness, and the small canonical v0.2 result rows are in git. `data/eval/runs/` still ignores ad-hoc local runs, caches, embeddings, and sidecar indexes.
 
 Hosted cross-model check, kept separate from the Gemma headline:

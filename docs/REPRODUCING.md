@@ -70,6 +70,12 @@ To regenerate the combined SOTA headline table from committed rows:
 npm run bench:sota:headline
 ```
 
+To regenerate the scaling-SOTA slope report:
+
+```powershell
+npm run bench:sota:scaling
+```
+
 This recomputes the aggregated `summary.json` from the cached `results.jsonl` for that run. Expected wall clock: **under 5 minutes** end-to-end including disk I/O for the full 9M corpus sweep.
 
 If the run directory is missing, replay will fail. Verify with:
