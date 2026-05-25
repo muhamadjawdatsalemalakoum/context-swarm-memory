@@ -1,0 +1,27 @@
+{
+  "title": "Context Swarm Memory",
+  "upload_type": "software",
+  "description": "Context Swarm Memory is an R&D memory system that routes queries across bounded, read-only LLM context shards and gates durable writes through an explicit Committer protocol.",
+  "creators": [
+    {
+      "name": "Alakoum, Mohamad Jawdat",
+      "affiliation": "Independent"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": [
+    "LLM memory",
+    "retrieval",
+    "RAG",
+    "agent memory",
+    "benchmark"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}

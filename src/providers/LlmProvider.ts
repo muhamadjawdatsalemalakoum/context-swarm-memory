@@ -1,5 +1,5 @@
 // Provider abstraction. The MVP runs entirely on MockProvider by default.
-// Real providers: OpenAI / Ollama (OpenAI-compatible local) / Anthropic stub.
+// Real providers: OpenAI / Ollama (OpenAI-compatible local) / Gemini / Anthropic stub.
 
 export interface CompleteJsonInput<TSchema = unknown> {
   system: string;
@@ -64,12 +64,18 @@ export type ProviderName =
   | "openai"
   | "ollama"
   | "llama-server"
+  | "gemini"
   | "anthropic";
 
 export interface ProviderEnv {
   CSM_PROVIDER?: string;
   CSM_OPENAI_BASE_URL?: string;
+  CSM_GEMINI_BASE_URL?: string;
+  CSM_GEMINI_MODEL?: string;
+  CSM_MODEL?: string;
   OPENAI_API_KEY?: string;
+  GEMINI_API_KEY?: string;
+  GOOGLE_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
 }
 
@@ -78,6 +84,7 @@ export function selectProviderName(env: ProviderEnv = process.env as ProviderEnv
   if (
     explicit === "openai" ||
     explicit === "anthropic" ||
+    explicit === "gemini" ||
     explicit === "mock" ||
     explicit === "ollama" ||
     explicit === "llama-server"
@@ -110,7 +117,7 @@ export function resolveStageModels(
   overrides: StageModels = {},
   env: NodeJS.ProcessEnv = process.env,
 ): StageModels {
-  const fallback = env.CSM_OPENAI_MODEL || env.CSM_MODEL;
+  const fallback = env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL || env.CSM_MODEL;
   return {
     probe: overrides.probe ?? env.CSM_PROBE_MODEL ?? fallback,
     recall: overrides.recall ?? env.CSM_RECALL_MODEL ?? fallback,
