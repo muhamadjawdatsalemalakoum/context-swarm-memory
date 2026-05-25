@@ -12,17 +12,21 @@ import { join } from "node:path";
 import { mcNemar, type McqScore } from "../src/eval/scorer.js";
 
 interface ResultRow {
+  corpusSize?: number;
   citationF1: number;
   citationPrecision: number;
   citationRecall: number;
   correct: boolean;
+  modelContext?: number;
   queryId: string;
   system: string;
 }
 
 interface ExpectedMetric {
+  corpusSize?: number;
   correct: number;
   f1: number;
+  modelContext?: number;
   n: number;
   runId: string;
   system: string;
@@ -45,6 +49,16 @@ const HASHES: Record<string, string> = {
     "bf4be983f5615471758dba6e72223e2da9649afdbeaf5f2be8877f156fc0ec15",
   "data/eval/runs/scaling-1m/results.jsonl":
     "22d95028bdea311050184f06c7504cfa0d05ceae08eff6d1a7cd296547064c14",
+  "data/eval/runs/gemini35-160k-30q-v1/config.json":
+    "3e56839cf19795723a84fee0a5e90e90121fb631d2aec92596f4ff8ef8f9c2ed",
+  "data/eval/runs/gemini35-160k-30q-v1/results.jsonl":
+    "2f0e38651686dfea902f7f2b8c427952830f30ea81cc700d6640fb0283db738d",
+  "data/eval/runs/gemini35-160k-30q-v1/summary.json":
+    "5aed175548f19a6f86cebf1833623bc6338de95aefa4671a23dc184b884c8f5e",
+  "data/eval/runs/gemini35-160k-30q-v1/trial-summary.md":
+    "7c468a0446f19810d79e20395560be24ee9e6b6fc7c29807dc3768d0b184c785",
+  "data/eval/runs/gemini35-160k-30q-v1/report.md":
+    "134115a5cab0737e18ff72172283c06d5ff92743355c822129a0352e1d66da1c",
 };
 
 const EXPECTED: ExpectedMetric[] = [
@@ -58,6 +72,114 @@ const EXPECTED: ExpectedMetric[] = [
   { runId: "scaling-1m", system: "csm", n: 30, correct: 28, f1: 0.46 },
   { runId: "scaling-1m", system: "rag", n: 30, correct: 25, f1: 0.336 },
   { runId: "scaling-1m", system: "longctx", n: 30, correct: 9, f1: 0.033 },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "csm",
+    corpusSize: 100_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 28,
+    f1: 0.517,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "csm",
+    corpusSize: 1_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 29,
+    f1: 0.523,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "csm",
+    corpusSize: 2_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 28,
+    f1: 0.515,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "longctx",
+    corpusSize: 100_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 30,
+    f1: 0.559,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "longctx",
+    corpusSize: 1_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 27,
+    f1: 0.163,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "longctx",
+    corpusSize: 2_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 15,
+    f1: 0.086,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "rag",
+    corpusSize: 100_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 28,
+    f1: 0.447,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "rag",
+    corpusSize: 1_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 26,
+    f1: 0.345,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "rag",
+    corpusSize: 2_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 26,
+    f1: 0.334,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "hybrid",
+    corpusSize: 100_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 27,
+    f1: 0.447,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "hybrid",
+    corpusSize: 1_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 27,
+    f1: 0.386,
+  },
+  {
+    runId: "gemini35-160k-30q-v1",
+    system: "hybrid",
+    corpusSize: 2_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 27,
+    f1: 0.386,
+  },
 ];
 
 function sha256(path: string): string {
@@ -66,13 +188,19 @@ function sha256(path: string): string {
     .digest("hex");
 }
 
-function loadRows(runId: string, system: string): ResultRow[] {
+function loadRows(
+  runId: string,
+  system: string,
+  filters: { corpusSize?: number; modelContext?: number } = {},
+): ResultRow[] {
   const path = join(process.cwd(), "data", "eval", "runs", runId, "results.jsonl");
   return readFileSync(path, "utf8")
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line) as ResultRow)
     .filter((row) => row.system === system)
+    .filter((row) => filters.corpusSize === undefined || row.corpusSize === filters.corpusSize)
+    .filter((row) => filters.modelContext === undefined || row.modelContext === filters.modelContext)
     .sort((a, b) => a.queryId.localeCompare(b.queryId));
 }
 
@@ -102,20 +230,24 @@ function assertNear(actual: number, expected: number, label: string): void {
 }
 
 function assertMetrics(expected: ExpectedMetric): void {
-  const rows = loadRows(expected.runId, expected.system);
-  assertEqual(rows.length, expected.n, `${expected.runId}/${expected.system} row count`);
+  const rows = loadRows(expected.runId, expected.system, expected);
+  const label =
+    `${expected.runId}/${expected.system}` +
+    (expected.corpusSize === undefined ? "" : `/${expected.corpusSize}`) +
+    (expected.modelContext === undefined ? "" : `/${expected.modelContext}`);
+  assertEqual(rows.length, expected.n, `${label} row count`);
   assertEqual(
     rows.filter((r) => r.correct).length,
     expected.correct,
-    `${expected.runId}/${expected.system} correct count`,
+    `${label} correct count`,
   );
   assertNear(
     Number(mean(rows.map((r) => r.citationF1)).toFixed(3)),
     expected.f1,
-    `${expected.runId}/${expected.system} citation F1`,
+    `${label} citation F1`,
   );
   console.log(
-    `PASS metric ${expected.runId}/${expected.system}: ` +
+    `PASS metric ${label}: ` +
       `${expected.correct}/${expected.n}, citation F1 ${expected.f1.toFixed(3)}`,
   );
 }

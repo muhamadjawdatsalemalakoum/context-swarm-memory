@@ -83,6 +83,27 @@ Suggested interpretation:
 - Do not merge Gemini numbers into the existing README headline unless the
   README explicitly labels the model change.
 
+## Completed single-trial evidence run
+
+The repository includes one committed Gemini 3.5 Flash evidence run:
+
+- Run id: `gemini35-160k-30q-v1`
+- Artifacts: `data/eval/runs/gemini35-160k-30q-v1/`
+- Matrix: CSM, long-context, vanilla RAG, and hybrid RAG over 30 queries at
+  100K, 1M, and 2M corpus sizes
+- Context cap: 160K model-context budget
+- Result at 2M: CSM 28/30, hybrid 27/30, vanilla RAG 26/30, long-context 15/30
+- Reliability: 360/360 cells completed with zero provider errors
+
+This is useful cross-model evidence, not the final 3-trial confirmation. The
+raw rows are verified by `npm run verify:published`; aggregate report artifacts
+can be regenerated with:
+
+```bash
+npm run bench:trials -- gemini35-160k-30q-v1
+npm run bench:report -- gemini35-160k-30q-v1 --headline-ctx 160K --headline-corpus 2M
+```
+
 ## Cost safety
 
 Before running the full confirmation, set a Google Cloud or AI Studio budget

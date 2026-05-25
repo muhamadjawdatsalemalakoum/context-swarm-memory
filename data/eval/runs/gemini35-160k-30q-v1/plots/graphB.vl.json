@@ -1,0 +1,178 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "values": [
+      {
+        "accuracy": 0.9333333333333333,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8333333333333334,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.5147272902536061,
+        "meanCitationPrecision": 0.788888888888889,
+        "meanCitationRecall": 0.44582112332112345,
+        "meanInputTokens": 18075.733333333334,
+        "meanLatencyMs": 30003.466666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "csm"
+      },
+      {
+        "accuracy": 0.9,
+        "accuracyCiHigh": 1,
+        "accuracyCiLow": 0.8,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.3863369963369963,
+        "meanCitationPrecision": 0.6766666666666666,
+        "meanCitationRecall": 0.364423076923077,
+        "meanInputTokens": 5632.666666666667,
+        "meanLatencyMs": 3662.766666666667,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "hybrid"
+      },
+      {
+        "accuracy": 0.5,
+        "accuracyCiHigh": 0.6666666666666666,
+        "accuracyCiLow": 0.3333333333333333,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.08628306878306878,
+        "meanCitationPrecision": 0.2111111111111111,
+        "meanCitationRecall": 0.12208791208791209,
+        "meanInputTokens": 170474.86666666667,
+        "meanLatencyMs": 11561.333333333334,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "longctx"
+      },
+      {
+        "accuracy": 0.8666666666666667,
+        "accuracyCiHigh": 0.9666666666666667,
+        "accuracyCiLow": 0.7333333333333333,
+        "corpusSize": 2000000,
+        "earlyStopped": false,
+        "meanCitationF1": 0.3335187579305226,
+        "meanCitationPrecision": 0.6,
+        "meanCitationRecall": 0.31481074481074484,
+        "meanInputTokens": 5441.933333333333,
+        "meanLatencyMs": 3172.633333333333,
+        "modelContext": 160000,
+        "n": 30,
+        "system": "rag"
+      }
+    ]
+  },
+  "description": "Graph B — Physical context efficiency at corpus_size=2000000 tokens",
+  "height": 400,
+  "layer": [
+    {
+      "encoding": {
+        "color": {
+          "field": "system",
+          "type": "nominal"
+        },
+        "x": {
+          "field": "modelContext",
+          "scale": {
+            "type": "log"
+          },
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "accuracyCiLow",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "accuracyCiHigh"
+        }
+      },
+      "mark": {
+        "interpolate": "monotone",
+        "opacity": 0.18,
+        "type": "errorband"
+      }
+    },
+    {
+      "encoding": {
+        "color": {
+          "field": "system",
+          "legend": {
+            "title": "System"
+          },
+          "type": "nominal"
+        },
+        "tooltip": [
+          {
+            "field": "system",
+            "type": "nominal"
+          },
+          {
+            "field": "modelContext",
+            "format": ",d",
+            "type": "quantitative"
+          },
+          {
+            "field": "accuracy",
+            "format": ".1%",
+            "type": "quantitative"
+          }
+        ],
+        "x": {
+          "axis": {
+            "format": "~s",
+            "title": "Model native context (tokens, log scale)"
+          },
+          "field": "modelContext",
+          "scale": {
+            "type": "log"
+          },
+          "type": "quantitative"
+        },
+        "y": {
+          "axis": {
+            "format": "%",
+            "title": "Accuracy"
+          },
+          "field": "accuracy",
+          "scale": {
+            "domain": [
+              0,
+              1
+            ]
+          },
+          "type": "quantitative"
+        }
+      },
+      "mark": {
+        "interpolate": "monotone",
+        "point": {
+          "size": 60
+        },
+        "strokeWidth": 2.5,
+        "type": "line"
+      }
+    },
+    {
+      "encoding": {
+        "y": {
+          "datum": 0.8
+        }
+      },
+      "mark": {
+        "color": "#666",
+        "strokeDash": [
+          6,
+          4
+        ],
+        "type": "rule"
+      }
+    }
+  ],
+  "title": {
+    "subtitle": "How small can the model's native context be before each system breaks",
+    "text": "Physical Context Efficiency (corpus = 2M tokens)"
+  },
+  "width": 720
+}

@@ -60,9 +60,9 @@ export function graphAEffectiveContextWindow(
   const filtered = data.rows.filter((r) => r.modelContext === target);
   return {
     $schema: VL_SCHEMA,
-    description: `Graph A — Effective context window at model_ctx=${target} tokens`,
+    description: `Graph A — Effective context window at model_ctx=${formatTokens(target)}`,
     title: {
-      text: `Effective Context Window (model context = ${target} tokens)`,
+      text: `Effective Context Window (model context = ${formatTokens(target)})`,
       subtitle: "Where each system can still answer above the accuracy threshold",
     },
     data: { values: filtered },
@@ -229,10 +229,10 @@ export function graphCEffectiveContextMultiplier(
   const multipliers = computeMultipliers(data, { modelContext: target, threshold });
   return {
     $schema: VL_SCHEMA,
-    description: `Graph C — Effective context multiplier (threshold=${threshold}, model_ctx=${target})`,
+    description: `Graph C — Effective context multiplier (threshold=${threshold}, model_ctx=${formatTokens(target)})`,
     title: {
       text: `Effective Context Multiplier`,
-      subtitle: `How many times the model's native context (${target} tokens) each system can stretch at ≥${(threshold * 100).toFixed(0)}% accuracy`,
+      subtitle: `How many times the model's native context (${formatTokens(target)}) each system can stretch at ≥${(threshold * 100).toFixed(0)}% accuracy`,
     },
     data: { values: multipliers },
     width: 600,
@@ -372,7 +372,7 @@ export function graphFAblationAtScale(
   const filtered = data.rows.filter((r) => r.modelContext === target);
   return {
     $schema: VL_SCHEMA,
-    description: `Graph F — CSM component ablation at model_ctx=${target}`,
+    description: `Graph F — CSM component ablation at model_ctx=${formatTokens(target)}`,
     title: {
       text: "CSM Component Ablation at Scale",
       subtitle: "Which architectural piece pays off most as the corpus grows",
