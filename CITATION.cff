@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Context Swarm Memory, please cite this software artifact."
+title: "Context Swarm Memory"
+version: "0.2.0"
+date-released: "2026-05-25"
+type: software
+license: MIT
+repository-code: "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory"
+abstract: "Context Swarm Memory is an R&D memory system that routes queries across bounded, read-only LLM context shards and gates durable writes through an explicit Committer protocol."
+authors:
+  - family-names: "Alakoum"
+    given-names: "Mohamad Jawdat"
+keywords:
+  - "LLM memory"
+  - "retrieval"
+  - "RAG"
+  - "agent memory"
+  - "benchmark"

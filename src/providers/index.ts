@@ -1,4 +1,6 @@
 import { AnthropicProvider } from "./AnthropicProvider.js";
+import { GeminiProvider } from "./GeminiProvider.js";
+export { GEMINI_DEFAULT_BASE_URL, GEMINI_DEFAULT_MODEL } from "./GeminiProvider.js";
 import { LlamaServerProvider } from "./LlamaServerProvider.js";
 import { MockProvider } from "./MockProvider.js";
 import { OllamaProvider } from "./OllamaProvider.js";
@@ -18,6 +20,8 @@ export function createProvider(name: ProviderName = selectProviderName()): LlmPr
       // decoding + real prefix caching + grammar-constrained JSON. ~2×
       // wall-clock improvement vs Ollama on the same Gemma 4 31B weights.
       return new LlamaServerProvider();
+    case "gemini":
+      return new GeminiProvider();
     case "anthropic":
       return new AnthropicProvider();
     case "mock":
@@ -28,6 +32,7 @@ export function createProvider(name: ProviderName = selectProviderName()): LlmPr
 
 export {
   AnthropicProvider,
+  GeminiProvider,
   LlamaServerProvider,
   MockProvider,
   OllamaProvider,

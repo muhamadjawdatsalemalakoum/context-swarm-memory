@@ -78,6 +78,9 @@ The verifier currently checks these SHA-256 hashes:
 - Mem0 and HippoRAG are documented as blocked locally, not beaten. The repo
   should not claim a numerical win against systems that did not produce a clean
   local 30-query run.
-- Full scientific-grade polish would add a DOI-backed release archive, a
-  container or lockfile for the Python sidecars, and a 3-trial confirmation run
-  with mean/variance over accuracy and citation metrics.
+- Full scientific-grade polish still needs the external DOI to be minted and an
+  independent replication report from someone outside the author. The repo now
+  includes `CITATION.cff`, `.zenodo.json`, sidecar Docker/lock artifacts,
+  `docs/SCIENTIFIC_RELEASE.md`, `docs/REPLICATION_KIT.md`, and
+  `npm run bench:trials`, but the 3-trial confirmation rows are not yet public
+  evidence until a full run is completed and archived.

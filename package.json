@@ -18,9 +18,11 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "bench:smoke": "tsx src/cli/index.ts bench run --trials 1 --corpus-sizes 100K --model-contexts 8K --queries q01,q11,q28",
     "bench:full": "tsx src/cli/index.ts bench run",
+    "bench:confirm": "tsx src/cli/index.ts bench run --systems csm,longctx,rag,hybrid --trials 3 --corpus-sizes 100K,1M --model-contexts 8K",
     "bench:fill-cache": "tsx src/cli/index.ts bench fill-cache",
     "bench:replay": "tsx src/cli/index.ts bench replay",
     "bench:report": "tsx src/cli/index.ts bench report",
+    "bench:trials": "tsx scripts/trial-summary.ts",
     "bench:compare": "tsx scripts/compare-runs.ts",
     "verify:published": "tsx scripts/verify-published-claims.ts",
     "proxy:start": "tsx scripts/start-llm-cache-proxy.ts"

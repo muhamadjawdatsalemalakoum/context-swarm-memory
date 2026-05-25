@@ -20,7 +20,7 @@ import { CORPUS_SIZE_SWEEP, EARLY_STOP_ACCURACY, MODEL_CONTEXT_SWEEP } from "../
 import { generateAllGraphs, type ResultDataset, type ResultRow } from "../eval/plotter.js";
 import { runEval } from "../eval/runEval.js";
 import { replayResults, runBenchmark } from "../eval/runner.js";
-import { createProvider, resolveStageModels, selectProviderName } from "../providers/index.js";
+import { GEMINI_DEFAULT_MODEL, createProvider, resolveStageModels, selectProviderName } from "../providers/index.js";
 import { JsonlStorage } from "../storage/jsonlStorage.js";
 import { newShardId } from "../utils/ids.js";
 import { stableStringify } from "../utils/json.js";
@@ -105,9 +105,11 @@ Usage:
 
 Environment:
   CSM_HOME              Storage root (default: cwd)
-  CSM_PROVIDER          mock | ollama | llama-server | openai | anthropic    (default: mock)
+  CSM_PROVIDER          mock | ollama | llama-server | openai | gemini | anthropic    (default: mock)
   CSM_OPENAI_BASE_URL   default https://api.openai.com/v1; for Ollama: http://localhost:11434/v1
   OPENAI_API_KEY        required for hosted OpenAI; "ollama" auto-applied for local
+  GEMINI_API_KEY        required for CSM_PROVIDER=gemini (GOOGLE_API_KEY also accepted)
+  CSM_GEMINI_MODEL      default Gemini model (default: gemini-3-flash-preview)
   CSM_OPENAI_MODEL      default model when stage models aren't set
   CSM_PROBE_MODEL       e.g. gemma4:e4b   (cheap, runs per candidate shard)
   CSM_RECALL_MODEL      e.g. gemma4:31b   (heavier, only on selected shards)
@@ -469,12 +471,22 @@ async function cmdProvider(rest: string[]): Promise<number> {
     const resolved = selectProviderName();
     const stage = resolveStageModels();
     console.log(`provider          : ${resolved}`);
-    console.log(`base url          : ${process.env.CSM_OPENAI_BASE_URL ?? (resolved === "ollama" ? "http://localhost:11434/v1 (default)" : "https://api.openai.com/v1 (default)")}`);
-    console.log(`default model     : ${process.env.CSM_OPENAI_MODEL ?? process.env.CSM_MODEL ?? "(unset)"}`);
+    const baseUrl =
+      resolved === "gemini"
+        ? (process.env.CSM_GEMINI_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta (default)")
+        : (process.env.CSM_OPENAI_BASE_URL ?? (resolved === "ollama" ? "http://localhost:11434/v1 (default)" : "https://api.openai.com/v1 (default)"));
+    const defaultModel =
+      resolved === "gemini"
+        ? (process.env.CSM_GEMINI_MODEL ?? process.env.CSM_MODEL ?? "gemini-3-flash-preview (default)")
+        : (process.env.CSM_OPENAI_MODEL ?? process.env.CSM_MODEL ?? "(unset)");
+    console.log(`base url          : ${baseUrl}`);
+    console.log(`default model     : ${defaultModel}`);
     console.log(`stage:probe model : ${stage.probe ?? "(unset)"}`);
     console.log(`stage:recall model: ${stage.recall ?? "(unset)"}`);
     console.log(`stage:synth model : ${stage.synth ?? "(unset)"}`);
     console.log(`OPENAI_API_KEY    : ${process.env.OPENAI_API_KEY ? "(set)" : "(unset)"}`);
+    console.log(`GEMINI_API_KEY    : ${process.env.GEMINI_API_KEY ? "(set)" : "(unset)"}`);
+    console.log(`GOOGLE_API_KEY    : ${process.env.GOOGLE_API_KEY ? "(set)" : "(unset)"}`);
     return 0;
   }
   if (sub === "ping") {
@@ -490,6 +502,7 @@ async function cmdProvider(rest: string[]): Promise<number> {
         maxOutputTokens: 50,
         temperature: 0,
         model,
+        disableThinking: true,
       });
       console.log(`OK provider=${provider.name} model=${model ?? "(provider default)"} latency=${Date.now() - t0}ms`);
       console.log(`raw : ${r.rawText}`);
@@ -643,10 +656,13 @@ async function cmdBenchRun(rest: string[]): Promise<number> {
   const runId = flagString(args, "run-id") ?? runIdDefault;
   const outputDir = flagString(args, "output-dir") ?? join("data", "eval", "runs", runId);
   const trials = Number.parseInt(flagString(args, "trials") ?? "3", 10);
+  const resolvedProvider = selectProviderName();
   const model =
     flagString(args, "model") ??
+    (resolvedProvider === "gemini" ? process.env.CSM_GEMINI_MODEL : undefined) ??
     process.env.CSM_OPENAI_MODEL ??
-    "gemma4:31b";
+    process.env.CSM_MODEL ??
+    (resolvedProvider === "gemini" ? GEMINI_DEFAULT_MODEL : "gemma4:31b");
   const corpusSizes =
     parseSizesFlag(args, "corpus-sizes") ?? Array.from(CORPUS_SIZE_SWEEP);
   const modelContexts =
@@ -847,7 +863,9 @@ async function cmdBenchReport(rest: string[]): Promise<number> {
   return 0;
 }
 
-main().then((code) => process.exit(code)).catch((err) => {
+main().then((code) => {
+  process.exitCode = code;
+}).catch((err) => {
   console.error(err);
-  process.exit(1);
+  process.exitCode = 1;
 });

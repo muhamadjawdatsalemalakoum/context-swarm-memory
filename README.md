@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-196%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-199%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -64,7 +64,7 @@ CSM is intentionally small and inspectable. The core system is TypeScript, local
 | CLI | `src/cli/index.ts`, run through `tsx` in development and compiled with `tsc` |
 | Storage | Local JSON / JSONL under `data/`: directory, chronicle, immutable shard snapshots, query-run logs |
 | Validation | Zod schemas for structured LLM JSON outputs and storage-facing data contracts |
-| LLM provider seam | `LlmProvider` interface with `MockProvider` default; OpenAI-compatible, Ollama, llama.cpp `llama-server`, OpenAI, and Anthropic wiring live behind the same seam |
+| LLM provider seam | `LlmProvider` interface with `MockProvider` default; Gemini, OpenAI-compatible, Ollama, llama.cpp `llama-server`, OpenAI, and Anthropic wiring live behind the same seam |
 | Embeddings | `@huggingface/transformers` with `Xenova/all-MiniLM-L6-v2` for local RAG / hybrid-RAG embedding baselines |
 | Benchmark harness | Programmatic MCQ/free-form scoring, citation precision/recall/F1, bootstrap CIs, exact paired McNemar tests |
 | SOTA sidecars | Python FastAPI sidecars for LightRAG, Mem0, and HippoRAG integration experiments |
@@ -77,11 +77,12 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 196 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 199 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
 | `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
+| `npm run bench:trials -- <runId>` | Multi-trial runs can be summarized as mean +/- sample standard deviation | No |
 | `npm run verify:published` | Hashes the committed evidence rows and recomputes the published headline counts, citation F1, and McNemar checks from `results.jsonl` | No |
 | `npx tsx scripts/verify-corpus.ts` | The shipped PaySwift corpus loads, totals ~9M tokens, and preserves the core/filler structure | No |
 | `npx tsx scripts/verify-no-leakage.ts` | Filler events do not leak banned answer-bearing terms from the hand-authored core facts | No |
@@ -101,7 +102,7 @@ What was used for the headline benchmark claims:
 
 ```bash
 npm install
-npm test                       # 196 tests, no API keys (deterministic MockProvider)
+npm test                       # 199 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -120,7 +121,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 
 ## Limitations
 
-- **Single-trial + measured nondeterminism.** CSM is ~27–30/30 across runs (temp=0 is not bitwise-deterministic across processes); a 3-trial run to pin a mean ± CI is pending.
+- **Single-trial + measured nondeterminism.** CSM is ~27–30/30 across runs (temp=0 is not bitwise-deterministic across processes); `npm run bench:confirm` + `npm run bench:trials` are wired for a 3-trial confirmation, but those rows are not yet part of the public evidence bundle.
 - **Latency.** CSM's pipeline is ~3.5× slower than RAG per query.
 - **Scope.** All numbers are Gemma 4 31B Q4_K_M on one RTX 4090, at 100K + 1M corpus sizes; other models and the full corpus × context sweep are future work.
 
@@ -133,7 +134,10 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 5-minute architecture overview |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
+| [`docs/GEMINI.md`](docs/GEMINI.md) | Hosted Gemini provider setup and cross-model confirmation workflow |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) | Step-by-step reproduction on a local 4090 |
+| [`docs/REPLICATION_KIT.md`](docs/REPLICATION_KIT.md) | Third-party replication commands and report template |
+| [`docs/SCIENTIFIC_RELEASE.md`](docs/SCIENTIFIC_RELEASE.md) | DOI/archive, release, sidecar, and 3-trial checklist |
 | [`docs/COST_ACCOUNTING.md`](docs/COST_ACCOUNTING.md) | Token/latency cost model |
 | [`specs/`](specs/) | Full design spec, benchmark + release plan, corpus design |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CHANGELOG.md`](CHANGELOG.md) | Contributor guide · release notes |

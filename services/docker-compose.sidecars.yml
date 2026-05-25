@@ -1,0 +1,50 @@
+services:
+  lightrag-sidecar:
+    build:
+      context: ..
+      dockerfile: services/Dockerfile.sidecar
+      args:
+        SIDECAR: lightrag-sidecar
+    environment:
+      LIGHTRAG_SIDECAR_HOST: 0.0.0.0
+      LIGHTRAG_LLM_ENDPOINT: http://host.docker.internal:8090/v1
+      LIGHTRAG_EMBED_ENDPOINT: http://host.docker.internal:11434/v1
+      LIGHTRAG_INDEX_ROOT: /work/data/eval/lightrag-indexes
+      OPENAI_API_KEY: proxied
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../data:/work/data
+
+  mem0-sidecar:
+    build:
+      context: ..
+      dockerfile: services/Dockerfile.sidecar
+      args:
+        SIDECAR: mem0-sidecar
+    environment:
+      MEM0_SIDECAR_HOST: 0.0.0.0
+      MEM0_LLM_ENDPOINT: http://host.docker.internal:8090/v1
+      MEM0_EMBED_ENDPOINT: http://host.docker.internal:11434/v1
+      MEM0_INDEX_ROOT: /work/data/eval/mem0-indexes
+      OPENAI_API_KEY: proxied
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../data:/work/data
+
+  hipporag-sidecar:
+    build:
+      context: ..
+      dockerfile: services/Dockerfile.sidecar
+      args:
+        SIDECAR: hipporag-sidecar
+    environment:
+      HIPPORAG_SIDECAR_HOST: 0.0.0.0
+      HIPPORAG_LLM_ENDPOINT: http://host.docker.internal:8090/v1
+      HIPPORAG_INDEX_ROOT: /work/data/eval/hipporag-indexes
+      OPENAI_API_KEY: proxied
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../data:/work/data

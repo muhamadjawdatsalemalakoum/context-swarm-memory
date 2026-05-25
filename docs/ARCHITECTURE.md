@@ -95,6 +95,8 @@ pipeline shape does not change between mock and real backends.
   backend (Ollama exposes an OpenAI-compatible endpoint at `:11434/v1`).
 - **`OllamaProvider`** — thin wrapper around `OpenAIProvider` with Gemma-4-on-4090
   defaults (`gemma4:e4b` probe, `gemma4:31b` recall/synth).
+- **`GeminiProvider`** — native Gemini API provider; accepts `GEMINI_API_KEY` or
+  `GOOGLE_API_KEY` and defaults to `gemini-3-flash-preview`.
 - **`AnthropicProvider`** — Phase 1 stub.
 
 All LLM JSON outputs are validated through Zod schemas in
