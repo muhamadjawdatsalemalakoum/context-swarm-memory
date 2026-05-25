@@ -61,6 +61,65 @@ describe("GeminiProvider", () => {
     expect(result.usage.outputTokensEstimate).toBe(3);
   });
 
+  it("adds native Gemini responseJsonSchema for CSM structured stages", async () => {
+    let body: Record<string, unknown> = {};
+    const provider = new GeminiProvider({
+      apiKey: "secret-key",
+      defaultModel: GEMINI_DEFAULT_MODEL,
+      fetchImpl: async (_input, init) => {
+        body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        query: "q",
+                        summary: "s",
+                        key_claims: [],
+                        caveats: [],
+                        conflicts: [],
+                        recommended_main_context: "ctx",
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      },
+    });
+
+    await provider.completeJson({
+      system: "Return JSON only.",
+      prompt: "ping",
+      schemaName: "MemoryPacket",
+      maxOutputTokens: 1024,
+      temperature: 0,
+    });
+
+    const generationConfig = body.generationConfig as {
+      responseJsonSchema?: {
+        type?: string;
+        required?: string[];
+        properties?: Record<string, unknown>;
+      };
+    };
+    expect(generationConfig.responseJsonSchema).toMatchObject({
+      type: "object",
+      properties: {
+        key_claims: { type: "array" },
+        recommended_main_context: { type: "string" },
+      },
+    });
+    expect(generationConfig.responseJsonSchema?.required).toContain("key_claims");
+    expect(generationConfig.responseJsonSchema?.required).toContain("recommended_main_context");
+  });
+
   it("redacts the API key in error messages", async () => {
     const provider = new GeminiProvider({
       apiKey: "secret-key",
