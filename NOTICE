@@ -9,7 +9,7 @@ retains its own license and copyright.
 
 Runtime dependencies:
 - @modelcontextprotocol/sdk     MIT License
-- @xenova/transformers          Apache License 2.0
+- @huggingface/transformers     Apache License 2.0
 - zod                           MIT License
 
 Development dependencies:
@@ -20,7 +20,7 @@ Development dependencies:
 
 Model artifacts referenced (downloaded at runtime, not bundled):
 - Xenova/all-MiniLM-L6-v2       Apache License 2.0 — used for RAG-baseline
-                                embeddings. Downloaded via @xenova/transformers.
+                                embeddings. Downloaded via @huggingface/transformers.
 - google/gemma-4 (any variant)  Subject to Google's Gemma Terms of Use —
                                 accessed via Ollama. Not redistributed by
                                 this project.

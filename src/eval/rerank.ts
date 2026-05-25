@@ -11,9 +11,9 @@
  * ~50ms per (query, doc) pair on CPU with the default 22M-param MiniLM.
  *
  * **Why MiniLM as default?** `Xenova/ms-marco-MiniLM-L-6-v2` is the well-
- * tested transformers.js cross-encoder. 22M params, ~80 MB download, runs on
+ * tested Transformers.js cross-encoder. 22M params, ~80 MB download, runs on
  * CPU. BGE-reranker-v2-m3 (568M, the 2024 SOTA per multiple leaderboards) is
- * the upgrade target but transformers.js v2 support is uneven — swap in via
+ * the upgrade target — swap in via
  * `CSM_RERANKER_MODEL=Xenova/bge-reranker-base` (or another community port)
  * when available. The hybrid RAG path falls back gracefully if the model
  * fails to load (logs a warning, returns the input order unchanged).
@@ -51,8 +51,8 @@ async function getRerankerPipeline(
   if (!pipelinePromise) {
     pipelinePromise = (async () => {
       try {
-        const tx = await import("@xenova/transformers");
-        // Cross-encoders are exposed as `text-classification` in transformers.js;
+        const tx = await import("@huggingface/transformers");
+        // Cross-encoders are exposed as `text-classification` in Transformers.js;
         // the pipeline accepts `{text, text_pair}` for pairwise inputs and
         // returns the model's relevance score under the highest-score label.
         const pipe = (await tx.pipeline(
@@ -99,7 +99,7 @@ export async function rerank(
     return documents.map((_doc, index) => ({ index, score: 0 }));
   }
   // Batch the pairs in one call when the model supports array input. The
-  // transformers.js text-classification pipeline accepts an array of pair
+  // Transformers.js text-classification pipeline accepts an array of pair
   // objects and returns a parallel array of outputs.
   const pairs = documents.map((doc) => ({ text: query, text_pair: doc }));
   let raw: CrossEncoderOutput | CrossEncoderOutput[];

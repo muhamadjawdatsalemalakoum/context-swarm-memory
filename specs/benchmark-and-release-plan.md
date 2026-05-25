@@ -45,7 +45,7 @@ Lives in `src/eval/`. Extends current smoke-eval scaffold; do not break `npm run
 
 ### A.1 Baseline runners
 - `src/eval/baselines/longContext.ts` — concatenate all events into one prompt, with truncation at the model context limit (recorded per query). Output: chosen option number + cited event IDs.
-- `src/eval/baselines/vanillaRag.ts` — chunk-by-event, embed via **`all-MiniLM-L6-v2` (`@xenova/transformers`, fully local)**, top-K cosine (K∈{5,10}), generate.
+- `src/eval/baselines/vanillaRag.ts` — chunk-by-event, embed via **`all-MiniLM-L6-v2` (`@huggingface/transformers`, fully local)**, top-K cosine (K∈{5,10}), generate.
 - `src/eval/baselines/hybridRag.ts` — BM25 + vector RRF fusion, top-K, generate.
 - `src/eval/baselines/csm.ts` — thin wrapper over `ask()` with `skipQueryLog: true` to convert `MemoryPacket` → `BaselineResult`.
 
@@ -269,7 +269,7 @@ Structure:
 
 ### D.6 LICENSE + NOTICE
 - `LICENSE` — MIT License with copyright holder filled in.
-- `NOTICE` — attributions for third-party code/data (Gemma weights license, `@xenova/transformers`, `all-MiniLM-L6-v2`, etc.).
+- `NOTICE` — attributions for third-party code/data (Gemma weights license, `@huggingface/transformers`, `all-MiniLM-L6-v2`, etc.).
 - README license section uses plain English; LICENSE file is authoritative.
 
 ### D.7 CI workflow file (validated, not yet active)
@@ -361,7 +361,7 @@ Slip allowance: +1 week if pilot reveals systemic issues or distractor curation 
 | External APIs (OpenAI, Anthropic, etc.) | **$0** |
 | Claude Code subagent usage (engineering) | covered by maintainer tooling |
 | Ollama / Gemma 4 (local 4090-class GPU) | **$0** + electricity |
-| Embedding model (`all-MiniLM-L6-v2` via `@xenova/transformers`) | **$0** (local) |
+| Embedding model (`all-MiniLM-L6-v2` via `@huggingface/transformers`) | **$0** (local) |
 | Labeling / contractors | **$0** (corpus is authored alongside queries) |
 | GitHub | **$0** |
 | Electricity (one full bench fill: ~30–50 min at ~350W) | <$0.10 |
