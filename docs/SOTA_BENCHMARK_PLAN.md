@@ -20,6 +20,36 @@ Any future SOTA claim must pass `docs/BENCHMARK_FRESHNESS.md`: current model
 families, exact model IDs, run dates, same-harness rows where possible, and
 stale leaderboards labeled as stale.
 
+## Selected 2026 Benchmark Decision
+
+Use two external tracks, because they test different parts of the CSM thesis:
+
+1. **Primary scale/SOTA track: Agent Memory Benchmark (AMB) + BEAM.**
+   AMB is the best immediate public harness because it publishes datasets,
+   prompts, scoring logic, results, and a live leaderboard, while explicitly
+   targeting memory systems rather than old 32K-context retrieval tests. BEAM is
+   the key dataset inside this family for CSM's scale claim: coherent
+   conversations up to 10M tokens, 100 conversations, and 2,000 validated
+   questions. This is the first benchmark to integrate for the claim "CSM stays
+   useful when the memory is larger than native context."
+
+2. **Primary agentic/task track: Microsoft STATE-Bench Memory Track.**
+   STATE-Bench was released in May 2026 and evaluates whether memory improves
+   realistic multi-turn enterprise tasks, not just whether a system can retrieve
+   a fact. Its Memory Track adds train trajectories and a retrieval hook for
+   procedural learnings while keeping task simulators, tools, judges, and
+   metrics consistent. This is the right benchmark for "does memory make an
+   agent perform better with experience?"
+
+3. **Secondary academic checks: MemoryAgentBench and MemoryArena/AMA-Bench.**
+   These are important 2026 academic references for paper polish and breadth,
+   but they should not become the README headline until CSM has clean adapters
+   and saved per-row results.
+
+This means the README should stop treating BABILong as the next SOTA headline.
+BABILong remains useful external diagnostic evidence, but the next public SOTA
+benchmark target is **AMB/BEAM first, STATE-Bench second**.
+
 ## Current Claim Boundary
 
 The repo already includes one real SOTA head-to-head:
@@ -53,8 +83,12 @@ next comparison ladder. Use primary sources when updating this table.
 | Graphiti / Zep | Temporal context graph for evolving agent memory, provenance, and historical queries. | Not integrated yet. Priority P1 sidecar. | <https://github.com/getzep/graphiti> |
 | APEX-MEM | Conversational memory system combining append-only temporal property graphs with multi-tool retrieval. | Not integrated yet. Priority P1 after Graphiti/GraphRAG because it stresses temporal conflicts directly. | <https://arxiv.org/abs/2604.14362> |
 | LightMem / LIGHT | 2026 memory-augmented generation system focused on accuracy/cost tradeoffs. | Not integrated yet. Priority P1 after code path is verified. | <https://arxiv.org/abs/2510.18866> |
-| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2510.27246> |
-| LongMemEval | ICLR 2025 long-term chat memory benchmark with information extraction, multi-session reasoning, temporal reasoning, updates, and abstention. | Not integrated yet. Priority P0 dataset/driver. | <https://arxiv.org/abs/2410.10813> |
+| Agent Memory Benchmark (AMB) | Open memory-system harness with public datasets, prompts, scoring logic, results, Gemini-based generation/judging, cost/latency tracking, and a live leaderboard. | **Selected P0 SOTA harness.** Add a CSM memory-provider adapter or export-compatible retrieval provider. | <https://github.com/vectorize-io/agent-memory-benchmark> |
+| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | **Selected P0 scale benchmark.** Prefer the AMB BEAM track; otherwise add a direct BEAM driver and snapshot leaderboard rows with retrieval date. | <https://arxiv.org/abs/2510.27246> |
+| Microsoft STATE-Bench | May 2026 benchmark for realistic multi-turn enterprise tasks with stateful tools, deterministic assertions, Memory Track train trajectories, retrieval hook, pass@1/pass^5/UX/cost metrics. | **Selected P0 agentic-memory benchmark.** Add an adapter only after AMB/BEAM smoke results exist. | <https://github.com/microsoft/STATE-Bench> |
+| MemoryAgentBench | ICLR 2026 incremental multi-turn memory benchmark covering accurate retrieval, test-time learning, long-range understanding, and conflict resolution. | Not integrated yet. Priority P1 academic validation after AMB/BEAM. | <https://github.com/HUST-AI-HYZ/MemoryAgentBench> |
+| MemoryArena / AMA-Bench | 2026 agent-memory benchmarks for interdependent multi-session tasks and long-horizon agent trajectories. | Not integrated yet. Priority P1/P2 breadth checks; useful for paper appendix, not the first README headline. | <https://memoryarena.github.io/> |
+| LongMemEval | ICLR 2025 long-term chat memory benchmark with information extraction, multi-session reasoning, temporal reasoning, updates, and abstention. | Not integrated yet. Priority P2 diagnostic because 2026 million-token models can sometimes context-stuff it. | <https://arxiv.org/abs/2410.10813> |
 | LoCoMo | Common long-term conversational memory benchmark used by Mem0, A-MEM, and related systems. | Not integrated yet; useful but should be treated carefully because it is partly judge-based. | <https://arxiv.org/abs/2402.17753> |
 | BABILong | Long-context reasoning-in-haystack benchmark up to 10M tokens; useful but the public Space leaderboard snapshot is not current 2026 SOTA. | **Driven:** task1/task2 at 4K/8K, 30 rows/cell, CSM only. Task1 is solved; task2 exposed and then improved by entity-bridge recall. Needs full QA1-QA5 plus fresh frontier-model rows before any SOTA claim. | <https://arxiv.org/abs/2406.10149> |
 | A-MEM | NeurIPS 2025 agentic Zettelkasten-style memory with dynamic linking/evolution. | Not integrated yet; benchmark if the released code can ingest our corpus. | <https://arxiv.org/abs/2502.12110> |
@@ -138,16 +172,24 @@ or scale, but those dimensions must be measured directly.
 
 ## Next Implementation Order
 
-1. Add public LongMemEval and BEAM dataset drivers.
-2. Extend BABILong beyond the committed task1/task2 4K/8K subset: add task3,
+1. Add a CSM adapter for Agent Memory Benchmark and run the BEAM 100K smoke
+   tier first.
+2. Run AMB/BEAM at 100K, 500K, 1M, and 10M where feasible, saving per-row
+   outputs, prompts, judge responses, token/cost accounting, and leaderboard
+   snapshot metadata.
+3. Add Microsoft STATE-Bench Memory Track adapter and run one domain smoke test
+   before broadening to all 450 tasks.
+4. Add MemoryAgentBench smoke coverage for AR/TTL/LRU/CR as an academic
+   validation set.
+5. Extend BABILong beyond the committed task1/task2 4K/8K subset: add task3,
    32K/128K lengths, and paired long-context/RAG baselines.
-3. Add a Graphiti/Zep sidecar using the existing `/index` and `/query` protocol.
-4. Add a Microsoft GraphRAG sidecar with global/local/DRIFT modes.
-5. Attempt LightMem with the authors' released code and record install/runtime
+6. Add a Graphiti/Zep sidecar using the existing `/index` and `/query` protocol.
+7. Add a Microsoft GraphRAG sidecar with global/local/DRIFT modes.
+8. Attempt LightMem with the authors' released code and record install/runtime
    blockers if it cannot run cleanly.
-6. Re-run CSM, LightRAG, Graphiti/GraphRAG, Mem0/HippoRAG if unblocked, and
+9. Re-run CSM, LightRAG, Graphiti/GraphRAG, Mem0/HippoRAG if unblocked, and
    baseline controls with 3 trials.
-7. Archive the evidence bundle and update `docs/EVIDENCE.md` only after the
+10. Archive the evidence bundle and update `docs/EVIDENCE.md` only after the
    full result rows are saved.
 
 ## What Would Be Meaningful
