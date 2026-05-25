@@ -69,6 +69,7 @@ export class GeminiProvider implements LlmProvider {
     temperature?: number;
     model?: string;
     jsonMode: boolean;
+    schemaName?: string;
     disableThinking?: boolean;
   }): Promise<ProviderResponse<T>> {
     if (!this.apiKey) {
@@ -94,7 +95,12 @@ export class GeminiProvider implements LlmProvider {
         temperature: args.temperature ?? 0,
         maxOutputTokens: args.maxOutputTokens,
         ...(thinkingConfig ? { thinkingConfig } : {}),
-        ...(args.jsonMode ? { responseMimeType: "application/json" } : {}),
+        ...(args.jsonMode
+          ? {
+              responseMimeType: "application/json",
+              ...geminiResponseSchema(args.schemaName ?? ""),
+            }
+          : {}),
       },
     };
 
@@ -174,6 +180,149 @@ function geminiThinkingConfig(model: string): Record<string, unknown> | undefine
   }
   return undefined;
 }
+
+function geminiResponseSchema(schemaName: string): Record<string, unknown> {
+  const schema = CSM_JSON_SCHEMAS[schemaName];
+  return schema ? { responseJsonSchema: schema } : {};
+}
+
+const stringArray = {
+  type: "array",
+  items: { type: "string" },
+} as const;
+
+const claimSchema = {
+  type: "object",
+  properties: {
+    claim: { type: "string" },
+    support: stringArray,
+    confidence: { type: "number" },
+  },
+  required: ["claim", "support", "confidence"],
+} as const;
+
+const keyClaimSchema = {
+  type: "object",
+  properties: {
+    claim: { type: "string" },
+    sources: stringArray,
+    confidence: { type: "number" },
+  },
+  required: ["claim", "sources", "confidence"],
+} as const;
+
+const CSM_JSON_SCHEMAS: Record<string, unknown> = {
+  ProbeResult: {
+    type: "object",
+    properties: {
+      knows: { type: "boolean" },
+      confidence: { type: "number" },
+      memory_type: {
+        type: "string",
+        enum: ["direct", "adjacent", "conflicting", "vague", "none"],
+      },
+      estimated_answer_value: {
+        type: "string",
+        enum: ["none", "low", "medium", "high"],
+      },
+      needs_full_recall: { type: "boolean" },
+      relevant_event_ids: stringArray,
+    },
+    required: [
+      "knows",
+      "confidence",
+      "memory_type",
+      "estimated_answer_value",
+      "needs_full_recall",
+      "relevant_event_ids",
+    ],
+  },
+  RecallResult: {
+    type: "object",
+    properties: {
+      shard_id: { type: "string" },
+      snapshot_id: { type: "string" },
+      confidence: { type: "number" },
+      answer: { type: "string" },
+      claims: {
+        type: "array",
+        items: claimSchema,
+      },
+      unknowns: stringArray,
+      conflicts: stringArray,
+    },
+    required: [
+      "shard_id",
+      "snapshot_id",
+      "confidence",
+      "answer",
+      "claims",
+      "unknowns",
+      "conflicts",
+    ],
+  },
+  MemoryPacket: {
+    type: "object",
+    properties: {
+      query: { type: "string" },
+      summary: { type: "string" },
+      key_claims: {
+        type: "array",
+        items: keyClaimSchema,
+      },
+      caveats: stringArray,
+      conflicts: stringArray,
+      recommended_main_context: { type: "string" },
+    },
+    required: [
+      "query",
+      "summary",
+      "key_claims",
+      "caveats",
+      "conflicts",
+      "recommended_main_context",
+    ],
+  },
+  CommitDecision: {
+    type: "object",
+    properties: {
+      action: {
+        type: "string",
+        enum: ["write", "update", "split", "merge", "freeze", "no_op", "ask_confirmation"],
+      },
+      target_shard_id: { type: ["string", "null"] },
+      memory_type: {
+        type: "string",
+        enum: [
+          "user_preference",
+          "project_decision",
+          "fact",
+          "correction",
+          "inference",
+          "none",
+        ],
+      },
+      content: { type: "string" },
+      confidence: { type: "number" },
+      requires_user_confirmation: { type: "boolean" },
+      tags: stringArray,
+      source: {
+        type: "string",
+        enum: ["current_conversation", "user_confirmation", "system_inference"],
+      },
+    },
+    required: [
+      "action",
+      "target_shard_id",
+      "memory_type",
+      "content",
+      "confidence",
+      "requires_user_confirmation",
+      "tags",
+      "source",
+    ],
+  },
+};
 
 async function safeReadBody(r: Response): Promise<string> {
   try {
