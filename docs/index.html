@@ -133,7 +133,7 @@
               chronicle remain untouched.
             </p>
             <ul class="check-list">
-              <li>Router is keyword and tag based, with no LLM indexing cost.</li>
+              <li>Router is keyword and tag based; starved packets get a local embedding recall floor, with no LLM indexing cost.</li>
               <li>Probe and recall calls stay behind the <code>LlmProvider</code> seam.</li>
               <li>Committer is the only durable write entry point.</li>
             </ul>

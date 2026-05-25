@@ -210,6 +210,8 @@ ${optionsBlock}
 Instructions:
 - Identify the relevant fact(s) in the CONTEXT.
 - Match those facts against the OPTIONS to find the single best one.
+- Some options may describe true but secondary project facts; choose the option that directly answers the QUESTION's focus, not merely any true statement from the CONTEXT.
+- If multiple options share partial facts, choose the most complete option supported by the CONTEXT.
 - DO NOT enumerate every option in your reasoning. Keep any reasoning under three sentences.
 - End your response with EXACTLY these two final lines (no text after them):
 

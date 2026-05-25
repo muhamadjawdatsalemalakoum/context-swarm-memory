@@ -40,7 +40,7 @@ Both formats share the same scorer entry point (`scoreAnswer` in `src/eval/score
 
 Four baselines, all calling **the same Gemma 4 model via Ollama** for fair head-to-head:
 
-- **`csm`** — the full CSM pipeline: router → probe → recall → synthesize → `MemoryPacket` → MCQ/free-form answer step. Tests the architectural thesis.
+- **`csm`** — the full CSM pipeline: router → probe → recall → synthesize → `MemoryPacket` → MCQ/free-form answer step, with a local embedding recall floor when the CSM packet is starved. Tests the architectural thesis.
 - **`longctx`** — concatenate all events into one prompt, truncate at the model context limit. The strawman; expected to fail above the model's native window.
 - **`rag`** — vanilla embedding-based RAG: embed each event via `all-MiniLM-L6-v2` (local, fully offline), top-K cosine (K=10), generate.
 - **`hybrid`** — BM25 + cosine RRF fusion, K=10 final. Often beats vanilla RAG on factual queries because BM25 catches keyword-exact matches embeddings miss.

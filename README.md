@@ -21,7 +21,7 @@ Conventional memory degrades as it fills up — more history means more to sift,
 
 <p align="center"><img src="docs/assets/scaling.svg" width="560" alt="Accuracy as memory scales 10x: CSM holds (90->93%), vanilla RAG degrades (97->83%), long-context stays collapsed (37->30%)"></p>
 
-At 1M tokens, CSM **overtakes vanilla RAG** (they were tied at 100K) and beats long-context **28–9, exact McNemar p<0.0001** — at **zero LLM-indexing cost** (keyword indexing, no LLM calls), where long-context physically can't fit the corpus (8K = 0.06% of 1M) and embedding-RAG degrades under the added distractors. *The more CSM remembers, the more its edge shows.*
+At 1M tokens, CSM **overtakes vanilla RAG** (they were tied at 100K) and beats long-context **28–9, exact McNemar p<0.0001** — at **zero LLM-indexing cost** (keyword/tag routing plus a local embedding recall floor, no LLM-generated index), where long-context physically can't fit the corpus (8K = 0.06% of 1M) and embedding-RAG degrades under the added distractors. *The more CSM remembers, the more its edge shows.*
 
 > Honest calibration: single-trial; CSM's absolute accuracy is ~27–30/30 across runs (Gemma at temp=0 is not bitwise-deterministic across processes), so the robust claim is **"does not degrade as memory grows, while the alternatives do"** — not that its raw score climbs.
 
@@ -52,7 +52,7 @@ flowchart TD
 
 - **The read path is branch-and-discard.** `ask()` never mutates durable memory — it only appends a query-run log. Enforced by `tests/mutationSafety.test.ts` with SHA-256 file hashes.
 - **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
-- **Indexing is LLM-free.** Routing is a keyword/tag scorer, so index cost stays ~0 regardless of corpus size — which is *why* CSM scales where LLM-indexed systems (LightRAG, Mem0, HippoRAG) cannot on consumer hardware.
+- **Indexing is LLM-free.** Routing starts with a keyword/tag scorer, and starved packets use a local `all-MiniLM-L6-v2` embedding recall floor. No LLM-generated index is built; embedding vectors are disk-cached.
 
 ## Training direction
 

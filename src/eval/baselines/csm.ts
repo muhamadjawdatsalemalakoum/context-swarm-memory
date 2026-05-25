@@ -47,8 +47,8 @@ const SYNTHETIC_CONTEXT_LIMIT = 128_000;
  * Fires only when the pipeline is starved (`baseOrder.length < k`). Appends
  * AFTER the pipeline's own hits so the budgeted context still packs CSM's
  * precise events first (preserving citation precision); the embedding hits
- * only fill the remaining slots. With `k <= 0` (default/off) it's a no-op so
- * the baseline replays byte-identically.
+ * only fill the remaining slots. With `k <= 0` it's a no-op so callers can
+ * explicitly disable the safety net.
  */
 export function applyEmbeddingFloor(
   baseOrder: string[],
@@ -69,6 +69,12 @@ export function applyEmbeddingFloor(
     if (order.length >= k) break;
   }
   return { order, fired: count > 0, count };
+}
+
+export function resolveEmbeddingFloorK(raw = process.env.CSM_EMBED_FLOOR_K): number {
+  if (raw === undefined || raw.trim().length === 0) return 10;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 10;
 }
 
 /**
@@ -197,8 +203,8 @@ export class CsmBaseline implements BaselineRunner {
       }
     }
 
-    // **Embedding recall floor** — env-gated via `CSM_EMBED_FLOOR_K` (default
-    // off → baseline replays byte-identically).
+    // **Embedding recall floor** — env-tunable via `CSM_EMBED_FLOOR_K`
+    // (default 10; set `CSM_EMBED_FLOOR_K=0` to disable).
     //
     // The keyword router + probe pipeline above is precise but brittle on a
     // filler-heavy corpus. When a query is framed in first-person project
@@ -220,8 +226,9 @@ export class CsmBaseline implements BaselineRunner {
     // citation precision on the queries CSM already handles is preserved; the
     // embedding hits only fill the remaining slots on starved queries. The
     // embeddings are disk-cached per (model, content), so this reuses whatever
-    // `vanillaRag` already computed. Turn on with `CSM_EMBED_FLOOR_K=10`.
-    const embedFloorK = Number.parseInt(process.env.CSM_EMBED_FLOOR_K ?? "0", 10);
+    // `vanillaRag` already computed. Default is 10; set `CSM_EMBED_FLOOR_K=0`
+    // to disable for byte-identical replay of old runs.
+    const embedFloorK = resolveEmbeddingFloorK();
     let embedFloorFired = false;
     let embedFloorCount = 0;
     if (
