@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { applyEmbeddingFloor } from "../src/eval/baselines/csm.js";
+import {
+  applyEmbeddingFloor,
+  resolveEmbeddingFloorK,
+} from "../src/eval/baselines/csm.js";
 
 describe("applyEmbeddingFloor (CSM_EMBED_FLOOR_K backfill logic)", () => {
   it("is a no-op when k <= 0 (feature off → baseline byte-identical)", () => {
@@ -64,5 +67,20 @@ describe("applyEmbeddingFloor (CSM_EMBED_FLOOR_K backfill logic)", () => {
     expect(r.fired).toBe(false);
     expect(r.count).toBe(0);
     expect(r.order).toEqual(["e1"]);
+  });
+});
+
+describe("resolveEmbeddingFloorK", () => {
+  it("defaults to the benchmark recall floor", () => {
+    expect(resolveEmbeddingFloorK(undefined)).toBe(10);
+    expect(resolveEmbeddingFloorK("")).toBe(10);
+  });
+
+  it("allows explicit disablement with zero", () => {
+    expect(resolveEmbeddingFloorK("0")).toBe(0);
+  });
+
+  it("falls back to the default for invalid input", () => {
+    expect(resolveEmbeddingFloorK("nope")).toBe(10);
   });
 });
