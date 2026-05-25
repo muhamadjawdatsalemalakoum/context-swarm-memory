@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyEmbeddingFloor,
+  applyShardLocalExpansion,
   resolveEmbeddingFloorK,
+  resolveShardExpandK,
+  resolveShardExpandMax,
 } from "../src/eval/baselines/csm.js";
 
 describe("applyEmbeddingFloor (CSM_EMBED_FLOOR_K backfill logic)", () => {
@@ -28,6 +31,7 @@ describe("applyEmbeddingFloor (CSM_EMBED_FLOOR_K backfill logic)", () => {
     const r = applyEmbeddingFloor(base, 5, ranked);
     expect(r.fired).toBe(true);
     expect(r.count).toBe(3); // 2 + 3 = 5
+    expect(r.addedIds).toEqual(["e10", "e11", "e12"]);
     // CSM's precise hits stay at the front; embedding hits fill the rest.
     expect(r.order).toEqual(["e1", "e2", "e10", "e11", "e12"]);
   });
@@ -82,5 +86,86 @@ describe("resolveEmbeddingFloorK", () => {
 
   it("falls back to the default for invalid input", () => {
     expect(resolveEmbeddingFloorK("nope")).toBe(10);
+  });
+});
+
+describe("applyShardLocalExpansion (CSM_SHARD_EXPAND_* local sibling recall)", () => {
+  it("inserts shard-local siblings directly after that shard's foothold", () => {
+    const r = applyShardLocalExpansion(
+      ["filler-a", "e1", "tail-a"],
+      [
+        {
+          shardId: "s-architecture",
+          afterEventId: "e1",
+          rankedIds: ["e1", "e2", "e3"],
+        },
+      ],
+      5,
+    );
+
+    expect(r.fired).toBe(true);
+    expect(r.count).toBe(2);
+    expect(r.shardIds).toEqual(["s-architecture"]);
+    expect(r.order).toEqual(["filler-a", "e1", "e2", "e3", "tail-a"]);
+  });
+
+  it("preserves the input order when maxTotal is already reached", () => {
+    const base = ["e1", "e2"];
+    const r = applyShardLocalExpansion(
+      base,
+      [{ shardId: "s", afterEventId: "e1", rankedIds: ["e3"] }],
+      2,
+    );
+
+    expect(r.fired).toBe(false);
+    expect(r.order).toBe(base);
+  });
+
+  it("dedupes siblings and respects the global expansion cap", () => {
+    const r = applyShardLocalExpansion(
+      ["a1", "b1"],
+      [
+        { shardId: "a", afterEventId: "a1", rankedIds: ["a1", "a2", "a3"] },
+        { shardId: "b", afterEventId: "b1", rankedIds: ["b2"] },
+      ],
+      4,
+    );
+
+    expect(r.count).toBe(2);
+    expect(r.shardIds).toEqual(["a"]);
+    expect(r.order).toEqual(["a1", "a2", "a3", "b1"]);
+  });
+
+  it("can cap local siblings per shard while continuing to the next shard", () => {
+    const r = applyShardLocalExpansion(
+      ["a1", "b1"],
+      [
+        { shardId: "a", afterEventId: "a1", rankedIds: ["a2", "a3", "a4"] },
+        { shardId: "b", afterEventId: "b1", rankedIds: ["b2", "b3"] },
+      ],
+      10,
+      2,
+    );
+
+    expect(r.count).toBe(4);
+    expect(r.shardIds).toEqual(["a", "b"]);
+    expect(r.order).toEqual(["a1", "a2", "a3", "b1", "b2", "b3"]);
+  });
+});
+
+describe("resolveShardExpandK / resolveShardExpandMax", () => {
+  it("defaults to conservative local expansion settings", () => {
+    expect(resolveShardExpandK(undefined)).toBe(3);
+    expect(resolveShardExpandMax(undefined)).toBe(16);
+  });
+
+  it("allows explicit disablement with zero", () => {
+    expect(resolveShardExpandK("0")).toBe(0);
+    expect(resolveShardExpandMax("0")).toBe(0);
+  });
+
+  it("falls back to defaults for invalid input", () => {
+    expect(resolveShardExpandK("nope")).toBe(3);
+    expect(resolveShardExpandMax("nope")).toBe(16);
   });
 });

@@ -54,27 +54,105 @@ export function applyEmbeddingFloor(
   baseOrder: string[],
   k: number,
   rankedIds: string[],
-): { order: string[]; fired: boolean; count: number } {
+): { order: string[]; fired: boolean; count: number; addedIds: string[] } {
   if (!Number.isFinite(k) || k <= 0 || baseOrder.length >= k) {
-    return { order: baseOrder, fired: false, count: 0 };
+    return { order: baseOrder, fired: false, count: 0, addedIds: [] };
   }
   const order = [...baseOrder];
   const already = new Set(order);
+  const addedIds: string[] = [];
   let count = 0;
   for (const id of rankedIds) {
     if (already.has(id)) continue;
     order.push(id);
     already.add(id);
+    addedIds.push(id);
     count++;
     if (order.length >= k) break;
   }
-  return { order, fired: count > 0, count };
+  return { order, fired: count > 0, count, addedIds };
 }
 
 export function resolveEmbeddingFloorK(raw = process.env.CSM_EMBED_FLOOR_K): number {
   if (raw === undefined || raw.trim().length === 0) return 10;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : 10;
+}
+
+export interface ShardLocalExpansionInput {
+  shardId: string;
+  afterEventId: string;
+  rankedIds: string[];
+}
+
+/**
+ * Insert nearest sibling events from already-touched shards.
+ *
+ * The global embedding floor fixes fully-starved queries, but at larger corpus
+ * sizes it can still land on only one or two events from the right shard. That
+ * makes the answer model correct more often than it makes the citation set
+ * complete. Local expansion keeps the retrieval precise by expanding inside a
+ * shard CSM already touched, then inserts those siblings beside the shard's
+ * current foothold so they survive context truncation.
+ */
+export function applyShardLocalExpansion(
+  baseOrder: string[],
+  groups: ShardLocalExpansionInput[],
+  maxTotal: number,
+  maxPerGroup: number = Number.POSITIVE_INFINITY,
+): { order: string[]; fired: boolean; count: number; shardIds: string[] } {
+  const perGroupLimit = Number.isFinite(maxPerGroup)
+    ? maxPerGroup
+    : Number.POSITIVE_INFINITY;
+  if (
+    !Number.isFinite(maxTotal) ||
+    maxTotal <= baseOrder.length ||
+    perGroupLimit <= 0
+  ) {
+    return { order: baseOrder, fired: false, count: 0, shardIds: [] };
+  }
+
+  const order = [...baseOrder];
+  const already = new Set(order);
+  const shardIds: string[] = [];
+  let count = 0;
+
+  for (const group of groups) {
+    if (order.length >= maxTotal) break;
+    let insertAt = order.lastIndexOf(group.afterEventId);
+    if (insertAt === -1) continue;
+
+    let addedForShard = false;
+    let addedForGroup = 0;
+    for (const id of group.rankedIds) {
+      if (already.has(id)) continue;
+      order.splice(insertAt + 1, 0, id);
+      insertAt++;
+      already.add(id);
+      addedForShard = true;
+      addedForGroup++;
+      count++;
+      if (order.length >= maxTotal || addedForGroup >= perGroupLimit) break;
+    }
+
+    if (addedForShard) shardIds.push(group.shardId);
+  }
+
+  return { order, fired: count > 0, count, shardIds };
+}
+
+export function resolveShardExpandK(raw = process.env.CSM_SHARD_EXPAND_K): number {
+  if (raw === undefined || raw.trim().length === 0) return 3;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 3;
+}
+
+export function resolveShardExpandMax(
+  raw = process.env.CSM_SHARD_EXPAND_MAX,
+): number {
+  if (raw === undefined || raw.trim().length === 0) return 16;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 16;
 }
 
 /**
@@ -231,20 +309,47 @@ export class CsmBaseline implements BaselineRunner {
     const embedFloorK = resolveEmbeddingFloorK();
     let embedFloorFired = false;
     let embedFloorCount = 0;
+    let embedFloorAddedEventIds: string[] = [];
+    let eventVecs: Float32Array[] | null = null;
+    let queryVec: Float32Array | null = null;
+    let eventIndexById: Map<string, number> | null = null;
+
+    const ensureEmbeddings = async (): Promise<{
+      eventVecs: Float32Array[];
+      queryVec: Float32Array;
+      eventIndexById: Map<string, number>;
+    } | null> => {
+      if (!eventVecs) {
+        eventVecs = await embed(
+          corpus.events.map((e) => e.content),
+          EMBED_MODEL_NAME,
+        );
+      }
+      if (!eventIndexById) {
+        eventIndexById = new Map(corpus.events.map((e, i) => [e.id, i]));
+      }
+      if (!queryVec) {
+        const [embeddedQuery] = await embed([query.question], EMBED_MODEL_NAME);
+        queryVec = embeddedQuery ?? null;
+      }
+      if (!queryVec) return null;
+      return { eventVecs, queryVec, eventIndexById };
+    };
+
     if (
       Number.isFinite(embedFloorK) &&
       embedFloorK > 0 &&
       augmentedRetrievalOrder.length < embedFloorK
     ) {
-      const eventVecs = await embed(
-        corpus.events.map((e) => e.content),
-        EMBED_MODEL_NAME,
-      );
-      const [queryVec] = await embed([query.question], EMBED_MODEL_NAME);
-      if (queryVec) {
+      const embeddings = await ensureEmbeddings();
+      if (embeddings) {
         // Pull a few extra (×3) so dedupe against already-packed events still
         // leaves enough to reach the floor.
-        const topK = topKCosine(queryVec, eventVecs, embedFloorK * 3);
+        const topK = topKCosine(
+          embeddings.queryVec,
+          embeddings.eventVecs,
+          embedFloorK * 3,
+        );
         const rankedIds = topK
           .map((hit) => corpus.events[hit.index]?.id)
           .filter((id): id is string => Boolean(id));
@@ -256,6 +361,94 @@ export class CsmBaseline implements BaselineRunner {
         augmentedRetrievalOrder = floor.order;
         embedFloorFired = floor.fired;
         embedFloorCount = floor.count;
+        embedFloorAddedEventIds = floor.addedIds;
+      }
+    }
+
+    // **Shard-local semantic expansion** - env-tunable via
+    // `CSM_SHARD_EXPAND_K` (default 3; set 0 to disable) and
+    // `CSM_SHARD_EXPAND_MAX` (default 16).
+    //
+    // The 1M-token Gemma scaling run exposed a different failure from the old
+    // zero-recall bug: CSM often found the right shard, but not enough sibling
+    // evidence inside that shard, so answer accuracy held while citation recall
+    // fell. A global embedding floor alone is vulnerable to filler swamping as
+    // the corpus grows. Once CSM has a foothold in a shard, dense retrieval
+    // should operate locally inside that shard, where distractor pressure is
+    // much lower. We insert those local hits immediately after the shard's
+    // existing foothold so they survive context truncation ahead of unrelated
+    // trailing filler events.
+    const shardExpandK = resolveShardExpandK();
+    const shardExpandMax = resolveShardExpandMax();
+    let shardExpandFired = false;
+    let shardExpandCount = 0;
+    let shardExpandShardIds: string[] = [];
+    if (
+      Number.isFinite(shardExpandK) &&
+      shardExpandK > 0 &&
+      Number.isFinite(shardExpandMax) &&
+      shardExpandMax > augmentedRetrievalOrder.length
+    ) {
+      const embeddings = await ensureEmbeddings();
+      if (embeddings) {
+        const lastEventIdByShard = new Map<string, string>();
+        const retrievalShardIds: string[] = [];
+        for (const eventId of augmentedRetrievalOrder) {
+          const shardId = corpus.byId.get(eventId)?.shardId;
+          if (!shardId) continue;
+          lastEventIdByShard.set(shardId, eventId);
+          retrievalShardIds.push(shardId);
+        }
+
+        const embedFloorShardIds = embedFloorAddedEventIds
+          .map((eventId) => corpus.byId.get(eventId)?.shardId)
+          .filter((id): id is string => Boolean(id));
+        const seedShardIds = dedupeInOrder([
+          ...embedFloorShardIds,
+          ...(topCandidate ? [topCandidate.entry.id] : []),
+          ...askResult.recalls.map((r) => r.shardId),
+          ...askResult.candidates.map((c) => c.entry.id),
+          ...retrievalShardIds,
+        ]);
+
+        const groups: ShardLocalExpansionInput[] = [];
+        for (const shardId of seedShardIds) {
+          const afterEventId = lastEventIdByShard.get(shardId);
+          if (!afterEventId) continue;
+          const shardEvents = corpus.byShard.get(shardId) ?? [];
+          const indexed = shardEvents
+            .map((event) => {
+              const index = embeddings.eventIndexById.get(event.id);
+              if (index === undefined) return null;
+              const vec = embeddings.eventVecs[index];
+              return vec ? { event, vec } : null;
+            })
+            .filter(
+              (item): item is { event: BenchEvent; vec: Float32Array } =>
+                item !== null,
+            );
+          if (indexed.length === 0) continue;
+
+          const rankedIds = topKCosine(
+            embeddings.queryVec,
+            indexed.map((item) => item.vec),
+            Math.min(indexed.length, shardExpandK * 4 + 4),
+          )
+            .map((hit) => indexed[hit.index]?.event.id)
+            .filter((id): id is string => Boolean(id));
+          groups.push({ shardId, afterEventId, rankedIds });
+        }
+
+        const expanded = applyShardLocalExpansion(
+          augmentedRetrievalOrder,
+          groups,
+          shardExpandMax,
+          shardExpandK,
+        );
+        augmentedRetrievalOrder = expanded.order;
+        shardExpandFired = expanded.fired;
+        shardExpandCount = expanded.count;
+        shardExpandShardIds = expanded.shardIds;
       }
     }
 
@@ -349,6 +542,9 @@ export class CsmBaseline implements BaselineRunner {
         ragAugmentCount,
         embedFloorFired,
         embedFloorCount,
+        shardExpandFired,
+        shardExpandCount,
+        shardExpandShardIds,
         routerTopScore: askResult.candidates[0]?.score ?? 0,
         packetCost: askResult.cost,
         // Per-stage breakdown so the report can disambiguate pipeline vs final.
