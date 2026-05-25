@@ -1,0 +1,28 @@
+{
+  "cells": [
+    {
+      "accuracy": 0.8,
+      "accuracyCi95": [
+        0.6333333333333333,
+        0.9333333333333333
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.2653671288453897,
+      "meanCitationPrecision": 0.4511111111111111,
+      "meanCitationRecall": 0.2745573870573871,
+      "meanInputTokens": 5451.133333333333,
+      "meanLatencyMs": 224104.36666666667,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "lightrag"
+    }
+  ],
+  "earlyStops": [],
+  "generatedAt": "2026-05-22T10:48:45.748Z",
+  "replay": true,
+  "runId": "lightrag-30q",
+  "systemNames": [
+    "lightrag"
+  ]
+}

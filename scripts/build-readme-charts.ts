@@ -9,6 +9,7 @@
  * Numbers are the committed benchmark values (sources in comments). Regenerate:
  *   npx tsx scripts/build-readme-charts.ts
  */
+import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -26,15 +27,61 @@ const C = {
   longctx: "#9ca3af", // gray — the strawman
 };
 
+interface SummaryCell {
+  accuracy: number;
+  corpusSize: number;
+  meanCitationF1: number;
+  modelContext: number;
+  system: string;
+}
+
+interface BenchSummary {
+  cells: SummaryCell[];
+}
+
+function readSummary(runId: string): BenchSummary {
+  return JSON.parse(
+    readFileSync(join("data", "eval", "runs", runId, "summary.json"), "utf8"),
+  ) as BenchSummary;
+}
+
+function summaryCell(
+  runId: string,
+  system: string,
+  corpusSize: number,
+  modelContext = 8000,
+): SummaryCell {
+  const cell = readSummary(runId).cells.find(
+    (c) =>
+      c.system === system &&
+      c.corpusSize === corpusSize &&
+      c.modelContext === modelContext,
+  );
+  if (!cell) {
+    throw new Error(
+      `Missing ${system} ${corpusSize}/${modelContext} cell in run ${runId}`,
+    );
+  }
+  return cell;
+}
+
+function accuracyPct(runId: string, system: string, corpusSize: number): number {
+  return Math.round(summaryCell(runId, system, corpusSize).accuracy * 100);
+}
+
+function citationF1(runId: string, system: string, corpusSize = 100000): number {
+  return Number(summaryCell(runId, system, corpusSize).meanCitationF1.toFixed(3));
+}
+
 // --- RQ1 scaling: accuracy (%) vs corpus size (8K window). ----------------
 //   csm/rag/longctx from runs `scaling-rq1` (100K) + `scaling-1m` (1M).
 const scaling = [
-  { system: "CSM", corpus: "100K", acc: 90, order: 1 },
-  { system: "CSM", corpus: "1M", acc: 93, order: 2 },
-  { system: "vanilla RAG", corpus: "100K", acc: 97, order: 1 },
-  { system: "vanilla RAG", corpus: "1M", acc: 83, order: 2 },
-  { system: "long-context", corpus: "100K", acc: 37, order: 1 },
-  { system: "long-context", corpus: "1M", acc: 30, order: 2 },
+  { system: "CSM", corpus: "100K", acc: accuracyPct("scaling-rq1", "csm", 100000), order: 1 },
+  { system: "CSM", corpus: "1M", acc: accuracyPct("scaling-1m", "csm", 1000000), order: 2 },
+  { system: "vanilla RAG", corpus: "100K", acc: accuracyPct("scaling-rq1", "rag", 100000), order: 1 },
+  { system: "vanilla RAG", corpus: "1M", acc: accuracyPct("scaling-1m", "rag", 1000000), order: 2 },
+  { system: "long-context", corpus: "100K", acc: accuracyPct("scaling-rq1", "longctx", 100000), order: 1 },
+  { system: "long-context", corpus: "1M", acc: accuracyPct("scaling-1m", "longctx", 1000000), order: 2 },
 ];
 
 const scalingSpec: TopLevelSpec = {
@@ -105,11 +152,11 @@ const scalingSpec: TopLevelSpec = {
 //   committed headline values (README/SOTA_COMPARISON): csm/rag/hybrid @ v020,
 //   lightrag @ lightrag-30q, longctx @ scaling-rq1 (honest representative pack).
 const citation = [
-  { system: "CSM", f1: 0.505, kind: "csm" },
-  { system: "hybrid RAG", f1: 0.455, kind: "hybrid" },
-  { system: "vanilla RAG", f1: 0.446, kind: "rag" },
-  { system: "LightRAG (SOTA)", f1: 0.265, kind: "lightrag" },
-  { system: "long-context", f1: 0.067, kind: "longctx" },
+  { system: "CSM", f1: citationF1("v020-30q-embedfloor", "csm"), kind: "csm" },
+  { system: "hybrid RAG", f1: citationF1("v020-30q-embedfloor", "hybrid"), kind: "hybrid" },
+  { system: "vanilla RAG", f1: citationF1("v020-30q-embedfloor", "rag"), kind: "rag" },
+  { system: "LightRAG (SOTA)", f1: citationF1("lightrag-30q", "lightrag"), kind: "lightrag" },
+  { system: "long-context", f1: citationF1("scaling-rq1", "longctx"), kind: "longctx" },
 ];
 
 const citationSpec: TopLevelSpec = {

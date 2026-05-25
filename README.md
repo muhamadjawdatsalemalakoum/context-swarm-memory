@@ -82,6 +82,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
 | `npm run bench:report -- <runId>` | Benchmark summaries can be turned into report/plot artifacts | No |
+| `npm run verify:published` | Hashes the committed evidence rows and recomputes the published headline counts, citation F1, and McNemar checks from `results.jsonl` | No |
 | `npx tsx scripts/verify-corpus.ts` | The shipped PaySwift corpus loads, totals ~9M tokens, and preserves the core/filler structure | No |
 | `npx tsx scripts/verify-no-leakage.ts` | Filler events do not leak banned answer-bearing terms from the hand-authored core facts | No |
 | `npm audit` | Current package lock has no reported npm vulnerabilities | No |
@@ -94,7 +95,7 @@ What was used for the headline benchmark claims:
 - **Questions:** 30 multiple-choice queries with 40 options each and gold citation event IDs. Scoring is exact option match plus citation precision/recall/F1. No LLM judge is used.
 - **Systems compared:** CSM, long-context, vanilla RAG, hybrid RAG, and LightRAG. Mem0 and HippoRAG are documented as locally blocked, not claimed as beaten.
 - **Statistics:** bootstrap 95% confidence intervals and paired exact McNemar tests over the same query set.
-- **Replay:** source, corpus, and harness are in git. Exact no-LLM replay of published numbers needs the saved run artifact bundle from the release page because `data/eval/runs/` is intentionally ignored.
+- **Replay:** source, corpus, harness, and the small canonical v0.2 result rows are in git. `data/eval/runs/` still ignores ad-hoc local runs, caches, embeddings, and sidecar indexes.
 
 ## Quickstart
 
@@ -115,7 +116,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 - **Corpus — PaySwift:** a synthetic 22K-event / ~9M-token project log with 30 multiple-choice queries (40 options each) and gold source-event citations. Released **CC0**. (A BABILong free-form path is wired but not yet driven.)
 - **Baselines:** long-context, vanilla RAG, hybrid RAG, CSM — plus 2025-SOTA sidecars (LightRAG runs; Mem0 / HippoRAG blocked locally).
 - **Scoring is programmatic:** exact-match accuracy + citation precision/recall/F1 + bootstrap 95% CIs + paired exact McNemar. The same answering model is used for every system, so only retrieval differs.
-- **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus and harness are in git; exact published run artifacts are distributed separately with releases. Charts regenerate via `npx tsx scripts/build-readme-charts.ts`.
+- **Reproducible + cached:** every (model, prompt) is content-hashed, so replaying a saved run costs zero LLM calls (`npm run bench:replay -- <runId>`). The corpus, harness, and canonical published result rows are in git; larger local caches and sidecar indexes stay ignored. Charts regenerate from committed summaries via `npx tsx scripts/build-readme-charts.ts`.
 
 ## Limitations
 
@@ -131,6 +132,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) | Full results — per-query breakdown, scaling table, embedding-floor analysis |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 5-minute architecture overview |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
+| [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) | Step-by-step reproduction on a local 4090 |
 | [`docs/COST_ACCOUNTING.md`](docs/COST_ACCOUNTING.md) | Token/latency cost model |
 | [`specs/`](specs/) | Full design spec, benchmark + release plan, corpus design |

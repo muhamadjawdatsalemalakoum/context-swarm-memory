@@ -1,0 +1,55 @@
+{
+  "corpusDir": "data/eval/corpus-synthetic",
+  "corpusSizes": [
+    100000
+  ],
+  "earlyStopThreshold": 0.5,
+  "maxOutputTokens": 4096,
+  "model": "gemma4:31b",
+  "modelContexts": [
+    8000
+  ],
+  "outputDir": "data\\eval\\runs\\v020-30q-embedfloor",
+  "queryIdsFilter": [
+    "q01",
+    "q02",
+    "q03",
+    "q04",
+    "q05",
+    "q06",
+    "q07",
+    "q08",
+    "q09",
+    "q10",
+    "q11",
+    "q12",
+    "q13",
+    "q14",
+    "q15",
+    "q16",
+    "q17",
+    "q18",
+    "q19",
+    "q20",
+    "q21",
+    "q22",
+    "q23",
+    "q24",
+    "q25",
+    "q26",
+    "q27",
+    "q28",
+    "q29",
+    "q30"
+  ],
+  "reserveScaffoldingTokens": 512,
+  "runId": "v020-30q-embedfloor",
+  "seed": 42,
+  "systemNames": [
+    "csm",
+    "longctx",
+    "rag",
+    "hybrid"
+  ],
+  "trials": 1
+}

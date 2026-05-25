@@ -1,0 +1,70 @@
+{
+  "cells": [
+    {
+      "accuracy": 0.9,
+      "accuracyCi95": [
+        0.7666666666666667,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.5241251260816479,
+      "meanCitationPrecision": 0.7527777777777779,
+      "meanCitationRecall": 0.5315354090354091,
+      "meanInputTokens": 14162.2,
+      "meanLatencyMs": 293832.9666666667,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "csm"
+    },
+    {
+      "accuracy": 0.36666666666666664,
+      "accuracyCi95": [
+        0.2,
+        0.5333333333333333
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.06666666666666667,
+      "meanCitationPrecision": 0.06666666666666667,
+      "meanCitationRecall": 0.06666666666666667,
+      "meanInputTokens": 8785.833333333334,
+      "meanLatencyMs": 93932.43333333333,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "longctx"
+    },
+    {
+      "accuracy": 0.9666666666666667,
+      "accuracyCi95": [
+        0.9,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.4455581696886044,
+      "meanCitationPrecision": 0.7305555555555556,
+      "meanCitationRecall": 0.41170940170940173,
+      "meanInputTokens": 5501.433333333333,
+      "meanLatencyMs": 96389.33333333333,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "rag"
+    }
+  ],
+  "earlyStops": [
+    {
+      "failedAtCorpus": 100000,
+      "modelContext": 8000,
+      "system": "longctx"
+    }
+  ],
+  "generatedAt": "2026-05-22T10:49:46.148Z",
+  "replay": true,
+  "runId": "scaling-rq1",
+  "systemNames": [
+    "csm",
+    "longctx",
+    "rag"
+  ]
+}

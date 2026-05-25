@@ -22,6 +22,7 @@
     "bench:replay": "tsx src/cli/index.ts bench replay",
     "bench:report": "tsx src/cli/index.ts bench report",
     "bench:compare": "tsx scripts/compare-runs.ts",
+    "verify:published": "tsx scripts/verify-published-claims.ts",
     "proxy:start": "tsx scripts/start-llm-cache-proxy.ts"
   },
   "dependencies": {
