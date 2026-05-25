@@ -1,0 +1,21 @@
+# HippoRAG 2 sidecar deps. Install into a dedicated venv:
+#   python -m venv .venv-hipporag
+#   .venv-hipporag\Scripts\activate
+#   pip install -r services/hipporag-sidecar/requirements.txt
+#
+# WARNING: hipporag pulls heavy ML deps (torch, transformers, igraph). First
+# install takes 5-10 min on a fresh venv.
+#
+# Then start the sidecar via:
+#   python services/hipporag-sidecar/main.py
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0
+hipporag>=2.0
+# torch is a transitive dep of hipporag; pin to CPU since indexing is LLM-bound
+# (the GPU is busy serving Gemma 4 31B). Override to a CUDA wheel if you want
+# to run NV-Embed-v2 on GPU.
+torch>=2.0
+# Cross-encoder reranker, optional but recommended by HippoRAG 2 authors.
+sentence-transformers>=2.5
+openai>=1.10.0

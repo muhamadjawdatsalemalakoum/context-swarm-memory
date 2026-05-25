@@ -1,0 +1,51 @@
+node_modules
+dist
+.env
+.env.local
+.env.*
+!.env.example
+coverage
+.vitest
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+*.log
+*.pyc
+__pycache__/
+
+# Durable CSM data tree — user-local state created by `csm init` / `csm remember`
+data/directory.json
+data/chronicle.jsonl
+data/query-runs.jsonl
+data/shards/
+
+# Eval artifacts — reproducible from cache + source, do not ship
+data/eval/cache/
+data/eval/runs/
+data/eval/embeddings/
+data/eval/*-indexes/
+data/eval/*.log
+
+# BABILong is fetched at runtime by scripts/fetch-babilong.ts
+data/eval/corpus-babilong/
+
+# PaySwift corpus: ship the merged events.jsonl (what src/eval/corpus.ts actually reads)
+# + queries.json + decisions + the corpus's own CC0 LICENSE. Exclude the per-tier build
+# intermediates that scripts/merge-phase-events.ts consumes to PRODUCE events.jsonl —
+# they're regenerable and redundant once events.jsonl exists.
+data/eval/corpus-synthetic/events-core.jsonl
+data/eval/corpus-synthetic/events-p*.jsonl
+data/eval/corpus-synthetic/events-tier*.jsonl
+data/eval/corpus-synthetic/queries-batch-*.json
+data/eval/corpus-synthetic/queries-stub.json
+
+# Keep src/**/data un-ignored if any source uses it as a fixtures dir
+!src/**/data
+
+.venv-mem0/
+.venv-hipporag/
+.venv-lightrag/
+.venv-*/
+.claude/

@@ -1,0 +1,657 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-11T03:28:38.912Z",
+  "decisions": {
+    "D-001": {
+      "summary": "Use Postgres-backed monolith; defer service split until 3 distinct read patterns emerge",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0002",
+        "e0003",
+        "e0005",
+        "e0027"
+      ]
+    },
+    "D-002": {
+      "summary": "Adopt Hono on Bun for the API layer (provisional; reversed in P3)",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0006",
+        "e0007",
+        "e0008",
+        "e0009",
+        "e0025",
+        "e0026",
+        "e0027"
+      ]
+    },
+    "D-003": {
+      "summary": "TypeScript everywhere, strict mode, NodeNext modules; no JS in src/",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0009",
+        "e0010",
+        "e0026",
+        "e0027"
+      ]
+    },
+    "D-004": {
+      "summary": "Monorepo (pnpm workspaces) with packages api, dashboard, sdk-js, sdk-python, infra",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0003",
+        "e0004",
+        "e0005",
+        "e0027",
+        "e0096",
+        "e0159"
+      ]
+    },
+    "D-005": {
+      "summary": "Defer hiring 2nd engineer until April; founders cover the workload through architecture phase",
+      "shardIds": [
+        "s-people"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0022",
+        "e0023",
+        "e0027",
+        "e0083"
+      ]
+    },
+    "D-006": {
+      "summary": "Postgres 17 on AWS RDS Aurora Serverless v2",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0011",
+        "e0012",
+        "e0013",
+        "e0014",
+        "e0024",
+        "e0027"
+      ]
+    },
+    "D-007": {
+      "summary": "Pursue PCI Level 4 self-attestation only; outsource Level 1 work to processor (Adyen)",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0015",
+        "e0016",
+        "e0027"
+      ]
+    },
+    "D-008": {
+      "summary": "Weekly all-hands Wed 10am PST; async standup via Slack thread; no daily sync meeting",
+      "shardIds": [
+        "s-meta"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0001",
+        "e0020",
+        "e0021",
+        "e0027"
+      ]
+    },
+    "D-009": {
+      "summary": "Use Lucia for auth (build, not buy); revisit at 1k MAU",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P1",
+      "eventIds": [
+        "e0017",
+        "e0018",
+        "e0019",
+        "e0026",
+        "e0027"
+      ]
+    },
+    "D-010": {
+      "summary": "Use Persona for KYC ($1.50/verification); buy, not build",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0028",
+        "e0029",
+        "e0030",
+        "e0047",
+        "e0048"
+      ]
+    },
+    "D-011": {
+      "summary": "Sign LOI with ChairSync (dental SaaS, ~80 practices, ~$2K MRR potential)",
+      "shardIds": [
+        "s-customers"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0031",
+        "e0032"
+      ]
+    },
+    "D-012": {
+      "summary": "Sign LOI with FitFlow (gym CRM, ~30 boutique gyms, ~$900 MRR potential)",
+      "shardIds": [
+        "s-customers"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0038",
+        "e0042"
+      ]
+    },
+    "D-013": {
+      "summary": "Decline FitFlow custom card-on-file holds — out of scope for v1",
+      "shardIds": [
+        "s-product",
+        "s-customers"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0039",
+        "e0040",
+        "e0041",
+        "e0046"
+      ]
+    },
+    "D-014": {
+      "summary": "Webhook system v1: HMAC-SHA256 signed payloads; deterministic retry budget capped at 5 attempts",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0035",
+        "e0036",
+        "e0037"
+      ]
+    },
+    "D-015": {
+      "summary": "Burn rate Feb projected $87K/mo; runway 28 months at current spend",
+      "shardIds": [
+        "s-finance"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0033",
+        "e0034",
+        "e0049",
+        "e0126"
+      ]
+    },
+    "D-016": {
+      "summary": "Dashboard MVP scope locked: payment list, customer list, refund flow, webhook log viewer",
+      "shardIds": [
+        "s-product"
+      ],
+      "phase": "P2",
+      "eventIds": [
+        "e0043",
+        "e0044",
+        "e0045",
+        "e0077"
+      ]
+    },
+    "D-017": {
+      "summary": "Webhook idempotency: Stripe-compatible Idempotency-Key header, 24h dedupe window",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0051",
+        "e0052",
+        "e0075"
+      ]
+    },
+    "D-018": {
+      "summary": "Mar 12 Bun runtime crash under sustained load; sandbox blocked ~6 hours",
+      "shardIds": [
+        "s-incidents",
+        "s-architecture"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0063",
+        "e0064",
+        "e0065",
+        "e0066",
+        "e0071"
+      ]
+    },
+    "D-019": {
+      "summary": "D-002 reversed: drop Bun, switch to Node 22 LTS; Devon owned migration over 4 days",
+      "shardIds": [
+        "s-architecture",
+        "s-incidents"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0067",
+        "e0068",
+        "e0069",
+        "e0070",
+        "e0071",
+        "e0072"
+      ]
+    },
+    "D-020": {
+      "summary": "ChairSync starts sandbox testing Mar 8; first bug Mar 9 (typo in error msg), fixed Mar 10",
+      "shardIds": [
+        "s-customers"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0057",
+        "e0060",
+        "e0061",
+        "e0072",
+        "e0085"
+      ]
+    },
+    "D-021": {
+      "summary": "Begin SOC 2 Type 1 prep parallel with PCI; aim audit-ready by August",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0055",
+        "e0056",
+        "e0073",
+        "e0074",
+        "e0084"
+      ]
+    },
+    "D-022": {
+      "summary": "Database migrations via pgroll (zero-downtime); reviewed knex, drizzle-kit native",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0053",
+        "e0054",
+        "e0074"
+      ]
+    },
+    "D-023": {
+      "summary": "Defer multi-currency support to Q3 backlog; v1 is USD-only",
+      "shardIds": [
+        "s-product"
+      ],
+      "phase": "P3",
+      "eventIds": [
+        "e0058",
+        "e0059",
+        "e0074"
+      ]
+    },
+    "D-024": {
+      "summary": "Mar 24 sandbox S3 leak: payment records exposed for ~14h via misconfigured bucket policy",
+      "shardIds": [
+        "s-incidents",
+        "s-compliance"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0086",
+        "e0087",
+        "e0088",
+        "e0089",
+        "e0103"
+      ]
+    },
+    "D-025": {
+      "summary": "All infra changes through Terraform; no console access for production after Apr 1",
+      "shardIds": [
+        "s-compliance",
+        "s-architecture"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0090",
+        "e0091",
+        "e0101"
+      ]
+    },
+    "D-026": {
+      "summary": "Add canary alerts on S3 bucket policy changes; Jordan owned implementation (~4 days)",
+      "shardIds": [
+        "s-incidents",
+        "s-architecture"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0092",
+        "e0100"
+      ]
+    },
+    "D-027": {
+      "summary": "Pricing model debate begins: % TPV + platform fee vs flat per-tx vs revenue-share",
+      "shardIds": [
+        "s-finance",
+        "s-product"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0079",
+        "e0080",
+        "e0081",
+        "e0093",
+        "e0095"
+      ]
+    },
+    "D-028": {
+      "summary": "Dashboard MVP shipped Mar 27 to ChairSync sandbox; mobile webhook viewer redesigned in 2 days",
+      "shardIds": [
+        "s-product"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0094",
+        "e0096",
+        "e0097",
+        "e0098"
+      ]
+    },
+    "D-029": {
+      "summary": "Devon proposes hiring 2nd SRE; rejected; D-005 stands; Jordan covers solo through April",
+      "shardIds": [
+        "s-people"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0082",
+        "e0083",
+        "e0102",
+        "e0103"
+      ]
+    },
+    "D-030": {
+      "summary": "State money-transmitter strategy: register as agent of processor (Adyen) for first 6 months",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P4",
+      "eventIds": [
+        "e0078",
+        "e0099"
+      ]
+    },
+    "D-031": {
+      "summary": "PCI Level 4 self-attestation submitted Apr 4; approved Apr 9",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0104",
+        "e0109",
+        "e0112",
+        "e0118",
+        "e0119",
+        "e0128"
+      ]
+    },
+    "D-032": {
+      "summary": "D-027 resolved: tiered % (0.5/0.4/0.3) + $99/mo platform fee; no rev-share, no per-tx fixed",
+      "shardIds": [
+        "s-finance",
+        "s-product"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0106",
+        "e0107",
+        "e0110",
+        "e0111",
+        "e0125"
+      ]
+    },
+    "D-033": {
+      "summary": "FitFlow goes to sandbox Apr 7; first webhook integration test Apr 9 (worked first try)",
+      "shardIds": [
+        "s-customers"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0108",
+        "e0115",
+        "e0117",
+        "e0154"
+      ]
+    },
+    "D-034": {
+      "summary": "Observability stack: Grafana Cloud (logs+metrics) + Sentry (errors); over self-hosted Prometheus",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0113",
+        "e0114",
+        "e0124"
+      ]
+    },
+    "D-035": {
+      "summary": "Add fraud-flag field to webhook events as P0 ask from FitFlow; 2-day turnaround",
+      "shardIds": [
+        "s-product",
+        "s-customers"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0117",
+        "e0120",
+        "e0121"
+      ]
+    },
+    "D-036": {
+      "summary": "Riley contract extended through May 31 (originally Mar 31)",
+      "shardIds": [
+        "s-people"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0122",
+        "e0127",
+        "e0162"
+      ]
+    },
+    "D-037": {
+      "summary": "Q2 OKRs: GA launch, 5 paying customers by end of June, 99.5% sandbox uptime",
+      "shardIds": [
+        "s-meta"
+      ],
+      "phase": "P5",
+      "eventIds": [
+        "e0116",
+        "e0123"
+      ]
+    },
+    "D-038": {
+      "summary": "Apr 18 sandbox webhook storm: ~18,000 webhook calls in 4 minutes during ChairSync load test",
+      "shardIds": [
+        "s-incidents",
+        "s-customers"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0131",
+        "e0132",
+        "e0133",
+        "e0136"
+      ]
+    },
+    "D-039": {
+      "summary": "D-014 amended: per-tenant retry budget 5/min; global circuit breaker at 1k/sec",
+      "shardIds": [
+        "s-architecture",
+        "s-incidents"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0134",
+        "e0135",
+        "e0136",
+        "e0138"
+      ]
+    },
+    "D-040": {
+      "summary": "D-038 postmortem surfaces lack of synthetic load testing in CI; added to Q2 backlog",
+      "shardIds": [
+        "s-incidents",
+        "s-meta"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0133",
+        "e0137"
+      ]
+    },
+    "D-041": {
+      "summary": "Launch checklist locked Apr 22; 23 items, owners assigned, daily standups Mon-Fri until Apr 29",
+      "shardIds": [
+        "s-product",
+        "s-meta"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0139",
+        "e0153",
+        "e0155"
+      ]
+    },
+    "D-042": {
+      "summary": "ChairSync agrees to be launch-day reference customer; quote drafted with their CTO",
+      "shardIds": [
+        "s-customers",
+        "s-product"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0138",
+        "e0140",
+        "e0160"
+      ]
+    },
+    "D-043": {
+      "summary": "Final security review by Nico Apr 24; no blockers; 90-day API token rotation cadence post-launch",
+      "shardIds": [
+        "s-compliance"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0142",
+        "e0158"
+      ]
+    },
+    "D-044": {
+      "summary": "Q2 board update: $98K April burn (D-024 remediation); runway revised to 26 months",
+      "shardIds": [
+        "s-finance"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0141",
+        "e0143",
+        "e0157"
+      ]
+    },
+    "D-045": {
+      "summary": "Final pre-launch retro Apr 26: Sarah credits scope discipline to D-005; Jordan flags burnout",
+      "shardIds": [
+        "s-meta",
+        "s-people"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0144",
+        "e0145"
+      ]
+    },
+    "D-046": {
+      "summary": "Decision NOT to run prod load test before launch; Devon dissented and dissent logged",
+      "shardIds": [
+        "s-architecture",
+        "s-meta"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0144",
+        "e0146",
+        "e0163"
+      ]
+    },
+    "D-047": {
+      "summary": "Public docs site goes live Apr 28: placeholder + API reference; full guides post-launch",
+      "shardIds": [
+        "s-product"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0147",
+        "e0152"
+      ]
+    },
+    "D-048": {
+      "summary": "Public-launch announcement copy locked Apr 27; Alex final sign-off; Marcus reviewed",
+      "shardIds": [
+        "s-meta",
+        "s-product"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0148",
+        "e0156"
+      ]
+    },
+    "D-049": {
+      "summary": "Open second engineer req post-launch; defer specific person; plan to interview May",
+      "shardIds": [
+        "s-people"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0144",
+        "e0145",
+        "e0151"
+      ]
+    },
+    "D-050": {
+      "summary": "Add OpenTelemetry spans on every API endpoint as last-mile change before launch",
+      "shardIds": [
+        "s-architecture"
+      ],
+      "phase": "P6",
+      "eventIds": [
+        "e0149",
+        "e0150",
+        "e0161"
+      ]
+    }
+  }
+}

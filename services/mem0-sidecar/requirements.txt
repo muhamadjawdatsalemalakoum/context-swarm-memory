@@ -1,0 +1,18 @@
+# Mem0 sidecar deps. Install into a dedicated venv:
+#   python -m venv .venv-mem0
+#   .venv-mem0\Scripts\activate    (Windows)
+#   source .venv-mem0/bin/activate  (Linux/macOS)
+#   pip install -r services/mem0-sidecar/requirements.txt
+#
+# Then start the sidecar via:
+#   python services/mem0-sidecar/main.py
+#
+# Or use the launcher: npm run sidecars:start mem0
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0
+mem0ai>=0.1.0
+# qdrant-client is required by mem0's default in-process vector store
+qdrant-client>=1.7.0
+# OpenAI client (Mem0 uses it under the hood when llm.provider="openai")
+openai>=1.10.0
