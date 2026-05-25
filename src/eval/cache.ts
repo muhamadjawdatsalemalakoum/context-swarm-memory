@@ -35,6 +35,8 @@ export interface CacheKeyInput {
    *  that don't disable thinking. New runs with `disableThinking: true` get a
    *  distinct key to avoid silently serving old reasoning-laden responses. */
   disableThinking?: boolean;
+  /** OpenAI-compatible reasoning effort, when the provider exposes it. */
+  reasoningEffort?: string;
 }
 
 export interface CacheEntry {
@@ -66,6 +68,9 @@ export function computeCacheKey(input: CacheKeyInput): string {
   // they don't silently serve old reasoning-laden responses.
   if (input.disableThinking) {
     normalised.disableThinking = true;
+  }
+  if (input.reasoningEffort) {
+    normalised.reasoningEffort = input.reasoningEffort;
   }
   return createHash("sha256")
     .update(stableStringify(normalised, 0))

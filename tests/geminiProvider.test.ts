@@ -22,7 +22,7 @@ describe("GeminiProvider", () => {
     let apiKeyHeader = "";
     const provider = new GeminiProvider({
       apiKey: "secret-key",
-      defaultModel: "gemini-test",
+      defaultModel: GEMINI_DEFAULT_MODEL,
       fetchImpl: async (input, init) => {
         url = String(input);
         body = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -45,13 +45,14 @@ describe("GeminiProvider", () => {
       temperature: 0,
     });
 
-    expect(url).toBe(`${GEMINI_DEFAULT_BASE_URL}/models/gemini-test:generateContent`);
+    expect(url).toBe(`${GEMINI_DEFAULT_BASE_URL}/models/${GEMINI_DEFAULT_MODEL}:generateContent`);
     expect(apiKeyHeader).toBe("secret-key");
     expect(body).toMatchObject({
       systemInstruction: { parts: [{ text: "Return JSON only." }] },
       generationConfig: {
         temperature: 0,
         maxOutputTokens: 64,
+        thinkingConfig: { thinkingLevel: "low" },
         responseMimeType: "application/json",
       },
     });

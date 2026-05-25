@@ -189,23 +189,31 @@ async function handleChatCompletions(
     return;
   }
 
+  const upstreamBody = normaliseUpstreamBody(body, ctx.upstreamBaseURL);
+  const upstreamBodyText = JSON.stringify(upstreamBody);
+
   // Build the CacheKeyInput. Map OpenAI-compat fields to our internal shape.
-  const systemMsg = body.messages?.find((m) => m.role === "system")?.content;
-  const userMsg = body.messages?.find((m) => m.role === "user")?.content;
+  const systemMsg = upstreamBody.messages?.find((m) => m.role === "system")?.content;
+  const userMsg = upstreamBody.messages?.find((m) => m.role === "user")?.content;
   const promptText = typeof userMsg === "string" ? userMsg : "";
   const systemText = typeof systemMsg === "string" ? systemMsg : undefined;
+  const reasoningEffort =
+    typeof upstreamBody.reasoning_effort === "string"
+      ? upstreamBody.reasoning_effort
+      : undefined;
 
   const cacheInput: CacheKeyInput = {
-    model: body.model,
+    model: upstreamBody.model,
     prompt: promptText,
     system: systemText,
-    temperature: typeof body.temperature === "number" ? body.temperature : 0,
-    seed: typeof body.seed === "number" ? body.seed : undefined,
-    maxOutputTokens: typeof body.max_tokens === "number" ? body.max_tokens : 0,
+    temperature: typeof upstreamBody.temperature === "number" ? upstreamBody.temperature : 0,
+    seed: typeof upstreamBody.seed === "number" ? upstreamBody.seed : undefined,
+    maxOutputTokens: typeof upstreamBody.max_tokens === "number" ? upstreamBody.max_tokens : 0,
     // Honor `think: false` so sidecar runs with thinking-off don't collide
     // with thinking-on cache entries. See `cache.ts` for the conditional-key
     // strategy.
-    disableThinking: body.think === false ? true : undefined,
+    disableThinking: upstreamBody.think === false ? true : undefined,
+    reasoningEffort,
   };
 
   // Cache hit path.
@@ -213,9 +221,9 @@ async function handleChatCompletions(
   if (hit) {
     ctx.stats.hits++;
     res.setHeader("x-cache-hit", "true");
-    res.setHeader("x-cache-bytes-in", String(bodyText.length));
+    res.setHeader("x-cache-bytes-in", String(upstreamBodyText.length));
     res.setHeader("x-cache-bytes-out", String(hit.response.length));
-    sendJson(res, 200, openAIWrap(body.model, hit.response));
+    sendJson(res, 200, openAIWrap(upstreamBody.model, hit.response));
     return;
   }
 
@@ -223,7 +231,7 @@ async function handleChatCompletions(
 
   // Cache miss — forward to upstream.
   const upstreamUrl = `${ctx.upstreamBaseURL}/chat/completions`;
-  const upstreamResponse = await forward(upstreamUrl, bodyText, ctx);
+  const upstreamResponse = await forward(upstreamUrl, upstreamBodyText, ctx);
 
   // Parse response to extract the content for caching.
   let upstreamJson: unknown;
@@ -232,7 +240,7 @@ async function handleChatCompletions(
   } catch {
     // Don't cache unparseable responses. Stream the bytes through unchanged.
     res.setHeader("x-cache-hit", "false");
-    res.setHeader("x-cache-bytes-in", String(bodyText.length));
+    res.setHeader("x-cache-bytes-in", String(upstreamBodyText.length));
     res.setHeader("x-cache-bytes-out", String(upstreamResponse.body.length));
     res.statusCode = upstreamResponse.status;
     for (const [k, v] of Object.entries(upstreamResponse.headers)) {
@@ -264,7 +272,7 @@ async function handleChatCompletions(
   }
 
   res.setHeader("x-cache-hit", "false");
-  res.setHeader("x-cache-bytes-in", String(bodyText.length));
+  res.setHeader("x-cache-bytes-in", String(upstreamBodyText.length));
   res.setHeader("x-cache-bytes-out", String(upstreamResponse.body.length));
   sendJson(res, upstreamResponse.status, upstreamJson);
 }
@@ -403,6 +411,21 @@ function openAIWrap(model: string, content: string): unknown {
       total_tokens: 0,
     },
   };
+}
+
+function normaliseUpstreamBody(
+  body: ChatCompletionsRequest,
+  upstreamBaseURL: string,
+): ChatCompletionsRequest {
+  if (!/generativelanguage\.googleapis\.com/i.test(upstreamBaseURL)) return body;
+  if (typeof body.reasoning_effort === "string") return body;
+  const effort = (process.env.CSM_GEMINI_REASONING_EFFORT ?? "low").trim();
+  if (!effort || effort.toLowerCase() === "default") return body;
+  if (body.model.toLowerCase().startsWith("gemini-3") && effort.toLowerCase() === "none") return body;
+  // Gemini's OpenAI-compatible endpoint accepts `reasoning_effort`; injecting a
+  // low setting keeps sidecar extraction deterministic while avoiding the
+  // quality loss seen with an overly tiny reasoning budget.
+  return { ...body, reasoning_effort: effort };
 }
 
 function extractContent(json: unknown): string | null {

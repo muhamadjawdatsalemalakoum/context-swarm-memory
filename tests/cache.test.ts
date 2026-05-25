@@ -45,6 +45,7 @@ describe("computeCacheKey", () => {
     expect(computeCacheKey({ ...sampleInput, seed: 1 })).not.toEqual(base);
     expect(computeCacheKey({ ...sampleInput, maxOutputTokens: 512 })).not.toEqual(base);
     expect(computeCacheKey({ ...sampleInput, system: undefined })).not.toEqual(base);
+    expect(computeCacheKey({ ...sampleInput, reasoningEffort: "low" })).not.toEqual(base);
   });
 
   it("is insensitive to field ordering (stableStringify is sorted)", () => {

@@ -43,6 +43,24 @@ The compose file expects the LLM-cache proxy on the host at port `8090` and
 Ollama embeddings on the host at port `11434`. On Linux, `host.docker.internal`
 may need an explicit Docker host gateway entry depending on your Docker version.
 
+## Gemini LLM path
+
+To use Gemini 3.5 Flash for sidecar LLM calls, keep the sidecars pointed at the
+local proxy and point the proxy upstream at Gemini's OpenAI-compatible endpoint:
+
+```bash
+export CSM_OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+export OPENAI_API_KEY=$GEMINI_API_KEY
+export CSM_GEMINI_REASONING_EFFORT=low
+npm run proxy:start
+```
+
+Then set the sidecar LLM model to `gemini-3.5-flash` (for example,
+`LIGHTRAG_LLM_MODEL=gemini-3.5-flash`). Embeddings are configured separately:
+LightRAG and Mem0 still need an OpenAI-compatible embeddings endpoint and model
+such as local Ollama `nomic-embed-text`; HippoRAG defaults to a local
+sentence-transformers embedding model.
+
 ## Known limits
 
 Mem0 and HippoRAG are kept as blocked-local findings in the public report until
