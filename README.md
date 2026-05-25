@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-199%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-200%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -54,6 +54,24 @@ flowchart TD
 - **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
 - **Indexing is LLM-free.** Routing is a keyword/tag scorer, so index cost stays ~0 regardless of corpus size — which is *why* CSM scales where LLM-indexed systems (LightRAG, Mem0, HippoRAG) cannot on consumer hardware.
 
+## Training direction
+
+CSM is an inference-time memory layer today, not a model-training method. But the
+same traces can become useful lower-level training data for models that need
+better memory behavior:
+
+- router traces teach **what to look at** before spending context
+- probe accept/reject traces teach **which memories are relevant**
+- recall packets and cited answers teach **grounded compression**
+- Committer decisions teach **when memory should change, and when it must not**
+
+The long-term research direction is to distill those traces into smaller memory
+controllers, retrieval heads, adapters, or reinforcement-learning policies so a
+model learns memory discipline closer to the runtime/weights boundary. That
+would not make the model magically store everything in weights; it would teach
+the model to use external memory with sharper routing, citations, and explicit
+write boundaries while using less raw context.
+
 ## Tech stack
 
 CSM is intentionally small and inspectable. The core system is TypeScript, local-file backed, and provider-agnostic.
@@ -77,7 +95,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 199 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 200 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
@@ -102,7 +120,7 @@ What was used for the headline benchmark claims:
 
 ```bash
 npm install
-npm test                       # 199 tests, no API keys (deterministic MockProvider)
+npm test                       # 200 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
