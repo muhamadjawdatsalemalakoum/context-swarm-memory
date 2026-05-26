@@ -91,6 +91,33 @@ Use `--category information_extraction` or another BEAM category to target a
 specific memory ability. Increase `--query-limit` only after the one-query smoke
 has saved a clean AMB result JSON.
 
+## Token Accounting Audit
+
+AMB's result JSON reports `context_tokens`, which is the retrieved context passed
+to the AMB answer model. That is the right apples-to-apples context-window
+number, but it is not the whole CSM cost because CSM also spends tokens inside
+its own probe/recall/synthesis pipeline before AMB answers.
+
+Set `CSM_AMB_TELEMETRY_JSONL` during BEAM runs to save a per-query CSM token
+ledger:
+
+```bash
+export CSM_AMB_TELEMETRY_JSONL="$CSM_REPO_DIR/data/eval/runs/amb-beam-100k-full-v3/csm-token-telemetry.jsonl"
+```
+
+Each row includes:
+
+- CSM internal input/output/total tokens across all LLM calls the bridge made,
+- the split between CSM pipeline tokens and the internal CSM answer call that
+  AMB discards,
+- probe/recall counts, returned event counts, evidence-capsule flags, and bridge
+  wall-clock latency,
+- a query hash and query text for joining back to AMB's saved per-query rows.
+
+Final BEAM reports should show both numbers: AMB `context_tokens` for the answer
+model's visible context, and CSM internal token totals from this JSONL sidecar.
+Otherwise CSM would look cheaper than it really is.
+
 ## Evidence Rules
 
 Do not use the smoke result as a README SOTA claim. A publishable BEAM claim

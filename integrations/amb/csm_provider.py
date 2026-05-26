@@ -12,6 +12,7 @@ import os
 import subprocess
 import time
 import uuid
+from hashlib import sha256
 from pathlib import Path
 
 from ..models import Document
@@ -130,4 +131,63 @@ class CSMMemoryProvider(MemoryProvider):
         ]
         raw = payload.get("raw_response") or {}
         raw["bridge_wall_time_ms"] = round((time.perf_counter() - started) * 1000, 1)
+        self._append_telemetry(query, return_k, user_id, docs, raw)
         return docs, raw
+
+    def _append_telemetry(
+        self,
+        query: str,
+        return_k: int,
+        user_id: str | None,
+        docs: list[Document],
+        raw: dict,
+    ) -> None:
+        telemetry_path = os.environ.get("CSM_AMB_TELEMETRY_JSONL")
+        if not telemetry_path:
+            return
+
+        meta = raw.get("meta") if isinstance(raw.get("meta"), dict) else {}
+        record = {
+            "provider": "context-swarm-memory",
+            "query_sha256": sha256(query.encode("utf-8")).hexdigest(),
+            "query": query,
+            "user_id": user_id,
+            "return_k": return_k,
+            "docs_returned": len(docs),
+            "doc_ids": [doc.id for doc in docs],
+            "returned_doc_chars": sum(len(doc.content or "") for doc in docs),
+            "bridge_wall_time_ms": raw.get("bridge_wall_time_ms"),
+            # `inputTokens`/`outputTokens` come from CsmBaseline and include
+            # every LLM call CSM actually made in the bridge: probes, recalls,
+            # synthesis, plus the internal CSM answer call that AMB discards.
+            "csm_internal_input_tokens": raw.get("inputTokens"),
+            "csm_internal_output_tokens": raw.get("outputTokens"),
+            "csm_internal_total_tokens": (
+                _num(raw.get("inputTokens")) + _num(raw.get("outputTokens"))
+            ),
+            "csm_pipeline_input_tokens": meta.get("pipelineInputTokens"),
+            "csm_pipeline_output_tokens": meta.get("pipelineOutputTokens"),
+            "csm_pipeline_latency_ms": meta.get("pipelineLatencyMs"),
+            "csm_internal_answer_input_tokens": meta.get("finalCallInputTokens"),
+            "csm_internal_answer_output_tokens": meta.get("finalCallOutputTokens"),
+            "csm_internal_answer_latency_ms": meta.get("finalCallLatencyMs"),
+            "csm_probe_count": meta.get("probeCount"),
+            "csm_recall_count": meta.get("recallCount"),
+            "csm_context_tokens_before_amb_capsule": meta.get("contextTokens"),
+            "csm_packet_tokens": meta.get("packetTokens"),
+            "csm_retrieved_event_count": len(meta.get("csmRetrievedEventIds") or []),
+            "csm_packed_event_count": len(meta.get("packedEventIds") or []),
+            "csm_returned_event_count": len(raw.get("returnedEventIds") or []),
+            "csm_evidence_capsule": raw.get("evidenceCapsule"),
+            "amb_intent": raw.get("ambIntent"),
+        }
+
+        path = Path(telemetry_path).expanduser()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True))
+            fh.write("\n")
+
+
+def _num(value) -> float:
+    return value if isinstance(value, (int, float)) else 0
