@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
 import type { BenchEvent, Corpus } from "../src/eval/corpus.js";
@@ -175,7 +175,15 @@ const mcqQuery: McqQuery = {
 };
 
 describe("Cost-accounting contract — CsmBaseline", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("top-level inputTokens === meta.pipelineInputTokens + meta.finalCallInputTokens", async () => {
+    vi.stubEnv("CSM_EMBED_FLOOR_K", "0");
+    vi.stubEnv("CSM_SHARD_EXPAND_K", "0");
+    vi.stubEnv("CSM_ENTITY_BRIDGE_K", "0");
+
     const provider = new RecordingStubProvider();
     const csm = new CsmBaseline({ provider });
     const corpus = buildTinyCorpus();

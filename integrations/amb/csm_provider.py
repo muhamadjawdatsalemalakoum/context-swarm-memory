@@ -73,9 +73,10 @@ class CSMMemoryProvider(MemoryProvider):
             raise RuntimeError("CSMMemoryProvider.prepare() must run before retrieve().")
 
         request_path = self._store_dir / f"request-{uuid.uuid4().hex}.json"
+        return_k = int(os.environ.get("CSM_AMB_RETURN_K", str(k)))
         request_path.write_text(json.dumps({
             "query": query,
-            "k": k,
+            "k": return_k,
             "user_id": user_id,
             "query_timestamp": query_timestamp,
         }), encoding="utf-8")
