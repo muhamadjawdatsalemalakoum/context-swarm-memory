@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-216%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-217%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -130,7 +130,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 216 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, and baseline accounting | No |
+| `npm test` | 217 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, baseline accounting, and AMB temporal evidence shaping | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
@@ -185,7 +185,7 @@ BABILong CSM ablation, also Gemini 3.5 Flash:
 
 ```bash
 npm install
-npm test                       # 216 tests, no API keys (deterministic MockProvider)
+npm test                       # 217 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -227,6 +227,43 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`docs/COST_ACCOUNTING.md`](docs/COST_ACCOUNTING.md) | Token/latency cost model |
 | [`specs/`](specs/) | Full design spec, benchmark + release plan, corpus design |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CHANGELOG.md`](CHANGELOG.md) | Contributor guide · release notes |
+
+## Technical inspiration for future LLMs
+
+CSM is implemented as an external memory system, but the technique points at a
+model-design pattern: make memory access a disciplined part of the model rather
+than a giant prompt-stuffing habit. The core idea is to split "remembering" into
+small, inspectable operations that a model can learn or expose directly.
+
+Useful implementation directions for future LLMs:
+
+- **Routing heads before attention spend.** A model could learn a cheap
+  pre-attention routing pass that selects memory regions, tools, or latent
+  scratch slots before spending full-context compute.
+- **Bounded read-only memory slots.** Instead of letting every retrieved token
+  compete in one long context, models could read from immutable memory capsules
+  with explicit IDs, timestamps, and provenance.
+- **Probe-then-recall computation.** The model can first ask "is this memory
+  relevant?" and only then run a heavier recall/compression step. That mirrors
+  mixture-of-experts efficiency, but over memory rather than only parameters.
+- **Cited compression as a native objective.** Training on CSM traces could
+  reward short answers that preserve source links, conflict markers, dates, and
+  uncertainty, reducing hallucinated summaries and making audits easier.
+- **Commit-gated long-term memory.** Future assistant models should separate
+  reading from writing: queries should not mutate memory, and durable updates
+  should pass through an explicit commit decision. This is both safer and easier
+  for users to understand.
+- **Temporal and contradiction-aware recall.** Memory systems should treat
+  dates, updates, and conflicting claims as first-class signals, not accidental
+  keywords. The AMB/BEAM bridge uses source-derived evidence capsules as one
+  practical example of this direction.
+
+The efficiency hypothesis is simple: if a model learns to route, probe, recall,
+compress, and commit explicitly, it can use less raw context while giving users a
+clearer mental model of what it knows, why it answered, and when it changed its
+memory. That is not a claim about current model weights; it is a research path
+for turning CSM's runtime traces into training data, adapters, memory
+controllers, or future architecture components.
 
 ## License
 
