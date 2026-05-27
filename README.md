@@ -65,6 +65,20 @@ tokens per query across shard probe/recall/synthesis. Full method, category
 deltas, token accounting, no-gold audit, and artifact hashes:
 [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
 
+### BEAM 100K Q&A
+
+**Does CSM beat Hindsight on BEAM 100K?** Yes, in the committed full local
+accepted-artifact comparison: 0.757573 and 342/400 correct rows for CSM versus
+0.733658 and 326/400 for Hindsight.
+
+**Is this an official leaderboard claim?** No. The result is public and
+artifact-backed, but the repo does not call it official SOTA until independent
+replication or official chart acceptance exists.
+
+**Did CSM use gold answers or hardcoded benchmark logic?** No. The BEAM report
+includes the no-gold audit: CSM retrieval does not use gold answers, rubrics,
+query IDs, or hardcoded benchmark answers.
+
 ## BABILong external status
 
 BABILong is useful external evidence, but its public Space leaderboard is a

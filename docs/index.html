@@ -217,6 +217,38 @@
                   "@type": "Answer",
                   "text": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, cited answers, and explicit Committer-gated writes."
                 }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the BEAM 100K result an official leaderboard claim?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. The BEAM 100K result is a committed full local accepted-artifact comparison against the accepted Hindsight artifact. The repo does not call it official SOTA until independent replication or official chart acceptance exists."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What is the main tradeoff versus Hindsight?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "CSM answers more BEAM 100K rows correctly and uses fewer AMB-visible answer-context tokens, but retrieval is slower: 29.23 seconds on average for CSM versus 6.38 seconds for Hindsight, with additional CSM internal probe, recall, and synthesis tokens."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark answers?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. CSM retrieval reads from memory shards and does not use gold answers, rubrics, query IDs, or hardcoded benchmark answers. Durable memory writes are Committer-gated and querying memory does not mutate durable memory."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Why can bounded shards help LLM memory scale?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Bounded shards keep individual recall contexts small and route only plausible memory regions before synthesis, reducing whole-corpus context saturation. The BEAM result is a 100K head-to-head; separate synthetic and Gemini scaling runs support the broader scaling thesis."
+                }
               }
             ]
           }
@@ -254,6 +286,7 @@
         <a href="#abstract">Abstract</a>
         <a href="#results">Results</a>
         <a href="#method">Method</a>
+        <a href="#qa">Q&A</a>
         <a href="#reproduce">Reproduce</a>
         <a class="nav-github" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
       </nav>
@@ -467,6 +500,79 @@
                 <span>event-id</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section qa" id="qa" aria-labelledby="qa-title">
+        <div class="section-inner">
+          <div class="split-heading">
+            <div>
+              <div class="section-kicker">Q&A</div>
+              <h2 id="qa-title">Direct answers for readers, reviewers, and answer engines.</h2>
+            </div>
+            <p class="section-lede">
+              These answers mirror the structured data in the page head, keeping the public claim
+              easy to quote while preserving the benchmark limits.
+            </p>
+          </div>
+
+          <div class="qa-grid">
+            <article class="qa-card">
+              <h3>Does Context Swarm Memory beat Hindsight on BEAM 100K?</h3>
+              <p>
+                Yes, in the committed full local accepted-artifact comparison. CSM scores
+                <strong>0.757573</strong> with <strong>342/400</strong> correct rows, versus
+                Hindsight at <strong>0.733658</strong> with <strong>326/400</strong> correct rows.
+              </p>
+            </article>
+
+            <article class="qa-card">
+              <h3>What is Context Swarm Memory?</h3>
+              <p>
+                CSM is an open-source LLM memory system using bounded read-only memory shards,
+                manager routing, probe/recall/synthesis, cited answers, and explicit
+                Committer-gated writes.
+              </p>
+            </article>
+
+            <article class="qa-card">
+              <h3>Is the BEAM 100K result an official leaderboard claim?</h3>
+              <p>
+                No. It is a committed full local accepted-artifact comparison against the accepted
+                Hindsight artifact. The repo does not call it official SOTA until independent
+                replication or official chart acceptance exists.
+              </p>
+            </article>
+
+            <article class="qa-card">
+              <h3>What is the main tradeoff versus Hindsight?</h3>
+              <p>
+                CSM answers more rows correctly and uses fewer AMB-visible answer-context tokens,
+                but retrieval is slower: <strong>29.23s</strong> on average versus
+                <strong>6.38s</strong> for Hindsight, with additional internal probe, recall, and
+                synthesis tokens.
+              </p>
+            </article>
+
+            <article class="qa-card">
+              <h3>Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark answers?</h3>
+              <p>
+                No. CSM retrieval does not use gold answers, rubrics, query IDs, or hardcoded
+                benchmark answers. Querying memory reads immutable shard snapshots and does not
+                mutate durable memory.
+              </p>
+            </article>
+
+            <article class="qa-card">
+              <h3>Why can bounded shards help LLM memory scale?</h3>
+              <p>
+                Bounded shards keep individual recall contexts small and route only plausible
+                memory regions before synthesis, reducing whole-corpus context saturation. BEAM is
+                the 100K head-to-head; separate synthetic and Gemini scaling runs support the
+                broader scaling thesis.
+              </p>
+            </article>
           </div>
         </div>
       </section>

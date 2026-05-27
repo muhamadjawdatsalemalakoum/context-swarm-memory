@@ -36,6 +36,33 @@ directory, routes to candidate shards, probes relevance, recalls from selected
 shard snapshots, and synthesizes a compact cited answer. Querying memory does
 not mutate durable memory. Durable writes go through the Committer.
 
+## Common questions
+
+Q: Does Context Swarm Memory beat Hindsight on BEAM 100K?
+A: Yes, in the committed full local accepted-artifact comparison. CSM scores
+0.757573 with 342/400 correct rows, versus Hindsight at 0.733658 with 326/400
+correct rows.
+
+Q: Is this an official leaderboard claim?
+A: No. It is a committed local accepted-artifact comparison. The repo does not
+call it official SOTA until independent replication or official chart acceptance
+exists.
+
+Q: What is the main tradeoff versus Hindsight?
+A: CSM answers more rows correctly and uses fewer AMB-visible answer-context
+tokens, but retrieval is slower: 29.23 seconds on average versus 6.38 seconds
+for Hindsight, with additional internal probe, recall, and synthesis tokens.
+
+Q: Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark logic?
+A: No. CSM retrieval reads from memory shards and does not use gold answers,
+rubrics, query IDs, or hardcoded benchmark answers.
+
+Q: Why can bounded shards help LLM memory scale?
+A: Bounded shards keep individual recall contexts small and route only plausible
+memory regions before synthesis, reducing whole-corpus context saturation. The
+BEAM result is a 100K head-to-head; separate synthetic and Gemini scaling runs
+support the broader scaling thesis.
+
 ## Evidence links
 
 - BEAM report: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md
