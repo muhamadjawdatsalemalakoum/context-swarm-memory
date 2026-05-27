@@ -13,6 +13,12 @@
 
 CSM is an R&D memory system where bounded LLM-context **memory shards** act as read-only witnesses. A Memory Manager routes a query to candidate shards, probes them cheaply, recalls from only the useful ones, and synthesizes a compact, **cited** answer. Durable memory changes only through an explicit Committer protocol. It is an alternative to / complement of classic RAG, built for narrative, evolving project memory.
 
+> Scope note: the "edge grows as it scales" thesis is supported by the repo's
+> synthetic and Gemini scaling runs, where CSM stays stable as corpus size grows
+> while RAG/long-context baselines degrade. The completed BEAM result is a full
+> 100K head-to-head against Hindsight, not a multi-scale BEAM study, so this repo
+> does not yet claim that the CSM-vs-Hindsight gap widens across BEAM scales.
+
 ---
 
 ## The headline
