@@ -766,6 +766,36 @@ figcaption {
   color: var(--primary-soft);
 }
 
+.qa {
+  background: rgba(255, 253, 246, 0.68);
+}
+
+.qa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.qa-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(18px, 3vw, 24px);
+  box-shadow: var(--shadow-sm);
+}
+
+.qa-card h3 {
+  margin: 0 0 10px;
+  color: var(--primary-deep);
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.18;
+}
+
+.qa-card p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 .invariant-list {
   display: grid;
   gap: 14px;
@@ -877,6 +907,7 @@ figcaption {
   .split-heading,
   .paper-columns,
   .geo-summary,
+  .qa-grid,
   .chart-grid {
     grid-template-columns: 1fr;
   }
