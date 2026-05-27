@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Context Swarm Memory | CSM</title>
+    <meta
+      name="description"
+      content="Context Swarm Memory is an open-source LLM memory layer with bounded read-only shards, cited recall, Committer-gated writes, and BEAM 100K evidence against Hindsight."
+    >
+    <link rel="canonical" href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Context Swarm Memory">
+    <meta
+      property="og:description"
+      content="A scientific, evidence-backed LLM memory layer: bounded shards, cited recall, commit-only writes, and BEAM 100K results."
+    >
+    <meta
+      property="og:image"
+      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/docs/assets/context-swarm-memory-cover.png"
+    >
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Context Swarm Memory">
+    <meta
+      name="twitter:description"
+      content="Bounded read-only shards, cited recall, Committer-gated writes, and BEAM 100K evidence against Hindsight."
+    >
+    <meta
+      name="twitter:image"
+      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/docs/assets/context-swarm-memory-cover.png"
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="docs/site.css">
+  </head>
+  <body class="paper-page">
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="Context Swarm Memory home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </span>
+        <span>
+          <strong>CSM</strong>
+          <small>Context Swarm Memory</small>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+        <span class="nav-toggle-line"></span>
+        <span class="nav-toggle-line"></span>
+        <span class="nav-toggle-line"></span>
+        <span class="sr-only">Menu</span>
+      </button>
+      <nav class="site-nav" id="site-nav" data-nav>
+        <a href="#abstract">Abstract</a>
+        <a href="#results">Results</a>
+        <a href="#method">Method</a>
+        <a href="#reproduce">Reproduce</a>
+        <a class="nav-github" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="content">
+      <section class="hero paper-hero" id="top" aria-labelledby="hero-title">
+        <div class="paper-rule" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Open-source memory infrastructure</p>
+          <h1 id="hero-title">Context Swarm Memory</h1>
+          <p class="hero-subtitle">Bounded read-only shards for cited long-term AI memory.</p>
+          <p class="hero-lede">Memory whose edge grows as it scales.</p>
+          <p class="hero-copy">
+            CSM routes a query through immutable memory shards, probes for relevant evidence,
+            recalls only from useful snapshots, and synthesizes a compact cited packet. Durable
+            memory changes only through explicit Committer-gated writes.
+          </p>
+          <div class="paper-meta" aria-label="Benchmark metadata">
+            <span>BEAM 100K</span>
+            <span>Gemini 3.5 Flash scaling</span>
+            <span>218 tests</span>
+            <span>MIT / CC0 corpus</span>
+          </div>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">
+              View repository
+            </a>
+            <a class="button button-secondary" href="#results">Read evidence</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section abstract" id="abstract" aria-labelledby="abstract-title">
+        <div class="section-inner paper-columns">
+          <div>
+            <div class="section-kicker">Abstract</div>
+            <h2 id="abstract-title">A memory layer engineered for auditability.</h2>
+          </div>
+          <div class="abstract-copy">
+            <p>
+              CSM is an R&D memory system for long-running agents. It treats memory as bounded,
+              inspectable shards rather than one ever-growing prompt. The read path is
+              branch-and-discard; the write path is Committer-only.
+            </p>
+            <p class="scope-note">
+              Scope note: the scaling thesis is supported by the synthetic and Gemini scaling
+              runs, where CSM stays stable as corpus size grows while RAG and long-context
+              baselines degrade. The completed BEAM result is a full 100K Hindsight head-to-head,
+              not yet a multi-scale BEAM study.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section evidence" id="results" aria-labelledby="results-title">
+        <div class="section-inner">
+          <div class="split-heading">
+            <div>
+              <div class="section-kicker">Results</div>
+              <h2 id="results-title">Measured claims, labeled with their limits.</h2>
+            </div>
+            <p>
+              The public evidence bundle separates the north-star BEAM/Hindsight comparison
+              from synthetic scaling, Gemini cross-model checks, and BABILong diagnostics.
+            </p>
+          </div>
+
+          <div class="metric-strip" aria-label="Benchmark highlights">
+            <div>
+              <strong>0.7576</strong>
+              <span>CSM BEAM 100K score</span>
+            </div>
+            <div>
+              <strong>342</strong>
+              <span>Correct rows out of 400</span>
+            </div>
+            <div>
+              <strong>+16</strong>
+              <span>Correct rows vs Hindsight</span>
+            </div>
+            <div>
+              <strong>38.2%</strong>
+              <span>Fewer answer-visible context tokens</span>
+            </div>
+          </div>
+
+          <div class="result-table" role="table" aria-label="BEAM 100K CSM versus Hindsight">
+            <div role="row">
+              <span role="columnheader">System</span>
+              <span role="columnheader">AMB score</span>
+              <span role="columnheader">Correct</span>
+              <span role="columnheader">Avg answer context</span>
+              <span role="columnheader">Avg retrieval</span>
+            </div>
+            <div role="row">
+              <span role="cell">CSM</span>
+              <span role="cell">0.757573</span>
+              <span role="cell">342 / 400</span>
+              <span role="cell">10.9K tokens</span>
+              <span role="cell">29.23s</span>
+            </div>
+            <div role="row">
+              <span role="cell">Hindsight</span>
+              <span role="cell">0.733658</span>
+              <span role="cell">326 / 400</span>
+              <span role="cell">17.7K tokens</span>
+              <span role="cell">6.38s</span>
+            </div>
+          </div>
+
+          <div class="chart-grid paper-figures">
+            <figure>
+              <img src="docs/assets/beam-100k-csm-vs-hindsight.svg" alt="BEAM 100K comparison of CSM and Hindsight">
+              <figcaption>Figure 1. Full BEAM 100K local accepted-artifact comparison.</figcaption>
+            </figure>
+            <figure>
+              <img src="docs/assets/gemini-accuracy-scaling.svg" alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens">
+              <figcaption>Figure 2. Hosted Gemini 3.5 Flash scaling check.</figcaption>
+            </figure>
+            <figure>
+              <img src="docs/assets/gemini-citation-grounding.svg" alt="Gemini 3.5 Flash citation grounding comparison">
+              <figcaption>Figure 3. Citation grounding at the 2M-token Gemini check.</figcaption>
+            </figure>
+            <figure>
+              <img src="docs/assets/gemini-babilong-ablation.svg" alt="Gemini 3.5 Flash CSM BABILong entity bridge ablation">
+              <figcaption>Figure 4. BABILong task1/task2 ablation with entity bridge.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section architecture" id="method" aria-labelledby="method-title">
+        <div class="section-inner architecture-grid">
+          <div>
+            <div class="section-kicker">Method</div>
+            <h2 id="method-title">Probe, recall, synthesize, then discard.</h2>
+            <p class="section-lede">
+              CSM spends context only after routing finds plausible shards. Shard snapshots are
+              immutable, LLM providers stay behind a seam, and query-time reads do not mutate
+              durable memory.
+            </p>
+            <ul class="check-list">
+              <li>Memory Manager routes by tags, lexical evidence, and local recall floors.</li>
+              <li>Probe and recall operate on bounded shard context instead of the whole corpus.</li>
+              <li>Committer is the only durable write path.</li>
+            </ul>
+          </div>
+
+          <div class="pipeline" aria-label="CSM query pipeline">
+            <div class="pipeline-row">
+              <span class="diagram-node">Directory</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node">Router</span>
+            </div>
+            <div class="pipeline-row">
+              <span class="diagram-node">Probe</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node">Recall</span>
+            </div>
+            <div class="pipeline-row">
+              <span class="diagram-node">Synthesize</span>
+              <span class="flow-line"></span>
+              <span class="diagram-node strong">Packet</span>
+            </div>
+            <div class="packet">
+              <div class="packet-header">
+                <span>MemoryPacket</span>
+                <span class="packet-dot" aria-hidden="true"></span>
+              </div>
+              <p>Concise answer, cited source IDs, conflict flags, and explicit uncertainty.</p>
+              <div class="source-row">
+                <span>shard</span>
+                <span>snapshot</span>
+                <span>event-id</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section run" id="reproduce" aria-labelledby="reproduce-title">
+        <div class="section-inner run-grid">
+          <div>
+            <div class="section-kicker">Reproducibility</div>
+            <h2 id="reproduce-title">Claims are backed by checked artifacts.</h2>
+            <p class="section-lede">
+              The verifier hashes committed evidence rows and recomputes headline metrics,
+              citation F1, McNemar checks, and the BEAM CSM-vs-Hindsight summary.
+            </p>
+          </div>
+          <pre class="terminal" aria-label="CSM verification commands"><code>npm install
+npm test
+npm run build
+npm run verify:published
+
+npm run amb:patch -- --amb-dir /path/to/agent-memory-benchmark</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <strong>Context Swarm Memory</strong>
+        <span>Scientific R&D prototype for auditable agent memory</span>
+      </div>
+      <nav aria-label="Footer links">
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md">BEAM report</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">Evidence</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md">Methodology</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
+      </nav>
+    </footer>
+
+    <script src="docs/site.js" defer></script>
+  </body>
+</html>
