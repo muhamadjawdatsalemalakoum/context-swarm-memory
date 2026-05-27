@@ -4,6 +4,7 @@
 ![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A522-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
+[![Website](https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg)](https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/)
 
 <p align="center">
   <img src="docs/assets/context-swarm-memory-cover.png" width="960" alt="Context Swarm Memory cover showing memory shards passing through a CSM memory lens into a cited memory packet">
