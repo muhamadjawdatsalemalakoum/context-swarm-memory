@@ -125,7 +125,7 @@ describe("GeminiProvider", () => {
     const provider = new GeminiProvider({
       apiKey: "secret-key",
       defaultModel: GEMINI_DEFAULT_MODEL,
-      maxRetries: 1,
+      maxRetries: 2,
       retryBaseDelayMs: 0,
       fetchImpl: async () => {
         attempts += 1;
@@ -133,6 +133,9 @@ describe("GeminiProvider", () => {
           const err = new Error("This operation was aborted");
           err.name = "AbortError";
           throw err;
+        }
+        if (attempts === 2) {
+          throw new TypeError("fetch failed");
         }
         return new Response(
           JSON.stringify({
@@ -150,7 +153,7 @@ describe("GeminiProvider", () => {
       maxOutputTokens: 16,
     });
 
-    expect(attempts).toBe(2);
+    expect(attempts).toBe(3);
     expect(result.rawText).toBe("ok");
     expect(result.usage.inputTokensEstimate).toBe(4);
   });

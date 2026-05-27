@@ -239,7 +239,7 @@ function isTransientGeminiError(err: unknown): boolean {
   const msg = err.message;
   return (
     /HTTP (408|409|429|500|502|503|504)\b/.test(msg) ||
-    /timed out|overloaded|RESOURCE_EXHAUSTED|ECONNRESET|ETIMEDOUT|UND_ERR/i.test(
+    /timed out|fetch failed|overloaded|RESOURCE_EXHAUSTED|ECONNRESET|ETIMEDOUT|UND_ERR/i.test(
       msg,
     )
   );
