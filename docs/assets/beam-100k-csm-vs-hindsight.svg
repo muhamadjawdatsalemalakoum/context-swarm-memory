@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520" role="img" aria-labelledby="title desc">
+<title id="title">BEAM 100K CSM versus Hindsight</title>
+<desc id="desc">CSM scores 75.8 percent versus Hindsight 73.4 percent on AMB BEAM 100K, with 342 versus 326 correct rows, lower answer context, and higher retrieval latency.</desc>
+<rect width="920" height="520" fill="white"/>
+<text x="40" y="42" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" fill="#111827">BEAM 100K: CSM vs accepted Hindsight</text>
+<text x="40" y="68" font-family="Inter, Arial, sans-serif" font-size="13" fill="#64748b">Agent Memory Benchmark, same answer/judge models. CSM internal retrieval uses Gemini 3.5 Flash.</text>
+<g font-family="Inter, Arial, sans-serif" font-size="13">
+<rect x="690" y="35" width="13" height="13" fill="#0e7c66"/><text x="710" y="47" fill="#111827">CSM</text>
+<rect x="775" y="35" width="13" height="13" fill="#64748b"/><text x="795" y="47" fill="#111827">Hindsight</text>
+</g>
+<line x1="260" y1="142" x2="760" y2="142" stroke="#e5e7eb"/>
+<text x="40" y="110" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#111827">AMB score (%)</text>
+<text x="40" y="131" font-family="Inter, Arial, sans-serif" font-size="12" fill="#64748b">higher is better</text>
+<rect x="260" y="94" width="378.8" height="20" rx="2" fill="#0e7c66"/>
+<rect x="260" y="122" width="366.8" height="20" rx="2" fill="#64748b"/>
+<text x="646.8" y="109" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">75.8</text>
+<text x="634.8" y="137" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">73.4</text>
+<line x1="260" y1="236" x2="760" y2="236" stroke="#e5e7eb"/>
+<text x="40" y="204" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#111827">Correct rows</text>
+<text x="40" y="225" font-family="Inter, Arial, sans-serif" font-size="12" fill="#64748b">higher is better</text>
+<rect x="260" y="188" width="427.5" height="20" rx="2" fill="#0e7c66"/>
+<rect x="260" y="216" width="407.5" height="20" rx="2" fill="#64748b"/>
+<text x="695.5" y="203" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">342</text>
+<text x="675.5" y="231" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">326</text>
+<line x1="260" y1="330" x2="760" y2="330" stroke="#e5e7eb"/>
+<text x="40" y="298" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#111827">Avg answer context tokens</text>
+<text x="40" y="319" font-family="Inter, Arial, sans-serif" font-size="12" fill="#64748b">lower is better</text>
+<rect x="260" y="282" width="272.8" height="20" rx="2" fill="#0e7c66"/>
+<rect x="260" y="310" width="441.4" height="20" rx="2" fill="#64748b"/>
+<text x="540.8" y="297" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">10.9K</text>
+<text x="709.4" y="325" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">17.7K</text>
+<line x1="260" y1="424" x2="760" y2="424" stroke="#e5e7eb"/>
+<text x="40" y="392" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#111827">Avg retrieve latency (s)</text>
+<text x="40" y="413" font-family="Inter, Arial, sans-serif" font-size="12" fill="#64748b">lower is better</text>
+<rect x="260" y="376" width="417.6" height="20" rx="2" fill="#0e7c66"/>
+<rect x="260" y="404" width="91.1" height="20" rx="2" fill="#64748b"/>
+<text x="685.6" y="391" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">29.2</text>
+<text x="359.1" y="419" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111827">6.4</text>
+<text x="40" y="488" font-family="Inter, Arial, sans-serif" font-size="12" fill="#64748b">CSM: 400 rows, score +2.39 pp, +16 correct rows, 38.2% fewer answer-visible context tokens, 4.58x slower retrieval.</text>
+</svg>
