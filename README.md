@@ -185,6 +185,10 @@ Hosted cross-model check, kept separate from the Gemma headline:
 - **Setup:** same 30 questions over 100K, 1M, and 2M corpus sizes, with native model context capped at 160K tokens
 - **2M result:** CSM 28/30 at ~18K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens. The run completed 360/360 cells with zero provider errors.
 
+<p align="center"><img src="docs/assets/gemini-accuracy-scaling.svg" width="680" alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens: CSM stays near 28 to 29 out of 30 while long-context drops to 15 out of 30 at 2M"></p>
+
+<p align="center"><img src="docs/assets/gemini-citation-grounding.svg" width="680" alt="Gemini 3.5 Flash citation grounding at 2M tokens: CSM leads hybrid RAG, vanilla RAG, and long-context on citation F1 while using far less input than long-context"></p>
+
 | Gemini 3.5 Flash system | 100K | 1M | 2M | 2M citation P/R/F1 | 2M mean input |
 |---|---:|---:|---:|---:|---:|
 | CSM | 28/30 | 29/30 | 28/30 | 0.789 / 0.446 / 0.515 | 18.1K |

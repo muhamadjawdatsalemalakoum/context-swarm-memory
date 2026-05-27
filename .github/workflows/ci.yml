@@ -41,5 +41,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify published evidence
+        run: npm run verify:published
+
       - name: Smoke bench (MockProvider — no API keys, no GPU)
         run: npm run bench:smoke
