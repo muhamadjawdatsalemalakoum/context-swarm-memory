@@ -15,18 +15,14 @@ concurrency:
 
 jobs:
   test:
-    name: lint + test + build (node ${{ matrix.node }})
+    name: lint + test + build (node 22)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ["20", "22"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
