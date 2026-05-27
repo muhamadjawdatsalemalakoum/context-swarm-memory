@@ -15,6 +15,8 @@ export interface GeminiProviderOptions {
   defaultModel?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  maxRetries?: number;
+  retryBaseDelayMs?: number;
 }
 
 interface GeminiResponse {
@@ -37,6 +39,8 @@ interface GeminiResponse {
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
+const DEFAULT_MAX_RETRIES = 2;
+const DEFAULT_RETRY_BASE_DELAY_MS = 1_000;
 
 export class GeminiProvider implements LlmProvider {
   readonly name = "gemini";
@@ -45,13 +49,26 @@ export class GeminiProvider implements LlmProvider {
   private readonly defaultModel: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly maxRetries: number;
+  private readonly retryBaseDelayMs: number;
 
   constructor(opts: GeminiProviderOptions = {}) {
     this.apiKey = opts.apiKey ?? process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
     this.baseURL = stripSlash(opts.baseURL ?? process.env.CSM_GEMINI_BASE_URL ?? GEMINI_DEFAULT_BASE_URL);
     this.defaultModel = opts.defaultModel ?? process.env.CSM_GEMINI_MODEL ?? process.env.CSM_MODEL ?? GEMINI_DEFAULT_MODEL;
     this.fetchImpl = opts.fetchImpl ?? globalThis.fetch.bind(globalThis);
-    this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.timeoutMs =
+      opts.timeoutMs ??
+      parsePositiveInt(process.env.CSM_GEMINI_TIMEOUT_MS) ??
+      DEFAULT_TIMEOUT_MS;
+    this.maxRetries =
+      opts.maxRetries ??
+      parseNonNegativeInt(process.env.CSM_GEMINI_MAX_RETRIES) ??
+      DEFAULT_MAX_RETRIES;
+    this.retryBaseDelayMs =
+      opts.retryBaseDelayMs ??
+      parseNonNegativeInt(process.env.CSM_GEMINI_RETRY_BASE_DELAY_MS) ??
+      DEFAULT_RETRY_BASE_DELAY_MS;
   }
 
   async completeJson<T>(input: CompleteJsonInput): Promise<ProviderResponse<T>> {
@@ -104,6 +121,37 @@ export class GeminiProvider implements LlmProvider {
       },
     };
 
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await this.generateOnce<T>({
+          args,
+          body,
+          endpoint,
+          model,
+        });
+      } catch (err) {
+        lastError = err;
+        if (attempt >= this.maxRetries || !isTransientGeminiError(err)) {
+          throw err;
+        }
+        await sleep(retryDelayMs(attempt, this.retryBaseDelayMs));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  private async generateOnce<T>(input: {
+    args: {
+      system: string;
+      prompt: string;
+      maxOutputTokens: number;
+    };
+    body: Record<string, unknown>;
+    endpoint: string;
+    model: string;
+  }): Promise<ProviderResponse<T>> {
+    const { args, body, endpoint, model } = input;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     if (typeof (timer as unknown as { unref?: () => void }).unref === "function") {
@@ -119,6 +167,13 @@ export class GeminiProvider implements LlmProvider {
         body: JSON.stringify(body),
         signal: controller.signal,
       });
+    } catch (err) {
+      if (isAbortLikeError(err)) {
+        throw new Error(
+          `${this.name}: request timed out after ${this.timeoutMs}ms from ${redactedEndpoint(this.baseURL, model)}`,
+        );
+      }
+      throw err;
     } finally {
       clearTimeout(timer);
     }
@@ -160,6 +215,42 @@ export class GeminiProvider implements LlmProvider {
       usage,
     };
   }
+}
+
+function parsePositiveInt(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseNonNegativeInt(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function isAbortLikeError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.name === "AbortError" || /aborted|abort/i.test(err.message);
+}
+
+function isTransientGeminiError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message;
+  return (
+    /HTTP (408|409|429|500|502|503|504)\b/.test(msg) ||
+    /timed out|overloaded|RESOURCE_EXHAUSTED|ECONNRESET|ETIMEDOUT|UND_ERR/i.test(
+      msg,
+    )
+  );
+}
+
+function retryDelayMs(attempt: number, baseDelayMs: number): number {
+  return baseDelayMs * 2 ** attempt;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function stripSlash(s: string): string {

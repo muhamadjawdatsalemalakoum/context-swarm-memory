@@ -120,6 +120,41 @@ describe("GeminiProvider", () => {
     expect(generationConfig.responseJsonSchema?.required).toContain("recommended_main_context");
   });
 
+  it("retries transient Gemini transport failures without changing the prompt", async () => {
+    let attempts = 0;
+    const provider = new GeminiProvider({
+      apiKey: "secret-key",
+      defaultModel: GEMINI_DEFAULT_MODEL,
+      maxRetries: 1,
+      retryBaseDelayMs: 0,
+      fetchImpl: async () => {
+        attempts += 1;
+        if (attempts === 1) {
+          const err = new Error("This operation was aborted");
+          err.name = "AbortError";
+          throw err;
+        }
+        return new Response(
+          JSON.stringify({
+            candidates: [{ content: { parts: [{ text: "ok" }] } }],
+            usageMetadata: { promptTokenCount: 4, candidatesTokenCount: 1 },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      },
+    });
+
+    const result = await provider.completeText({
+      system: "Be brief.",
+      prompt: "ping",
+      maxOutputTokens: 16,
+    });
+
+    expect(attempts).toBe(2);
+    expect(result.rawText).toBe("ok");
+    expect(result.usage.inputTokensEstimate).toBe(4);
+  });
+
   it("redacts the API key in error messages", async () => {
     const provider = new GeminiProvider({
       apiKey: "secret-key",
