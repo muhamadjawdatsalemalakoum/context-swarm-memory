@@ -8,7 +8,7 @@ The harness is cache-first: every prompt sent to Ollama during a bench run is co
 
 ## Prerequisites
 
-- **Node.js ≥ 20** and **npm** (Node 20 is the engine declared in `package.json`).
+- **Node.js >= 22** and **npm** (Node 22 is the supported runtime declared in `package.json`).
 - **PowerShell or bash.** Examples below use PowerShell syntax (`$env:VAR="value"`); bash users substitute `export VAR=value`.
 - **No GPU required for source validation.** `npm test` and `npm run bench:smoke` run on CPU with no API key.
 - **No GPU required for replay once artifacts are present.** `npm run bench:replay -- <runId>` only reads the saved run's `results.jsonl`.

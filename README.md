@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen.svg)
-![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
+![Node](https://img.shields.io/badge/node-%E2%89%A522-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
 <p align="center">
@@ -142,7 +142,7 @@ CSM is intentionally small and inspectable. The core system is TypeScript, local
 
 | Layer | What CSM uses |
 |---|---|
-| Runtime | Node.js 20+, TypeScript, ES modules / NodeNext |
+| Runtime | Node.js 22+, TypeScript, ES modules / NodeNext |
 | CLI | `src/cli/index.ts`, run through `tsx` in development and compiled with `tsc` |
 | Storage | Local JSON / JSONL under `data/`: directory, chronicle, immutable shard snapshots, query-run logs |
 | Validation | Zod schemas for structured LLM JSON outputs and storage-facing data contracts |
@@ -151,7 +151,7 @@ CSM is intentionally small and inspectable. The core system is TypeScript, local
 | Benchmark harness | Programmatic MCQ/free-form scoring, citation precision/recall/F1, bootstrap CIs, exact paired McNemar tests |
 | SOTA sidecars | Python FastAPI sidecars for LightRAG, Mem0, and HippoRAG integration experiments |
 | Site/docs | Static GitHub Pages site in `docs/`, generated charts as checked-in SVG assets |
-| CI | GitHub Actions on Node 20 and 22: install, type-check, test, build, mock smoke benchmark |
+| CI | GitHub Actions on Node 22: install, type-check, test, build, published-evidence verification, mock smoke benchmark |
 
 ## Testing and evidence
 
