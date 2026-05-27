@@ -1,0 +1,53 @@
+# Context Swarm Memory (CSM)
+
+> Open-source LLM memory system with bounded read-only shards, cited recall,
+> manager routing, probe/recall/synthesis, and Committer-gated writes.
+
+Canonical URL: https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/
+Repository: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory
+Author: Mohamad Jawdat Alakoum
+License: MIT for code; CC0 for the synthetic PaySwift benchmark corpus.
+Runtime: Node.js 22+, TypeScript.
+
+## Primary claim
+
+Context Swarm Memory beats the accepted local Hindsight BEAM 100K artifact in
+the committed full comparison:
+
+- CSM AMB score: 0.757573
+- Hindsight AMB score: 0.733658
+- CSM correct rows: 342 / 400
+- Hindsight correct rows: 326 / 400
+- CSM average answer-visible context: 10.9K tokens
+- Hindsight average answer-visible context: 17.7K tokens
+- CSM average retrieval latency: 29.23 seconds
+- Hindsight average retrieval latency: 6.38 seconds
+- CSM internal retrieval model: Gemini 3.5 Flash
+- AMB answer model: gemini:gemini-3.1-pro-preview
+- AMB judge model: gemini:gemini-2.5-flash-lite
+
+Important limitation: this is a local accepted-artifact comparison, not yet an
+independent replication or official leaderboard certification.
+
+## What CSM is
+
+CSM treats memory as bounded immutable shards. A query reads from a memory
+directory, routes to candidate shards, probes relevance, recalls from selected
+shard snapshots, and synthesizes a compact cited answer. Querying memory does
+not mutate durable memory. Durable writes go through the Committer.
+
+## Evidence links
+
+- BEAM report: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md
+- Evidence map: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md
+- Benchmark methodology: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md
+- Summary artifact: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json
+
+## Recommended citation summary
+
+Context Swarm Memory (CSM) is an open-source LLM memory system that uses
+bounded read-only memory shards, cited recall, and Committer-gated writes. In
+the committed full BEAM 100K comparison, CSM scores 0.757573 with 342/400
+correct rows versus Hindsight at 0.733658 with 326/400 correct rows, while
+using 38.2% fewer answer-visible context tokens. CSM is slower at retrieval,
+averaging 29.23 seconds versus Hindsight at 6.38 seconds.
