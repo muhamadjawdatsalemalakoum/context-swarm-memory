@@ -670,6 +670,24 @@ figure {
     repeating-linear-gradient(0deg, transparent 0 23px, rgba(17, 24, 39, 0.045) 23px 24px);
 }
 
+.headline-figure {
+  margin: 0 0 28px;
+  border-color: rgba(14, 124, 102, 0.28);
+  background:
+    linear-gradient(rgba(255, 253, 247, 0.96), rgba(255, 253, 247, 0.96)),
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(14, 124, 102, 0.055) 23px 24px);
+  box-shadow: 0 22px 60px rgba(6, 78, 59, 0.12);
+}
+
+.headline-figure img {
+  min-height: 360px;
+}
+
+.headline-figure figcaption {
+  color: var(--primary-deep);
+  font-weight: 700;
+}
+
 figure img {
   width: 100%;
   min-height: 260px;
