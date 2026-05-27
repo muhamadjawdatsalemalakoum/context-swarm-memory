@@ -51,6 +51,20 @@ supports it. `minimal` is useful for cost-smoke checks, but the 2M/160K smoke
 showed that `low` is the safer quality setting for CSM's multi-stage pipeline.
 Set `CSM_GEMINI_THINKING=default` to omit this override.
 
+## Timeouts and transient retries
+
+Hosted Gemini calls default to a 120 second per-call timeout with two transient
+retries. Long benchmark runs can raise the timeout without changing prompts,
+models, scoring, or memory behavior:
+
+```bash
+export CSM_GEMINI_TIMEOUT_MS=600000
+export CSM_GEMINI_MAX_RETRIES=2
+```
+
+Retries are limited to transport aborts/timeouts and transient HTTP statuses
+such as 429/5xx. Authentication and request-shape errors still fail fast.
+
 ## 3-trial confirmation run
 
 Gemini is useful for fast replication because it removes local 4090 throughput
