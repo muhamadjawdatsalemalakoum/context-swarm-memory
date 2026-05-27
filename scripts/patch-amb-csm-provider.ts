@@ -10,7 +10,9 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const ambDir = resolve(args.ambDir);
   const memoryDir = join(ambDir, "src", "memory_bench", "memory");
+  const llmDir = join(ambDir, "src", "memory_bench", "llm");
   const initPath = join(memoryDir, "__init__.py");
+  const geminiPath = join(llmDir, "gemini.py");
   const sourcePath = join(process.cwd(), "integrations", "amb", "csm_provider.py");
   const destPath = join(memoryDir, "csm.py");
 
@@ -19,6 +21,9 @@ async function main(): Promise<void> {
   }
   if (!existsSync(sourcePath)) {
     throw new Error(`CSM AMB provider source not found at ${sourcePath}`);
+  }
+  if (!existsSync(geminiPath)) {
+    throw new Error(`AMB Gemini LLM source not found at ${geminiPath}`);
   }
 
   await mkdir(memoryDir, { recursive: true });
@@ -47,7 +52,31 @@ async function main(): Promise<void> {
   }
   await writeFile(initPath, init, "utf8");
 
-  process.stdout.write(`Patched AMB provider registry at ${ambDir}\n`);
+  let gemini = await readFile(geminiPath, "utf8");
+  if (!gemini.includes("import os\n")) {
+    gemini = gemini.replace("import logging\nimport time\n", "import logging\nimport os\nimport time\n");
+  }
+  if (!gemini.includes("OMB_GEMINI_TIMEOUT_MS")) {
+    gemini = gemini.replace(
+      "        self._client = genai.Client()\n",
+      [
+        '        timeout_ms = int(os.environ.get("OMB_GEMINI_TIMEOUT_MS", "600000"))',
+        "        self._client = genai.Client(",
+        "            http_options=types.HttpOptions(timeout=timeout_ms),",
+        "        )",
+        "",
+      ].join("\n"),
+    );
+  }
+  if (!gemini.includes('"timeout" in msg or "timed out" in msg')) {
+    gemini = gemini.replace(
+      '"503" in msg or "UNAVAILABLE" in msg):',
+      '"503" in msg or "UNAVAILABLE" in msg or\n                        "timeout" in msg or "timed out" in msg or "ReadTimeout" in msg):',
+    );
+  }
+  await writeFile(geminiPath, gemini, "utf8");
+
+  process.stdout.write(`Patched AMB provider registry and Gemini timeout guard at ${ambDir}\n`);
 }
 
 function parseArgs(argv: string[]): Args {
