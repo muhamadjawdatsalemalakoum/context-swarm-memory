@@ -74,9 +74,19 @@ async function main(): Promise<void> {
       '"503" in msg or "UNAVAILABLE" in msg or\n                        "timeout" in msg or "timed out" in msg or "ReadTimeout" in msg):',
     );
   }
+  if (!gemini.includes('"RemoteProtocolError" in msg')) {
+    const timeoutGuard = '"timeout" in msg or "timed out" in msg or "ReadTimeout" in msg):';
+    const transportGuard =
+      '"timeout" in msg or "timed out" in msg or "ReadTimeout" in msg or\n' +
+      '                        "RemoteProtocolError" in msg or "Server disconnected without sending a response" in msg):';
+    if (!gemini.includes(timeoutGuard)) {
+      throw new Error(`Could not find AMB Gemini retry guard in ${geminiPath}`);
+    }
+    gemini = gemini.replace(timeoutGuard, transportGuard);
+  }
   await writeFile(geminiPath, gemini, "utf8");
 
-  process.stdout.write(`Patched AMB provider registry and Gemini timeout guard at ${ambDir}\n`);
+  process.stdout.write(`Patched AMB provider registry and Gemini timeout/transport guard at ${ambDir}\n`);
 }
 
 function parseArgs(argv: string[]): Args {
