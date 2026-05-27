@@ -2,6 +2,12 @@
 
 ## Current State
 
+Update 2026-05-27: the full BEAM 100K CSM run completed and is now compared
+against the accepted local Hindsight artifact. See
+[`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](BEAM_100K_CSM_VS_HINDSIGHT.md) for the
+current result, artifact hashes, token accounting, and limitations. The notes
+below are retained as historical setup/handover context.
+
 The repo now contains an Agent Memory Benchmark bridge:
 
 - `integrations/amb/csm_provider.py` adds a CSM `MemoryProvider` to AMB.
@@ -22,8 +28,9 @@ Hindsight is the comparator to beat:
 - Benchmark harness: <https://github.com/vectorize-io/agent-memory-benchmark>
 - Target dataset: BEAM 100K first, then 500K/1M/10M.
 
-Do not claim CSM beats Hindsight until AMB produces paired rows on the same
-split/model/prompt/judge/scoring path.
+CSM now has full paired BEAM 100K rows against the accepted Hindsight artifact.
+Treat the result as a local accepted-artifact comparison until it is independently
+replicated or accepted by an official chart.
 
 ## Mac Setup
 

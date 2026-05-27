@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-217%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 
@@ -37,6 +37,27 @@ Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answerin
 
 Full numbers, per-query breakdown, significance, and methodology: [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) · [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md).
 
+## AMB / BEAM head-to-head
+
+The first full Agent Memory Benchmark / BEAM 100K run is complete against the
+accepted local Hindsight row. This is the repo's current north-star memory
+comparison: not old RAG controls, not smoke rows, and not model-mismatched
+Flash-only diagnostics.
+
+<p align="center"><img src="docs/assets/beam-100k-csm-vs-hindsight.svg" width="760" alt="BEAM 100K comparison: CSM scores 75.8 percent against Hindsight at 73.4 percent, with 342 versus 326 correct rows, lower answer-visible context, and higher retrieval latency"></p>
+
+| BEAM 100K system | AMB score | Correct | Avg answer context | Avg retrieve latency |
+|---|---:|---:|---:|---:|
+| CSM | 0.757573 | 342/400 | 10.9K tokens | 29.23s |
+| Hindsight | 0.733658 | 326/400 | 17.7K tokens | 6.38s |
+
+CSM is +2.39 score points and +16 correct rows versus the accepted Hindsight
+artifact while using 38.2% fewer answer-visible context tokens. The tradeoff is
+real: CSM retrieval is 4.58x slower and spends an additional 23.6K internal
+tokens per query across shard probe/recall/synthesis. Full method, category
+deltas, token accounting, no-gold audit, and artifact hashes:
+[`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
+
 ## BABILong external status
 
 BABILong is useful external evidence, but its public Space leaderboard is a
@@ -61,12 +82,14 @@ evidence that the shard-memory route is not just a toy RAG wrapper.
 | QA2 / 4K | 60.0 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
 | QA2 / 8K | 53.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
 
-The next scientific milestone is therefore concrete: move the SOTA headline to
-**Agent Memory Benchmark / BEAM** for memory-at-scale, then **Microsoft
-STATE-Bench Memory Track** for agentic task improvement. BABILong stays as a
-diagnostic long-context check unless fresh frontier-model rows are added. The
-named product north star is **Hindsight**: CSM needs paired AMB/BEAM rows against
-Hindsight before making any serious SOTA memory claim. The
+The next scientific milestone is therefore concrete: promote the new
+**Agent Memory Benchmark / BEAM** result into a public replication/submission
+package, then add **Microsoft STATE-Bench Memory Track** for agentic task
+improvement. BABILong stays as a diagnostic long-context check unless fresh
+frontier-model rows are added. The named product north star is **Hindsight**:
+CSM now has paired full BEAM 100K rows against the accepted Hindsight artifact,
+but this should be described as a local accepted-artifact comparison until an
+official chart or independent replication accepts it. The
 freshness gate is documented in
 [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md), and the selected
 benchmark ladder is tracked in
@@ -130,7 +153,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 217 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, baseline accounting, and AMB temporal evidence shaping | No |
+| `npm test` | 218 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, baseline accounting, and AMB temporal evidence shaping | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
@@ -185,7 +208,7 @@ BABILong CSM ablation, also Gemini 3.5 Flash:
 
 ```bash
 npm install
-npm test                       # 217 tests, no API keys (deterministic MockProvider)
+npm test                       # 218 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -218,6 +241,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Authoritative methodology + threats to validity |
 | [`docs/BENCHMARK_FRESHNESS.md`](docs/BENCHMARK_FRESHNESS.md) | 2026 freshness gate for any future SOTA claim |
 | [`docs/SOTA_BENCHMARK_PLAN.md`](docs/SOTA_BENCHMARK_PLAN.md) | Current SOTA ladder, benchmark axes, go/no-go rules, and next integrations |
+| [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md) | Full AMB/BEAM 100K CSM-vs-Hindsight report, category deltas, token accounting, artifacts, and limitations |
 | [`integrations/amb/README.md`](integrations/amb/README.md) | Agent Memory Benchmark / BEAM bridge for running CSM as an AMB memory provider |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command, and remaining proof limits |
 | [`docs/GEMINI.md`](docs/GEMINI.md) | Hosted Gemini provider setup and cross-model confirmation workflow |

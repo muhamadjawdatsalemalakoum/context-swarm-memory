@@ -47,8 +47,9 @@ Use two external tracks, because they test different parts of the CSM thesis:
    and saved per-row results.
 
 This means the README should stop treating BABILong as the next SOTA headline.
-BABILong remains useful external diagnostic evidence, but the next public SOTA
-benchmark target is **AMB/BEAM first, STATE-Bench second**.
+BABILong remains useful external diagnostic evidence. The first AMB/BEAM 100K
+CSM-vs-Hindsight run is now complete locally; the next public bar is independent
+replication/official submission for that result, then STATE-Bench.
 
 ## North Star Comparator
 
@@ -68,10 +69,15 @@ must therefore be sharper than "better than RAG":
 
 ## Current Claim Boundary
 
-The repo already includes one real SOTA head-to-head:
+The repo now includes two real head-to-head evidence bundles:
 
 - LightRAG ran on the same 30-query PaySwift benchmark and CSM won on that
   saved run.
+- AMB/BEAM 100K ran to completion for CSM and was compared against the accepted
+  local Hindsight artifact on the same split, answer model, judge model, and
+  scoring code. CSM scored 0.757573 with 342/400 correct rows versus Hindsight
+  at 0.733658 with 326/400 correct rows. See
+  [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](BEAM_100K_CSM_VS_HINDSIGHT.md).
 - BABILong is now driven as public external diagnostic evidence on a 120-row
   task1/task2 subset with Gemini 3.5 Flash and 4K physical context. The public
   Space leaderboard snapshot is not current 2026 SOTA. See
@@ -79,8 +85,10 @@ The repo already includes one real SOTA head-to-head:
 - Mem0 and HippoRAG 2 sidecars are wired, but the public evidence treats their
   local failures as blocked integrations, not as CSM wins.
 - The present public claim is therefore: CSM beats LightRAG on this traceable
-  project-memory task, and CSM has tested mutation-safety and citation
-  discipline. It is not yet a field-wide "beats every SOTA memory system" claim.
+  project-memory task and beats the accepted local Hindsight BEAM 100K artifact
+  on AMB score/correct rows, while being slower and more internally token
+  intensive. It is not yet a field-wide "beats every SOTA memory system" claim
+  or an externally certified leaderboard placement.
 
 That distinction matters. If a stronger system wins on the same harness, we
 publish it and learn from it.
@@ -99,9 +107,9 @@ next comparison ladder. Use primary sources when updating this table.
 | Graphiti / Zep | Temporal context graph for evolving agent memory, provenance, and historical queries. | Not integrated yet. Priority P1 sidecar. | <https://github.com/getzep/graphiti> |
 | APEX-MEM | Conversational memory system combining append-only temporal property graphs with multi-tool retrieval. | Not integrated yet. Priority P1 after Graphiti/GraphRAG because it stresses temporal conflicts directly. | <https://arxiv.org/abs/2604.14362> |
 | LightMem / LIGHT | 2026 memory-augmented generation system focused on accuracy/cost tradeoffs. | Not integrated yet. Priority P1 after code path is verified. | <https://arxiv.org/abs/2510.18866> |
-| Hindsight | North-star agent memory system to beat: retain/recall/reflect, mental-model learning, parallel semantic/keyword/graph/temporal recall, public LongMemEval/AMB-style positioning. | AMB dependency exists but Windows install is blocked by its optional `hindsight-all -> uvloop` chain. Run on macOS/Linux first; then publish CSM-vs-Hindsight paired AMB/BEAM rows. | <https://github.com/vectorize-io/hindsight> |
-| Agent Memory Benchmark (AMB) | Open memory-system harness with public datasets, prompts, scoring logic, results, Gemini-based generation/judging, cost/latency tracking, and a live leaderboard. | **Bridge added:** `integrations/amb/csm_provider.py`, `npm run amb:patch`, and `npm run amb:csm:retrieve`. Next: run BEAM 100K smoke through AMB. | <https://github.com/vectorize-io/agent-memory-benchmark> |
-| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | **Selected P0 scale benchmark.** AMB bridge is in repo; smoke/full rows still pending. | <https://arxiv.org/abs/2510.27246> |
+| Hindsight | North-star agent memory system to beat: retain/recall/reflect, mental-model learning, parallel semantic/keyword/graph/temporal recall, public LongMemEval/AMB-style positioning. | **Full local BEAM 100K comparison complete:** CSM 0.757573 / 342 correct vs accepted Hindsight 0.733658 / 326 correct. Next: package for independent replication and official chart submission. | <https://github.com/vectorize-io/hindsight> |
+| Agent Memory Benchmark (AMB) | Open memory-system harness with public datasets, prompts, scoring logic, results, Gemini-based generation/judging, cost/latency tracking, and a live leaderboard. | **Integrated and run:** `integrations/amb/csm_provider.py`, `npm run amb:patch`, `npm run amb:csm:retrieve`, and a completed BEAM 100K CSM row with telemetry. | <https://github.com/vectorize-io/agent-memory-benchmark> |
+| BEAM | Benchmark for coherent conversations up to 10M tokens; directly probes the "beyond native context" thesis. | **P0 scale benchmark complete at 100K:** full CSM-vs-Hindsight artifact comparison exists. Next: 500K/1M/10M where API budget allows. | <https://arxiv.org/abs/2510.27246> |
 | Microsoft STATE-Bench | May 2026 benchmark for realistic multi-turn enterprise tasks with stateful tools, deterministic assertions, Memory Track train trajectories, retrieval hook, pass@1/pass^5/UX/cost metrics. | **Selected P0 agentic-memory benchmark.** Add an adapter only after AMB/BEAM smoke results exist. | <https://github.com/microsoft/STATE-Bench> |
 | MemoryAgentBench | ICLR 2026 incremental multi-turn memory benchmark covering accurate retrieval, test-time learning, long-range understanding, and conflict resolution. | Not integrated yet. Priority P1 academic validation after AMB/BEAM. | <https://github.com/HUST-AI-HYZ/MemoryAgentBench> |
 | MemoryArena / AMA-Bench | 2026 agent-memory benchmarks for interdependent multi-session tasks and long-horizon agent trajectories. | Not integrated yet. Priority P1/P2 breadth checks; useful for paper appendix, not the first README headline. | <https://memoryarena.github.io/> |
@@ -189,12 +197,12 @@ or scale, but those dimensions must be measured directly.
 
 ## Next Implementation Order
 
-1. Run the AMB/BEAM 100K smoke using the checked-in CSM bridge
-   (`integrations/amb/README.md`), then save the resulting AMB JSON under the
-   evidence bundle if it is clean.
-2. Replace the smoke bridge's per-query Node subprocess with a warm retrieval
+1. Package the completed AMB/BEAM 100K CSM-vs-Hindsight run for independent
+   replication and official chart submission, preserving the accepted Hindsight
+   comparator and the CSM telemetry sidecar.
+2. Replace the AMB bridge's per-query Node subprocess with a warm retrieval
    service before larger BEAM runs.
-3. Run AMB/BEAM at 100K, 500K, 1M, and 10M where feasible, saving per-row
+3. Run AMB/BEAM at 500K, 1M, and 10M where feasible, saving per-row
    outputs, prompts, judge responses, token/cost accounting, and leaderboard
    snapshot metadata.
 4. Add Microsoft STATE-Bench Memory Track adapter and run one domain smoke test
@@ -209,8 +217,9 @@ or scale, but those dimensions must be measured directly.
    blockers if it cannot run cleanly.
 10. Re-run CSM, LightRAG, Graphiti/GraphRAG, Mem0/HippoRAG if unblocked, and
    baseline controls with 3 trials.
-11. Archive the evidence bundle and update `docs/EVIDENCE.md` only after the
-   full result rows are saved.
+11. Re-run the BEAM 100K comparison with a warm service and repeated trials if
+   the official submission path requests confidence intervals beyond the
+   accepted full-row artifact.
 
 ## What Would Be Meaningful
 

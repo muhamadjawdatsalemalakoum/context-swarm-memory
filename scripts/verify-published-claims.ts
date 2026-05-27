@@ -36,6 +36,35 @@ interface ExpectedMetric {
   task?: number;
 }
 
+interface BeamComparisonSummary {
+  systems: {
+    csm: {
+      correct: number;
+      score: number;
+      total_queries: number;
+    };
+    hindsight: {
+      correct: number;
+      score: number;
+      total_queries: number;
+    };
+  };
+  csm_token_telemetry: {
+    final_rows_accounted: number;
+    unique_query_hashes: number;
+    summary: {
+      csm_internal_total_tokens: {
+        avg: number;
+        sum: number;
+      };
+    };
+  };
+  deltas: {
+    correct: number;
+    score: number;
+  };
+}
+
 const HASHES: Record<string, string> = {
   "data/eval/runs/v020-30q-embedfloor/config.json":
     "4fb52aa5d24bf12dfd8743a7265f43bf734cf7e006ebc3207907f7cf4b07aa47",
@@ -48,7 +77,7 @@ const HASHES: Record<string, string> = {
   "data/eval/runs/scaling-rq1/config.json":
     "88d3a061ac5b8787f9e7e5f74e69b29b461d4387ca2605b77becaabb91cfd105",
   "data/eval/runs/scaling-rq1/results.jsonl":
-    "610b61162a3f8c995ec43f070c928c580858648ca9e981f4182b3df4ffc94655",
+    "b90603ab20782d8530bbcab0fff24ed3a80cccf004152cfa82b50640a11da841",
   "data/eval/runs/scaling-1m/config.json":
     "bf4be983f5615471758dba6e72223e2da9649afdbeaf5f2be8877f156fc0ec15",
   "data/eval/runs/scaling-1m/results.jsonl":
@@ -79,6 +108,10 @@ const HASHES: Record<string, string> = {
     "635d43d08eb6409295462a2d10c51f1240e32497ccdf0b2e2e4a7b459de3d89e",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/report.md":
     "42ea7ef23e87643c9b76167fc83887116b9582b23b9ae00ff8cbc830f8efa55a",
+  "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json":
+    "45d2f8a36b624c2f4a54a1026181d37a8072d7fe5341b2b7947fba54262db645",
+  "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight-category-deltas.csv":
+    "9e3424f7ed917b4d8ee0e43b0b13505d104e72db7c6eb25fe012de8d35a04125",
   "data/eval/external/babilong-leaderboard-v0_results.csv":
     "584b7daf5f8cfcab96a005dabe6e6df189acd545a093dfc48f223af15ca6e196",
   "data/eval/external/babilong-leaderboard-v0_SOURCE.md":
@@ -377,6 +410,51 @@ function assertMcNemar(
   );
 }
 
+function assertBeamComparison(): void {
+  const summary = JSON.parse(
+    readFileSync(
+      join(
+        process.cwd(),
+        "data",
+        "eval",
+        "runs",
+        "sota-combined",
+        "amb-beam-100k-csm-vs-hindsight.json",
+      ),
+      "utf8",
+    ),
+  ) as BeamComparisonSummary;
+  assertEqual(summary.systems.csm.total_queries, 400, "BEAM CSM row count");
+  assertEqual(summary.systems.hindsight.total_queries, 400, "BEAM Hindsight row count");
+  assertEqual(summary.systems.csm.correct, 342, "BEAM CSM correct count");
+  assertEqual(summary.systems.hindsight.correct, 326, "BEAM Hindsight correct count");
+  assertNear(summary.systems.csm.score, 0.7575731005977905, "BEAM CSM score");
+  assertNear(summary.systems.hindsight.score, 0.7336577408538804, "BEAM Hindsight score");
+  assertEqual(summary.deltas.correct, 16, "BEAM correct delta");
+  assertNear(summary.deltas.score, 0.023915359743910125, "BEAM score delta");
+  assertEqual(
+    summary.csm_token_telemetry.final_rows_accounted,
+    400,
+    "BEAM CSM telemetry rows",
+  );
+  assertEqual(
+    summary.csm_token_telemetry.unique_query_hashes,
+    400,
+    "BEAM CSM telemetry unique query hashes",
+  );
+  assertEqual(
+    summary.csm_token_telemetry.summary.csm_internal_total_tokens.sum,
+    9_420_450,
+    "BEAM CSM internal total token sum",
+  );
+  assertNear(
+    summary.csm_token_telemetry.summary.csm_internal_total_tokens.avg,
+    23_551.125,
+    "BEAM CSM internal total token average",
+  );
+  console.log("PASS BEAM CSM vs Hindsight summary: 342/400 vs 326/400");
+}
+
 function main(): void {
   for (const [path, expected] of Object.entries(HASHES)) {
     assertEqual(sha256(path), expected, `${path} sha256`);
@@ -407,6 +485,7 @@ function main(): void {
     0,
     0.0,
   );
+  assertBeamComparison();
 }
 
 main();

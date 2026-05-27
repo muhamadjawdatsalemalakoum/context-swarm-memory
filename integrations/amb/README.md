@@ -11,20 +11,24 @@ a memory provider without forking AMB.
 - Returns the retrieved CSM documents to AMB's normal `rag` mode, so AMB still
   owns the BEAM prompt and judge path.
 
-The current bridge is intentionally conservative and smoke-test oriented: each
+The current bridge is intentionally conservative: each
 AMB retrieval launches the Node CSM retrieval command. That keeps the integration
-simple and reproducible. A long full BEAM run should replace this with a warm
-Node service so CSM does not reload state per query.
+simple and reproducible. The full BEAM 100K run completed through this path, but
+larger BEAM splits should replace it with a warm Node service so CSM does not
+reload state per query.
 
 ## North Star: Hindsight
 
 Hindsight is the named comparator to beat. It presents itself as agent memory
 that learns over time, with retain/recall/reflect APIs and a public SOTA memory
-benchmark story. CSM should not claim victory by beating weak RAG controls; it
-needs paired AMB/BEAM rows against Hindsight on the same split, model, prompts,
-judge, and scoring path.
+benchmark story. CSM should not claim victory by beating weak RAG controls.
 
-The first publishable table should include at least:
+The first full local comparison is now complete on BEAM 100K: CSM scored
+0.757573 with 342/400 correct rows versus the accepted Hindsight artifact at
+0.733658 with 326/400 correct rows. See
+[`../../docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](../../docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
+
+Future publishable tables should include at least:
 
 - CSM via this AMB bridge
 - Hindsight via AMB's Hindsight provider

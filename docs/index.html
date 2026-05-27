@@ -179,13 +179,21 @@
               <h2 id="evidence-title">Measured evidence, with stale leaderboards labeled stale.</h2>
             </div>
             <p>
-              PaySwift isolates the memory layer under the same answering model. BABILong
-              is useful external evidence, but its public leaderboard is historical, not
-              a current 2026 frontier-model board.
+              PaySwift isolates the memory layer under the same answering model. AMB/BEAM
+              now provides the north-star Hindsight comparison. BABILong remains useful
+              external evidence, but its public leaderboard is historical.
             </p>
           </div>
 
           <div class="metric-strip" aria-label="Benchmark highlights">
+            <div>
+              <strong>75.8%</strong>
+              <span>BEAM 100K CSM score</span>
+            </div>
+            <div>
+              <strong>+16</strong>
+              <span>Correct rows vs Hindsight</span>
+            </div>
             <div>
               <strong>100%</strong>
               <span>BABILong QA1 at 4K/8K</span>
@@ -201,6 +209,10 @@
           </div>
 
           <div class="chart-grid">
+            <figure>
+              <img src="assets/beam-100k-csm-vs-hindsight.svg" alt="BEAM 100K comparison of CSM and Hindsight">
+              <figcaption>CSM beats the accepted local Hindsight BEAM 100K artifact, with slower retrieval.</figcaption>
+            </figure>
             <figure>
               <img src="assets/scaling.svg" alt="Accuracy as memory scales from 100K to 1M tokens">
               <figcaption>CSM holds its accuracy as the corpus grows 10x.</figcaption>

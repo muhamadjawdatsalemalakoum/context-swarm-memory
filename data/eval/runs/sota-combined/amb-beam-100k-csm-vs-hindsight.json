@@ -1,0 +1,324 @@
+{
+  "created_at_local": "2026-05-27T22:43:41+03:00",
+  "benchmark": {
+    "dataset": "BEAM",
+    "split": "100K",
+    "harness": "Agent Memory Benchmark",
+    "amb_checkout": "/private/tmp/agent-memory-benchmark"
+  },
+  "comparison_scope": "Strict local CSM run compared with the accepted local Hindsight BEAM 100K artifact. Same dataset/split, answer model, judge model, and AMB scoring code; Hindsight artifact mode is single-query, CSM provider uses AMB rag retrieval-answer-judge mode.",
+  "models": {
+    "csm_internal_retrieval_model": "gemini-3.5-flash",
+    "amb_answer_model": "gemini:gemini-3.1-pro-preview",
+    "amb_judge_model": "gemini:gemini-2.5-flash-lite",
+    "hindsight_answer_model": "gemini:gemini-3.1-pro-preview",
+    "hindsight_judge_model": "gemini:gemini-2.5-flash-lite"
+  },
+  "settings": {
+    "CSM_AMB_MODEL_CONTEXT": 8192,
+    "CSM_AMB_RETURN_K": 24,
+    "CSM_AMB_SUMMARY_RETURN_K": 24,
+    "CSM_AMB_REASONING_RETURN_K": 32,
+    "CSM_AMB_NEIGHBOR_WINDOW": 1,
+    "CSM_AMB_MAX_OUTPUT_TOKENS": 512,
+    "temperature": 0,
+    "seed": 42
+  },
+  "systems": {
+    "csm": {
+      "memory_provider": "csm",
+      "mode": "rag",
+      "run_name": "csm-v4-official-models-full-100k",
+      "total_queries": 400,
+      "correct": 342,
+      "score": 0.7575731005977905,
+      "avg_context_tokens": 10914,
+      "avg_retrieve_time_ms": 29230,
+      "raw_result_path": "data/eval/runs/amb-beam-100k-full-v4-official-models/amb-outputs/beam/csm-v4-official-models-full-100k/rag/100k.json",
+      "raw_result_sha256": "11be07f7c4bf0638078433fe4832c375a1076f7267f3e4e876c04720785608c9",
+      "raw_result_size_bytes": 21090773
+    },
+    "hindsight": {
+      "memory_provider": "hindsight",
+      "mode": "single-query",
+      "run_name": "hindsight",
+      "total_queries": 400,
+      "correct": 326,
+      "score": 0.7336577408538804,
+      "avg_context_tokens": 17654.6,
+      "avg_retrieve_time_ms": 6379.4,
+      "raw_result_path": "/private/tmp/agent-memory-benchmark/outputs/beam/hindsight/single-query/100k.json.gz",
+      "raw_result_sha256": "ee26d546c98b828a47046fc2374e9dd1531f68d0f27eaca12a68eb0f18e32cdc",
+      "raw_result_size_bytes": 6727364
+    }
+  },
+  "deltas": {
+    "score": 0.023915359743910125,
+    "score_percentage_points": 2.3915359743910125,
+    "correct": 16,
+    "avg_context_tokens": -6740.5999999999985,
+    "avg_context_tokens_percent_vs_hindsight": 61.81958243177416,
+    "avg_retrieve_time_ms": 22850.6,
+    "avg_retrieve_time_ratio_vs_hindsight": 4.581935605229332
+  },
+  "category_scores": [
+    {
+      "category": "abstention",
+      "csm_score": 1,
+      "hindsight_score": 0.975,
+      "delta": 0.025000000000000022
+    },
+    {
+      "category": "contradiction_resolution",
+      "csm_score": 0.65,
+      "hindsight_score": 0.615625,
+      "delta": 0.034375000000000044
+    },
+    {
+      "category": "event_ordering",
+      "csm_score": 0.737516720263618,
+      "hindsight_score": 0.8047470513959465,
+      "delta": -0.06723033113232846
+    },
+    {
+      "category": "information_extraction",
+      "csm_score": 0.7567708333333333,
+      "hindsight_score": 0.6494791666666667,
+      "delta": 0.10729166666666656
+    },
+    {
+      "category": "instruction_following",
+      "csm_score": 0.89375,
+      "hindsight_score": 0.9125,
+      "delta": -0.018749999999999933
+    },
+    {
+      "category": "knowledge_update",
+      "csm_score": 0.66875,
+      "hindsight_score": 0.5875,
+      "delta": 0.08124999999999993
+    },
+    {
+      "category": "multi_session_reasoning",
+      "csm_score": 0.547797619047619,
+      "hindsight_score": 0.4738095238095238,
+      "delta": 0.07398809523809524
+    },
+    {
+      "category": "preference_following",
+      "csm_score": 0.975,
+      "hindsight_score": 0.95,
+      "delta": 0.025000000000000022
+    },
+    {
+      "category": "summarization",
+      "csm_score": 0.7086458333333333,
+      "hindsight_score": 0.7929166666666667,
+      "delta": -0.0842708333333334
+    },
+    {
+      "category": "temporal_reasoning",
+      "csm_score": 0.6375,
+      "hindsight_score": 0.575,
+      "delta": 0.0625
+    }
+  ],
+  "csm_token_telemetry": {
+    "final_rows_accounted": 400,
+    "unique_query_hashes": 400,
+    "source_counts": {
+      "attempt6": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt6-credit-stop-20260527T125654.csm-token-telemetry.jsonl",
+        "total_lines": 105,
+        "final_rows_used": 100,
+        "sha256": "5d6759739909d4371b78f79606174c7d74eca37874a17e40f91eca781ce78453"
+      },
+      "attempt7": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt7-credit-stop-20260527T162604.csm-token-telemetry.jsonl",
+        "total_lines": 234,
+        "final_rows_used": 220,
+        "sha256": "c9d76c7f9219b1861e4255b4000ab99fdbf7a0b3acba324e48bae822ea0ad035"
+      },
+      "attempt8": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt8-remote-protocol-error-20260527T213741.csm-token-telemetry.jsonl",
+        "total_lines": 26,
+        "final_rows_used": 20,
+        "sha256": "5a29f10fa07a1c42b49908fcc5857aabc8f9baab01733a1b539bd0553e4b8c41"
+      },
+      "attempt10": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/csm-token-telemetry.jsonl",
+        "total_lines": 60,
+        "final_rows_used": 60,
+        "sha256": "eda1c2b259646b453c1b639eaeb95e447e2c4497cb6fbc86b1e53b90637dc952"
+      }
+    },
+    "summary": {
+      "csm_internal_total_tokens": {
+        "count": 400,
+        "avg": 23551.125,
+        "sum": 9420450,
+        "min": 12134,
+        "max": 32360
+      },
+      "csm_internal_input_tokens": {
+        "count": 400,
+        "avg": 21019.82,
+        "sum": 8407928,
+        "min": 11629,
+        "max": 25873
+      },
+      "csm_internal_output_tokens": {
+        "count": 400,
+        "avg": 2531.305,
+        "sum": 1012522,
+        "min": 505,
+        "max": 8425
+      },
+      "csm_pipeline_input_tokens": {
+        "count": 400,
+        "avg": 13884.575,
+        "sum": 5553830,
+        "min": 6507,
+        "max": 18804
+      },
+      "csm_pipeline_output_tokens": {
+        "count": 400,
+        "avg": 2512.7725,
+        "sum": 1005109,
+        "min": 487,
+        "max": 8403
+      },
+      "csm_internal_answer_input_tokens": {
+        "count": 400,
+        "avg": 7135.245,
+        "sum": 2854098,
+        "min": 2290,
+        "max": 8882
+      },
+      "csm_internal_answer_output_tokens": {
+        "count": 400,
+        "avg": 18.5325,
+        "sum": 7413,
+        "min": 1,
+        "max": 62
+      },
+      "csm_context_tokens_before_amb_capsule": {
+        "count": 400,
+        "avg": 7065.0125,
+        "sum": 2826005,
+        "min": 2181,
+        "max": 7680
+      },
+      "bridge_wall_time_ms": {
+        "count": 400,
+        "avg": 29228.61775,
+        "sum": 11691447.099999998,
+        "min": 11720.1,
+        "max": 57311.2
+      },
+      "csm_pipeline_latency_ms": {
+        "count": 400,
+        "avg": 28443.595,
+        "sum": 11377438,
+        "min": 11433,
+        "max": 57013
+      },
+      "csm_internal_answer_latency_ms": {
+        "count": 400,
+        "avg": 2701.625,
+        "sum": 1080650,
+        "min": 1229,
+        "max": 10003
+      },
+      "docs_returned": {
+        "count": 400,
+        "avg": 25.98,
+        "sum": 10392,
+        "min": 15,
+        "max": 33
+      },
+      "csm_probe_count": {
+        "count": 400,
+        "avg": 7.25,
+        "sum": 2900,
+        "min": 5,
+        "max": 8
+      },
+      "csm_recall_count": {
+        "count": 400,
+        "avg": 3.55,
+        "sum": 1420,
+        "min": 1,
+        "max": 4
+      },
+      "csm_retrieved_event_count": {
+        "count": 400,
+        "avg": 24.875,
+        "sum": 9950,
+        "min": 24,
+        "max": 42
+      },
+      "csm_returned_event_count": {
+        "count": 400,
+        "avg": 26.1,
+        "sum": 10440,
+        "min": 24,
+        "max": 32
+      },
+      "returned_doc_chars": {
+        "count": 400,
+        "avg": 48780.63,
+        "sum": 19512252,
+        "min": 6571,
+        "max": 375003
+      }
+    },
+    "avg_total_memory_plus_visible_context_tokens": 34465.125,
+    "total_memory_plus_visible_context_tokens": 13786050
+  },
+  "runtime": {
+    "csm_final_rows_productive_wall_seconds": 20951,
+    "csm_final_rows_productive_wall_hours": 5.8197222222222225,
+    "csm_sum_per_row_done_seconds": 20946.700000000004,
+    "csm_avg_per_row_done_seconds": 52.36675,
+    "csm_median_per_row_done_seconds": 44.3,
+    "csm_max_per_row_done_seconds": 436.8,
+    "sources": {
+      "attempt6": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt6-credit-stop-20260527T125654.csm-v4-official-models-full-100k.stderr.log",
+        "first_final_row_start": "2026-05-27T11:19:00",
+        "last_final_row_done": "2026-05-27T12:48:13",
+        "wall_seconds": 5353
+      },
+      "attempt7": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt7-credit-stop-20260527T162604.csm-v4-official-models-full-100k.stderr.log",
+        "first_final_row_start": "2026-05-27T13:02:50",
+        "last_final_row_done": "2026-05-27T16:14:10",
+        "wall_seconds": 11480
+      },
+      "attempt8": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/attempt8-remote-protocol-error-20260527T213741.csm-v4-official-models-full-100k.stderr.log",
+        "first_final_row_start": "2026-05-27T20:14:07",
+        "last_final_row_done": "2026-05-27T20:30:17",
+        "wall_seconds": 970
+      },
+      "attempt10": {
+        "path": "data/eval/runs/amb-beam-100k-full-v4-official-models/csm-v4-official-models-full-100k.stderr.log",
+        "first_final_row_start": "2026-05-27T21:38:50",
+        "last_final_row_done": "2026-05-27T22:31:18",
+        "wall_seconds": 3148
+      }
+    },
+    "hindsight_wall_clock": "not present in accepted Hindsight artifact; avg_retrieve_time_ms is available"
+  },
+  "audit": {
+    "no_secret_scan": "rg over saved run directory and accepted Hindsight artifact found no API key patterns",
+    "gold_rubric_hardcoding": "CSM AMB provider sends only query/user/timestamp plus ingested documents. Retrieval script sets correctAnswer to unused, relevantEventIds to [], and evidence capsule text explicitly states no gold answers or rubric used."
+  },
+  "limitations": [
+    "Single completed CSM run compared with accepted Hindsight artifact; no repeated-run confidence interval yet.",
+    "CSM wins score/correct count and answer-visible context, but has higher retrieval latency and spends additional internal shard tokens.",
+    "Hindsight internal token/indexing telemetry is not present in the accepted artifact, so total-token comparison is complete for CSM but not symmetric for Hindsight.",
+    "Local comparison is ready for public reporting/submission preparation, but not yet an externally accepted leaderboard entry."
+  ]
+}
