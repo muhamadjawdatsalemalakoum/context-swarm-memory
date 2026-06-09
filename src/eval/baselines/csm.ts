@@ -1,4 +1,11 @@
 import { ask } from "../../core/ask.js";
+// [T2 WORKTREE WIRING — merge-window material]
+import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
+import {
+  buildRouterIndex,
+  hybridEquivalentOfLexScore,
+  type RouterIndex,
+} from "../../core/routerEmbed.js";
 import { SHARD_SYSTEM_PROMPT } from "../../core/prompts.js";
 import {
   estimateEventsTokens,
@@ -304,6 +311,20 @@ export function resolveParallelProbes(
   return providerName !== "ollama" && providerName !== "llama-server";
 }
 
+/**
+ * [T2 WORKTREE WIRING — merge-window material]
+ * Hybrid-router toggle for the baseline adapter. Default ON in this worktree
+ * to demonstrate end-to-end behavior; `CSM_ROUTER_HYBRID=0` restores the
+ * Phase-0 byte-identical path (the live A/B's "old" arm).
+ */
+export function resolveRouterHybrid(
+  raw = process.env.CSM_ROUTER_HYBRID,
+): boolean {
+  if (raw === undefined || raw.trim().length === 0) return true;
+  const v = raw.trim().toLowerCase();
+  return !(v === "0" || v === "false" || v === "no");
+}
+
 /** Everything `answer()` needs from the retrieval half of the baseline, and
  *  everything the AMB bridge needs WITHOUT the final answer call. */
 export interface CsmRetrieval {
@@ -353,6 +374,11 @@ export class CsmBaseline implements BaselineRunner {
    *  an LLM call but worth avoiding when we sweep multiple queries per
    *  corpus sample. */
   private adapterCache = new WeakMap<Corpus, InMemoryStorageReader>();
+
+  /** [T2 WORKTREE WIRING — merge-window material] One hybrid RouterIndex per
+   *  corpus (descriptors + MiniLM centroids), built lazily on first query.
+   *  Promise-cached so concurrent queries share the single build. */
+  private routerIndexCache = new WeakMap<Corpus, Promise<RouterIndex>>();
 
   constructor(private opts: { provider: LlmProvider }) {}
 
@@ -441,6 +467,13 @@ export class CsmBaseline implements BaselineRunner {
   ): Promise<CsmRetrieval> {
     const storage = this.getAdapter(corpus);
 
+    // [T2 WORKTREE WIRING — merge-window material] Content-derived hybrid
+    // router index (local MiniLM only; zero LLM). CSM_ROUTER_HYBRID=0 gives
+    // the byte-identical Phase-0 arm for the live A/B.
+    const routerIndex = resolveRouterHybrid()
+      ? await this.getRouterIndex(corpus)
+      : null;
+
     // 1. Drive the full CSM pipeline. `skipQueryLog: true` short-circuits
     //    the only write path on the read-only `StorageReader` interface
     //    (which our adapter doesn't implement anyway — see top-of-file).
@@ -449,6 +482,7 @@ export class CsmBaseline implements BaselineRunner {
       storage,
       query: query.question,
       skipQueryLog: true,
+      routerIndex,
       // Parallel probes/recalls for hosted providers; serial for local
       // single-GPU servers (Ollama/llama-server) where concurrent fetches
       // tripped Undici's connection pool. See resolveParallelProbes.
@@ -500,6 +534,13 @@ export class CsmBaseline implements BaselineRunner {
     // events packed (same as pre-audit lucky-correct) → no regression.
     const MIN_FROM_TOP_SHARD = 8;
     const RAG_FLOOR_SCORE_THRESHOLD = 4;
+    // [T2 WORKTREE WIRING] Hybrid scores live on a different scale; convert
+    // the lexical threshold so the floor's firing semantics are preserved
+    // (lex>4 ⇔ hybrid lexical leg > wLex*satLex(4); embedding confidence can
+    // also clear it, which is intended — see EXP-T2-router.md §5).
+    const ragFloorThreshold = routerIndex
+      ? hybridEquivalentOfLexScore(RAG_FLOOR_SCORE_THRESHOLD)
+      : RAG_FLOOR_SCORE_THRESHOLD;
     let augmentedRetrievalOrder = [...baseRetrievalOrder];
     let ragFallbackFired = false;
     let ragFallbackShardId: string | null = null;
@@ -507,7 +548,7 @@ export class CsmBaseline implements BaselineRunner {
     const topCandidate = askResult.candidates[0];
     if (
       topCandidate &&
-      topCandidate.score > RAG_FLOOR_SCORE_THRESHOLD &&
+      topCandidate.score > ragFloorThreshold &&
       augmentedRetrievalOrder.length < MIN_FROM_TOP_SHARD
     ) {
       const shardEvents = corpus.byShard.get(topCandidate.entry.id) ?? [];
@@ -828,6 +869,7 @@ export class CsmBaseline implements BaselineRunner {
         entityBridgeCount,
         entityBridgeShardIds,
         routerTopScore: askResult.candidates[0]?.score ?? 0,
+        routerHybrid: Boolean(routerIndex), // [T2 WORKTREE WIRING]
         packetCost: askResult.cost,
         pipelineInputTokens: pipelineCost.inputTokensEstimate,
         pipelineOutputTokens: pipelineCost.outputTokensEstimate,
@@ -843,6 +885,46 @@ export class CsmBaseline implements BaselineRunner {
     const adapter = new InMemoryStorageReader(corpus);
     this.adapterCache.set(corpus, adapter);
     return adapter;
+  }
+
+  /** [T2 WORKTREE WIRING — merge-window material] Build the hybrid router
+   *  index for a corpus: TF-IDF descriptor terms + per-shard MiniLM
+   *  centroids from per-event embeddings (same disk-cache keys the
+   *  embed-floor / vanillaRag paths already populate). O(events) once per
+   *  corpus; zero LLM calls. The merge window should lift this into a shared
+   *  src/eval helper so the AMB bridge reuses it verbatim. */
+  private getRouterIndex(corpus: Corpus): Promise<RouterIndex> {
+    const hit = this.routerIndexCache.get(corpus);
+    if (hit) return hit;
+    const built = (async () => {
+      const sources = [...corpus.byShard.entries()].map(([shardId, events]) => ({
+        shardId,
+        events: events.map((e) => ({ content: e.content, tags: e.tags })),
+      }));
+      const descriptors = deriveShardDescriptors(sources);
+      const allVecs = await embed(
+        corpus.events.map((e) => e.content),
+        EMBED_MODEL_NAME,
+      );
+      const vecByEventId = new Map<string, Float32Array>();
+      corpus.events.forEach((e, i) => vecByEventId.set(e.id, allVecs[i]!));
+      const shards = [...corpus.byShard.entries()].map(([shardId, events]) => ({
+        shardId,
+        terms: descriptors.get(shardId)?.terms ?? [],
+        centroid: centroidOf(
+          events
+            .map((e) => vecByEventId.get(e.id))
+            .filter((v): v is Float32Array => Boolean(v)),
+        ),
+      }));
+      return buildRouterIndex({
+        shards,
+        embed: (texts) => embed(texts, EMBED_MODEL_NAME),
+        model: EMBED_MODEL_NAME,
+      });
+    })();
+    this.routerIndexCache.set(corpus, built);
+    return built;
   }
 }
 
