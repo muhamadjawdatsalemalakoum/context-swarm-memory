@@ -1,0 +1,157 @@
+{
+  "corpusTokens": 99905,
+  "shardCount": 38,
+  "queries": 30,
+  "implicitFloorTokens": 4096,
+  "perStage": {
+    "probe": {
+      "calls": 240,
+      "avgRequestTokens": 557.3,
+      "maxRequestTokens": 701,
+      "atOrAboveImplicitFloor": 0,
+      "avgStablePrefixTokens": 178,
+      "maxStablePrefixTokens": 211
+    },
+    "recall": {
+      "calls": 120,
+      "avgRequestTokens": 1383.5,
+      "maxRequestTokens": 1676,
+      "atOrAboveImplicitFloor": 0,
+      "avgStablePrefixTokens": 571,
+      "maxStablePrefixTokens": 1289
+    },
+    "synth": {
+      "calls": 30,
+      "avgRequestTokens": 635.5,
+      "maxRequestTokens": 861,
+      "atOrAboveImplicitFloor": 0,
+      "avgStablePrefixTokens": null,
+      "maxStablePrefixTokens": null
+    }
+  },
+  "restructure": {
+    "f1-brassroots-architecture": {
+      "probeStableIndexTokens": 412,
+      "fullDigestTokens": 2862
+    },
+    "f1-brassroots-compliance": {
+      "probeStableIndexTokens": 206,
+      "fullDigestTokens": 585
+    },
+    "f1-brassroots-customers": {
+      "probeStableIndexTokens": 238,
+      "fullDigestTokens": 824
+    },
+    "f1-brassroots-incidents": {
+      "probeStableIndexTokens": 209,
+      "fullDigestTokens": 901
+    },
+    "f1-brassroots-meta": {
+      "probeStableIndexTokens": 204,
+      "fullDigestTokens": 486
+    },
+    "f1-brassroots-product": {
+      "probeStableIndexTokens": 275,
+      "fullDigestTokens": 1543
+    },
+    "f1-klipboard-architecture": {
+      "probeStableIndexTokens": 347,
+      "fullDigestTokens": 2108
+    },
+    "f1-klipboard-compliance": {
+      "probeStableIndexTokens": 209,
+      "fullDigestTokens": 452
+    },
+    "f1-klipboard-customers": {
+      "probeStableIndexTokens": 388,
+      "fullDigestTokens": 2848
+    },
+    "f1-klipboard-finance": {
+      "probeStableIndexTokens": 239,
+      "fullDigestTokens": 869
+    },
+    "f1-mealhaul-architecture": {
+      "probeStableIndexTokens": 411,
+      "fullDigestTokens": 1963
+    },
+    "f1-mealhaul-compliance": {
+      "probeStableIndexTokens": 211,
+      "fullDigestTokens": 411
+    },
+    "f1-mealhaul-customers": {
+      "probeStableIndexTokens": 320,
+      "fullDigestTokens": 1254
+    },
+    "f1-mealhaul-finance": {
+      "probeStableIndexTokens": 204,
+      "fullDigestTokens": 326
+    },
+    "f1-mealhaul-incidents": {
+      "probeStableIndexTokens": 209,
+      "fullDigestTokens": 448
+    },
+    "f1-mealhaul-meta": {
+      "probeStableIndexTokens": 305,
+      "fullDigestTokens": 1748
+    },
+    "f1-mealhaul-product": {
+      "probeStableIndexTokens": 239,
+      "fullDigestTokens": 550
+    },
+    "f1-stagewise-architecture": {
+      "probeStableIndexTokens": 280,
+      "fullDigestTokens": 1018
+    },
+    "f1-stagewise-customers": {
+      "probeStableIndexTokens": 353,
+      "fullDigestTokens": 1685
+    },
+    "f1-tidepool-architecture": {
+      "probeStableIndexTokens": 309,
+      "fullDigestTokens": 1814
+    },
+    "f1-tidepool-customers": {
+      "probeStableIndexTokens": 524,
+      "fullDigestTokens": 4359
+    },
+    "s-architecture": {
+      "probeStableIndexTokens": 1677,
+      "fullDigestTokens": 19432
+    },
+    "s-compliance": {
+      "probeStableIndexTokens": 886,
+      "fullDigestTokens": 8822
+    },
+    "s-customers": {
+      "probeStableIndexTokens": 883,
+      "fullDigestTokens": 8126
+    },
+    "s-finance": {
+      "probeStableIndexTokens": 633,
+      "fullDigestTokens": 5687
+    },
+    "s-incidents": {
+      "probeStableIndexTokens": 714,
+      "fullDigestTokens": 7725
+    },
+    "s-meta": {
+      "probeStableIndexTokens": 884,
+      "fullDigestTokens": 9998
+    },
+    "s-people": {
+      "probeStableIndexTokens": 451,
+      "fullDigestTokens": 3285
+    },
+    "s-product": {
+      "probeStableIndexTokens": 674,
+      "fullDigestTokens": 5920
+    }
+  },
+  "restructureTotals": {
+    "shards": 29,
+    "avgProbeStableIndexTokens": 445,
+    "avgFullDigestTokens": 3381,
+    "shardsWhereStableProbeSystemClearsFloor": 0,
+    "shardsWhereFullDigestClearsFloor": 8
+  }
+}
