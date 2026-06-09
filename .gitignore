@@ -93,3 +93,7 @@ data/eval/corpus-synthetic/queries-stub.json
 .venv-lightrag/
 .venv-*/
 .claude/
+!data/eval/runs/gemini-caching-measure/
+!data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/
+!data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/census.json
+!data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/census.md

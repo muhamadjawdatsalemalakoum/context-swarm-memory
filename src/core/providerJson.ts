@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { LlmProvider, CompleteJsonInput, ProviderResponse } from "../providers/LlmProvider.js";
+import type { LlmProvider, CompleteJsonInput, ProviderResponse, ProviderUsage } from "../providers/LlmProvider.js";
 import { extractJson } from "../utils/json.js";
 
 /** Calls the provider, parses JSON forgivingly, validates with Zod, retries once on failure.
@@ -13,13 +13,23 @@ export async function completeAndValidate<T>(
   let lastErr: unknown;
   // Accumulate usage across ALL attempts (including failed/retried ones) so cost
   // accounting doesn't silently drop the tokens/latency spent on invalid-JSON retries.
-  const usage = { inputTokensEstimate: 0, outputTokensEstimate: 0, estimatedUsd: 0, latencyMs: 0 };
+  const usage: ProviderUsage = { inputTokensEstimate: 0, outputTokensEstimate: 0, estimatedUsd: 0, latencyMs: 0 };
   for (let attempt = 0; attempt < 2; attempt++) {
     const r = await provider.completeJson<unknown>(input);
     usage.inputTokensEstimate += r.usage.inputTokensEstimate;
     usage.outputTokensEstimate += r.usage.outputTokensEstimate;
     usage.estimatedUsd += r.usage.estimatedUsd;
     usage.latencyMs += r.usage.latencyMs;
+    // Optional observability fields (Gemini cache hits / thinking spend) are
+    // forwarded ONLY when the provider reported them, so the usage object's
+    // key set — and anything serialized from it — is unchanged for providers
+    // that don't (mock/OpenAI/Ollama). See ProviderUsage in LlmProvider.ts.
+    if (typeof r.usage.cachedInputTokens === "number") {
+      usage.cachedInputTokens = (usage.cachedInputTokens ?? 0) + r.usage.cachedInputTokens;
+    }
+    if (typeof r.usage.thoughtsTokens === "number") {
+      usage.thoughtsTokens = (usage.thoughtsTokens ?? 0) + r.usage.thoughtsTokens;
+    }
     try {
       const parsed = typeof r.data === "string" ? extractJson(r.data) : r.data;
       // Fallback: some larger models (Gemma 31B in JSON mode) wrap their final

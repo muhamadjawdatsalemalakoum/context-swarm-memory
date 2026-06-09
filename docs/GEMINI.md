@@ -131,6 +131,57 @@ If the smoke behaves, run the full confirmation. The benchmark cache is
 content-hashed, so interrupted runs can resume without paying again for
 completed cells.
 
+## Context caching & usage observability (T4, 2026-06)
+
+`GeminiProvider` parses two additional `usageMetadata` fields into optional
+`ProviderUsage` fields on every call (no request change, any mode):
+
+- `cachedContentTokenCount` → `usage.cachedInputTokens` — input tokens served
+  from Gemini's context cache (implicit hits or explicit `cachedContent`).
+  Billed at the cached rate ($0.15/M on gemini-3.5-flash vs $1.50/M fresh).
+- `thoughtsTokenCount` → `usage.thoughtsTokens` — reasoning tokens. **Billed
+  as output but NOT included in `candidatesTokenCount`**, so
+  `outputTokensEstimate` alone understates billed output for thinking models
+  (≈$2/BEAM-100K-run of previously invisible spend at `low` thinking). The
+  field is additive; existing accounting is unchanged.
+
+Cache behavior is governed by `CSM_GEMINI_CACHE` (default **`off`** — byte-
+identical requests to the pre-T4 provider, pinned by
+`tests/geminiCaching.test.ts`):
+
+```bash
+CSM_GEMINI_CACHE=off               # default; no behavior change at all
+CSM_GEMINI_CACHE=implicit-observe  # same request bytes + per-call observation log
+CSM_GEMINI_CACHE=explicit          # cachedContents lifecycle for calls passing cacheKey
+CSM_GEMINI_USAGE_LOG=path.jsonl    # observation sink for modes ≠ off (keep OUT of data/ stores)
+CSM_GEMINI_CACHE_TTL_S=600         # explicit-cache TTL (default 3600 = API default)
+CSM_GEMINI_CACHE_MIN_TOKENS=4096   # skip-creation guard (gemini-3.5-flash minimum)
+```
+
+Facts that shape the design (verified 2026-06-10; citations and the full cost
+model live in `docs/experiments/EXP-T4-gemini-caching.md`): the implicit AND
+explicit caching minimum on gemini-3.5-flash is **4,096 tokens**, while CSM's
+probe/recall requests average 557/1,384 tokens — so today's pipeline can get
+**zero** cache hits, and `explicit` mode is inert until a call site declares a
+byte-stable system prompt via `CompleteJsonInput.cacheKey` (wave-2 prompt
+restructuring; immutable snapshots make `shardId@snapshotId` the natural key).
+The provider refuses explicit-cache reuse if the system bytes change under a
+key (SHA-256 check), falls back to uncached on every cache failure, and
+exposes `getCacheStats()` / `clearExplicitCaches()` for harnesses.
+
+Offline census of request sizes / stable prefixes (no API key needed):
+
+```bash
+npx tsx scripts/measure-gemini-caching.ts --offline-census
+```
+
+Live measurement matrix (54 calls, ≈$0.47 — see the experiment doc first):
+
+```bash
+npx tsx scripts/measure-gemini-caching.ts          # dry run: prints the plan
+npx tsx scripts/measure-gemini-caching.ts --live   # executes (needs GEMINI_API_KEY)
+```
+
 ## SOTA sidecar mode
 
 The Python sidecars can route their internal LLM calls through Gemini's
