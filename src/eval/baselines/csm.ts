@@ -884,6 +884,10 @@ export class CsmBaseline implements BaselineRunner {
         entityBridgeShardIds,
         coverageTimelineCount: timelineEventIds.length,
         coverageFired: timelineEventIds.length > 0,
+        // Full timeline entries (date/eventRef/line) so the AMB bridge can
+        // render its evidence capsule from the core's chronicle instead of
+        // re-deriving one with the legacy regex heuristics.
+        coverageTimeline: askResult.memoryPacket.timeline ?? [],
         routerTopScore: askResult.candidates[0]?.score ?? 0,
         routerHybrid: Boolean(routerIndex), // [T2 WORKTREE WIRING]
         packetCost: askResult.cost,

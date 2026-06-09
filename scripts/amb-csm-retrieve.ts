@@ -183,7 +183,20 @@ export async function executeAmbRetrieve(input: {
   const packedEventIds = asStringArray(meta.packedEventIds);
   const baseIds = retrievedEventIds.length > 0 ? retrievedEventIds : packedEventIds;
   const intent = detectAmbQueryIntent(request.query);
-  const ids = selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
+
+  // T1 migration step 2 ("bridge consumes core"): when the core's coverage
+  // chronicle fired, its retrieval order already IS the coverage selection —
+  // cited events first, then the date-ordered, term-scored timeline. The
+  // legacy heuristics were measured fighting it (BEAM-slice leg C, 2026-06-10:
+  // retrieved gold coverage +0.18 in both losing categories while the legacy
+  // k-cut kept returned coverage flat), so coverage queries now trust the
+  // core order at the k-cut and render the capsule from packet.timeline.
+  // Point queries keep the legacy path byte-identical.
+  const coverageTimeline = parseTimelineEntries(meta.coverageTimeline);
+  const coverageFired = meta.coverageFired === true && coverageTimeline.length > 0;
+  const ids = coverageFired
+    ? dedupeInOrder(baseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
+    : selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
 
   const outDocs = ids
     .map((id) => corpus.byId.get(id))
@@ -195,13 +208,15 @@ export async function executeAmbRetrieve(input: {
       timestamp: event.timestamp ?? null,
       context: `CSM retrieved from shard ${event.shardId}`,
     }));
-  const capsule = buildEvidenceCapsule({
-    query: request.query,
-    corpus,
-    ids,
-    intent,
-    userId: request.user_id ?? null,
-  });
+  const capsule = coverageFired
+    ? renderTimelineCapsule(coverageTimeline, request.user_id ?? null)
+    : buildEvidenceCapsule({
+        query: request.query,
+        corpus,
+        ids,
+        intent,
+        userId: request.user_id ?? null,
+      });
   const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
 
   return {
@@ -322,6 +337,55 @@ function extractTimestamp(chunk: string): string | undefined {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
+}
+
+interface TimelineEntryLike {
+  date: string | null;
+  eventRef: string;
+  line: string;
+}
+
+function parseTimelineEntries(value: unknown): TimelineEntryLike[] {
+  if (!Array.isArray(value)) return [];
+  const out: TimelineEntryLike[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const entry = item as Record<string, unknown>;
+    if (typeof entry.eventRef !== "string" || typeof entry.line !== "string") continue;
+    out.push({
+      date: typeof entry.date === "string" ? entry.date : null,
+      eventRef: entry.eventRef,
+      line: entry.line,
+    });
+  }
+  return out;
+}
+
+/** Render the core's chronicle timeline as the AMB evidence capsule. Replaces
+ *  the legacy regex-derived capsule for coverage-shaped queries: same pseudo-
+ *  document contract, but every line is a citation-bearing entry produced by
+ *  the deterministic assembler in src/core/coverage.ts (no gold, no rubric,
+ *  no domain term tables). */
+function renderTimelineCapsule(
+  timeline: TimelineEntryLike[],
+  userId: string | null,
+  maxLines = 40,
+): AmbDocument | null {
+  if (timeline.length === 0) return null;
+  const lines = timeline.slice(0, maxLines).map((entry) => {
+    const datePrefix = entry.date ? `${entry.date}: ` : "";
+    return `- [${entry.eventRef}] ${datePrefix}${entry.line}`;
+  });
+  return {
+    id: "csm-evidence-capsule",
+    content: [
+      "CSM chronological evidence capsule (date-ordered, source-derived from retrieved/scoped memories; no gold answers or rubric used).",
+      ...lines,
+    ].join("\n"),
+    user_id: userId,
+    timestamp: null,
+    context: "CSM evidence capsule",
+  };
 }
 
 export function detectAmbQueryIntent(query: string): AmbQueryIntent {
