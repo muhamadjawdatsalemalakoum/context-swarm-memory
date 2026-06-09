@@ -106,20 +106,48 @@ and recall counts identical per query, 3/3 correct both sides. Latency
 **8.1 s** vs 9.3 s pre-speculation; the single-recall query collapsed
 6.4 s → 3.3 s because its recall fully overlaps the probe phase.
 
+## 30-query gates (2026-06-10, PaySwift 100K, 8K ctx, gemini-3.5-flash answers)
+
+| Run | Config | Score | Avg pipeline | Avg pipeline in-tokens | Avg recalls |
+|---|---|---:|---:|---:|---:|
+| `rd-baseline-30q-v1` | parallel, minimal-thinking probes | 28/30 | 10.45 s | 10,366 | — |
+| `rd-digest-30q-v1` | + recall digest dates, + top-1 speculation | **29/30** | 8.96 s | 10,538 | — |
+| `rd-probelite-30q-v1` | + `CSM_PROBE_MODEL=gemini-2.5-flash-lite` | **29/30** | **7.15 s** | 9,590 | 1.97 |
+
+Misses: baseline q04+q27; both later runs only q04 (the known multi-event
+coverage failure — a retrieval-quality problem, tracked separately).
+Flash-lite probes are notably more conservative (fewer shards qualify for
+recall: 1.97 avg), which CUT input tokens ~9% while the score held — the
+forced top-1 recall absorbs probe false-negatives. **Status: recommended
+opt-in via `CSM_PROBE_MODEL=gemini-2.5-flash-lite`; not the hard default
+until the BABILong slice and a BEAM-scale check confirm the conservatism is
+safe off-PaySwift.**
+
+## Eager tier-2 recalls: measured no-op here (kept opt-in)
+
+`CSM_EAGER_RECALLS=1` generalizes the top-1 speculation: any shard whose
+probe passes the recall predicate starts its recall on its own probe's
+completion, then the score-ordered selection is reconciled and non-selected
+eager calls are discarded (tokens counted, `discardedRecalls` reported).
+Measured on q01/q11/q28: token-identical, zero discards, latency within
+noise (+0.1-0.4 s). Cause: probe latencies cluster tightly, so per-probe
+completion ≈ the barrier; top-1 speculation already covered the win. It may
+still help under straggler/retry-heavy conditions (the May BEAM run saw
+436 s max rows) — re-evaluate there; default stays OFF.
+
 ## Projected BEAM-scale stack (to be re-measured on resume)
 
-Starting point 29.2 s avg → after parallelization (~2.4x on the pipeline),
-retrieve-only, the warm service, and speculative top-1 recall: **~9-10 s**
-expected. Remaining levers, in planned order:
+Starting point 29.2 s avg → with everything gated above (parallel stages,
+retrieve-only, warm service, top-1 speculation, digest dates, flash-lite
+probes): 30-query PaySwift average is now **7.15 s**; BEAM-scale expectation
+**~8-9 s** pending re-measurement. Remaining levers, in value order:
 
-1. **Recall-as-probes-complete pipelining**: start each accepted shard's
-   recall the moment its probe resolves instead of barriering on all probes
-   (changes recall SELECTION from score-order to arrival-order when more
-   shards qualify than `maxRecallShards` — needs the accuracy gate, unlike
-   the top-1 speculation).
-2. **Probe model routing** (e.g. `gemini-2.5-flash-lite` for probes via the
-   existing `CSM_PROBE_MODEL` stage override) — only behind a measured
-   internal-bench quality gate.
+1. **Synthesis stage cost** (~3-4 s serial tail on multi-recall queries):
+   cheaper synth model, more aggressive skip conditions, or merging recall
+   and synthesis for 2-recall queries — all need accuracy gates.
+2. **Gemini context caching** for repeated shard snapshots on the warm
+   service (cuts cost and prefill latency of probe/recall calls; candidate
+   R&D topic for the portfolio wave).
 
 Target: average BEAM-style retrieval at or below **~6-7 s**, i.e. Hindsight
 parity, while keeping CSM's score and lower answer-visible context. Every

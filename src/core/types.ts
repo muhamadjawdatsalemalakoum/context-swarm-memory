@@ -156,6 +156,9 @@ export interface AskRunResult {
   runId: string;
   startedAt: string;
   finishedAt: string;
+  /** Eager (CSM_EAGER_RECALLS) recall calls that completed but were not in
+   *  the score-ordered selection; their tokens are included in `cost`. */
+  discardedRecalls?: number;
 }
 
 // Commit protocol — Phase 2.

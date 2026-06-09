@@ -118,25 +118,58 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     );
   });
 
-  // Speculative top-1 recall (parallel mode only). The router's top candidate
-  // is ALWAYS recalled (router-trust safety net below), and its recall input
-  // depends only on its OWN probe's relevant_event_ids hint — so the recall
-  // can launch the moment probe #0 resolves instead of waiting for the whole
-  // probe barrier. Schedule-only: the recall set, hints, and the order of
-  // `recalls` (and therefore every downstream LLM input) are unchanged.
+  // Eager recalls (parallel mode only). Two tiers:
+  //
+  // 1. The router's top candidate is ALWAYS recalled (router-trust safety net
+  //    below), and its recall input depends only on its OWN probe's
+  //    relevant_event_ids hint — so that recall launches the moment probe #0
+  //    resolves instead of waiting for the whole probe barrier. Schedule-only;
+  //    always on. (Verified token-identical serial vs parallel.)
+  //
+  // 2. With CSM_EAGER_RECALLS=1, any other shard whose probe qualifies for
+  //    recall (same predicate as the selection below) also starts eagerly,
+  //    capped at maxRecallShards-1 starts. After all probes resolve, the TRUE
+  //    score-ordered selection is computed exactly as before; eager calls for
+  //    shards that did not make the selection are awaited, their token usage
+  //    accumulated honestly, and their results DISCARDED — so every downstream
+  //    LLM input is identical to the non-eager path. The only cost is the
+  //    occasional discarded call, surfaced as `discardedRecalls`.
   type RecallOutput = { result: RecallResult; usage: ProviderUsage } | null;
-  let speculativeTopRecall: Promise<RecallOutput> | null = null;
-  let speculativeTopError: unknown = null;
+  interface EagerEntry {
+    promise: Promise<RecallOutput>;
+    error: unknown;
+  }
+  const eagerRecalls = new Map<string, EagerEntry>();
+  const eagerEnabled = resolveEagerRecalls();
+  // Count of ACTUAL tier-2 recall starts. Handlers run on the single JS
+  // thread, so increment-then-check is race-free. (The map itself registers
+  // every probed candidate up front for reconciliation lookup — map size is
+  // NOT the started count.)
+  let eagerStartedOthers = 0;
   let probeOutputs: Array<{ result: ProbeResult; usage: ProviderUsage } | null>;
 
-  if (parallelProbes) {
+  if (parallelProbes && budget.maxRecallShards > 0) {
     const probePromises = probeJobs.map((job) => job());
-    const topPromise = probePromises[0];
-    if (topPromise && budget.maxRecallShards > 0) {
-      speculativeTopRecall = topPromise
+    probePromises.forEach((probePromise, ix) => {
+      const cand = probedCandidates[ix];
+      const snap = snapshotsByCandidate[ix];
+      if (!cand || !snap) return;
+      const isTop = ix === 0;
+      if (!isTop && !eagerEnabled) return;
+
+      const entry: EagerEntry = { promise: Promise.resolve(null), error: null };
+      entry.promise = probePromise
         .then((o): Promise<RecallOutput> | RecallOutput => {
-          const snap = snapshotsByCandidate[0];
-          if (!o || !snap) return null;
+          if (!o) return null;
+          // Top-1 starts unconditionally (it is always selected). Others
+          // start only if they pass the same predicate the selection uses,
+          // and only while eager slots remain (top-1 has a reserved slot, so
+          // others get maxRecallShards-1).
+          if (!isTop) {
+            if (!probeQualifiesForRecall(o.result, recallConfidenceMin)) return null;
+            if (eagerStartedOthers >= budget.maxRecallShards - 1) return null;
+            eagerStartedOthers++;
+          }
           return recallShard({
             provider,
             userQuery: query,
@@ -148,14 +181,19 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
         })
         // Capture instead of rejecting NOW: a rejection with no handler
         // attached in the same tick would crash as unhandledRejection while
-        // the probe barrier is still settling. The error is rethrown at the
-        // recall barrier below, preserving the old failure semantics.
+        // the probe barrier is still settling. The error is rethrown when the
+        // entry is consumed as a selected recall (preserving old failure
+        // semantics) and swallowed when the entry is discarded (the old path
+        // would never have made that call).
         .catch((err): RecallOutput => {
-          speculativeTopError = err;
+          entry.error = err;
           return null;
         });
-    }
+      eagerRecalls.set(cand.entry.id, entry);
+    });
     probeOutputs = await Promise.all(probePromises);
+  } else if (parallelProbes) {
+    probeOutputs = await runJobs(probeJobs, true);
   } else {
     probeOutputs = await runJobs(probeJobs, false);
   }
@@ -167,22 +205,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     probes.push(o.result);
   }
 
-  // Recall trigger:
-  // - Honor probe's `needs_full_recall` when set, OR
-  // - Force recall if probe says it knows with high confidence and useful answer value.
-  //   (Models like Gemma 4 sometimes say `knows=true` but `needs_full_recall=false`
-  //    out of conservatism; we don't want to silently drop a known-relevant shard.)
   let recallTargets = probes
-    .filter((p) => {
-      if (!p.knows) return false;
-      if (p.estimatedAnswerValue === "none") return false;
-      const explicit = p.needsFullRecall && p.confidence >= recallConfidenceMin;
-      const inferred =
-        p.confidence >= 0.7 &&
-        (p.estimatedAnswerValue === "high" || p.estimatedAnswerValue === "medium") &&
-        (p.memoryType === "direct" || p.memoryType === "adjacent" || p.memoryType === "conflicting");
-      return explicit || inferred;
-    })
+    .filter((p) => probeQualifiesForRecall(p, recallConfidenceMin))
     .sort((a, b) => scoreProbe(b) - scoreProbe(a))
     .slice(0, budget.maxRecallShards);
 
@@ -224,12 +248,26 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   );
 
   const recallJobs = recallTargets.map((p, ix) => () => {
-    // The router's top candidate was speculatively recalled the moment its
-    // probe resolved — reuse that in-flight call instead of issuing another.
-    if (speculativeTopRecall && p.shardId === topRouterShardId) {
-      return speculativeTopRecall.then((o) => {
-        if (speculativeTopError) throw speculativeTopError;
-        return o;
+    // Reuse an eager in-flight recall when one exists for this shard. An
+    // eager entry can have resolved null without making a call (probe failed
+    // the predicate / no output) — e.g. the forced top-1 whose probe was
+    // rejected. Fall through to a fresh call in that case ONLY when the
+    // entry made no call; a null from a captured error must rethrow instead.
+    const eager = eagerRecalls.get(p.shardId);
+    if (eager) {
+      return eager.promise.then((o) => {
+        if (eager.error) throw eager.error;
+        if (o) return o;
+        const snap = recallSnapshots[ix];
+        if (!snap) return null;
+        return recallShard({
+          provider,
+          userQuery: query,
+          snapshot: snap,
+          relevantEventIdsHint: p.relevantEventIds,
+          maxRecallTokensPerShard: budget.maxRecallTokensPerShard,
+          model: stageModels.recall,
+        }).then(({ result, usage }) => ({ result, usage }));
       });
     }
     const snap = recallSnapshots[ix];
@@ -251,6 +289,24 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     if (!o) continue;
     accumulate(o.usage);
     recalls.push(o.result);
+  }
+
+  // Discard pass: eager recalls for shards the score-ordered selection did
+  // NOT pick are awaited (usually already settled — they started earlier than
+  // the barrier calls), their spend accumulated honestly, their results
+  // dropped. Errors here are swallowed: the non-eager path would never have
+  // made the call at all.
+  let discardedRecalls = 0;
+  if (eagerRecalls.size > 0) {
+    const selected = new Set(recallTargets.map((p) => p.shardId));
+    for (const [shardId, entry] of eagerRecalls) {
+      if (selected.has(shardId)) continue;
+      const o = await entry.promise;
+      if (o) {
+        accumulate(o.usage);
+        discardedRecalls++;
+      }
+    }
   }
 
   // Skip the LLM synthesizer call when ≤1 recall: deterministic packet, zero tokens.
@@ -284,6 +340,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     provider,
     storage,
     skipQueryLog,
+    discardedRecalls,
   });
 }
 
@@ -301,6 +358,7 @@ async function finalize(args: {
   provider: LlmProvider;
   storage: StorageReader;
   skipQueryLog: boolean;
+  discardedRecalls?: number;
 }): Promise<AskRunResult> {
   args.cost.latencyMs = Date.now() - args.latencyStart;
   const finishedAt = args.finishedAtFn();
@@ -315,6 +373,7 @@ async function finalize(args: {
     runId: args.runId,
     startedAt: args.startedAt,
     finishedAt,
+    discardedRecalls: args.discardedRecalls ?? 0,
   };
   if (!args.skipQueryLog && args.storage.appendQueryRun) {
     const record: QueryRunRecord = {
@@ -345,6 +404,37 @@ export async function runJobs<T>(jobs: Array<() => Promise<T>>, parallel: boolea
   const out: T[] = [];
   for (const job of jobs) out.push(await job());
   return out;
+}
+
+/** Recall trigger:
+ *  - Honor probe's `needs_full_recall` when set, OR
+ *  - Force recall if the probe says it knows with high confidence and useful
+ *    answer value. (Models sometimes say `knows=true` but
+ *    `needs_full_recall=false` out of conservatism; we don't want to silently
+ *    drop a known-relevant shard.)
+ *  Shared by the post-barrier selection AND the eager tier-2 starts so the
+ *  two can never disagree. */
+export function probeQualifiesForRecall(
+  p: ProbeResult,
+  recallConfidenceMin: number,
+): boolean {
+  if (!p.knows) return false;
+  if (p.estimatedAnswerValue === "none") return false;
+  const explicit = p.needsFullRecall && p.confidence >= recallConfidenceMin;
+  const inferred =
+    p.confidence >= 0.7 &&
+    (p.estimatedAnswerValue === "high" || p.estimatedAnswerValue === "medium") &&
+    (p.memoryType === "direct" || p.memoryType === "adjacent" || p.memoryType === "conflicting");
+  return explicit || inferred;
+}
+
+/** Tier-2 eager recalls are opt-in until the discard-rate is measured at the
+ *  30-query scale (the tier-1 top-1 speculation is always on — it is provably
+ *  schedule-only). */
+export function resolveEagerRecalls(raw = process.env.CSM_EAGER_RECALLS): boolean {
+  if (raw === undefined || raw.trim().length === 0) return false;
+  const v = raw.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
 }
 
 function scoreProbe(p: ProbeResult): number {
