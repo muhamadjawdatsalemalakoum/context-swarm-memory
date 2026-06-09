@@ -43,13 +43,107 @@ function prefixMatch(a: string, b: string): boolean {
   return longer.startsWith(shorter);
 }
 
-/** True iff `term` matches ANY of `tagSet` exactly or by prefix-tolerant rule. */
-function termMatchesAnyTag(term: string, tagSet: Set<string>): boolean {
+/** True iff `term` matches ANY of `tagSet` exactly or by prefix-tolerant rule.
+ *  Exported (additively, for the T2 hybrid router) so derived descriptor terms
+ *  can reuse the exact tag-matching semantics the Phase-0 scorer uses. */
+export function termMatchesAnyTag(term: string, tagSet: Set<string>): boolean {
   if (tagSet.has(term)) return true;
   for (const tag of tagSet) {
     if (prefixMatch(term, tag)) return true;
   }
   return false;
+}
+
+/**
+ * Per-entry Phase-0 lexical score. Extracted verbatim from `selectCandidates`
+ * (behavior-identical; the existing router tests pin it) and exported
+ * additively so the T2 hybrid router (`src/core/routerEmbed.ts`) can reuse the
+ * lexical leg without duplicating the weights.
+ *
+ *    score = tagOverlap*2 + descriptionMatch + nameMatch*1.5 + summaryMatch*0.75
+ *          + recencyBoost - stalenessPenalty - fullnessPenalty - statusPenalty
+ *
+ * Each component is documented as a `reason` string so the CLI can show why a
+ * candidate ranked where it did.
+ */
+export function scoreEntryLexical(
+  queryTerms: Set<string>,
+  entry: MemoryDirectoryEntry,
+  ref: Date,
+): { score: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let score = 0;
+
+  // Prefix-tolerant tag overlap: "authentication" in the query matches a
+  // shard tag of "auth", etc. See `termMatchesAnyTag` / `prefixMatch`.
+  const tagSet = new Set(entry.tags.map((t) => t.toLowerCase()));
+  let tagOverlap = 0;
+  for (const t of queryTerms) {
+    if (termMatchesAnyTag(t, tagSet)) tagOverlap++;
+  }
+  if (tagOverlap > 0) {
+    score += tagOverlap * 2;
+    reasons.push(`tagOverlap=${tagOverlap}`);
+  }
+
+  const descTerms = new Set(tokenize(entry.description));
+  let descMatch = 0;
+  for (const t of queryTerms) if (termMatchesAnyTag(t, descTerms)) descMatch++;
+  if (descMatch > 0) {
+    score += descMatch;
+    reasons.push(`descMatch=${descMatch}`);
+  }
+
+  const nameTerms = new Set(tokenize(entry.name));
+  let nameMatch = 0;
+  for (const t of queryTerms) if (termMatchesAnyTag(t, nameTerms)) nameMatch++;
+  if (nameMatch > 0) {
+    score += nameMatch * 1.5;
+    reasons.push(`nameMatch=${nameMatch}`);
+  }
+
+  const summaryTerms = new Set(tokenize(entry.summaryShort));
+  let sumMatch = 0;
+  for (const t of queryTerms) if (termMatchesAnyTag(t, summaryTerms)) sumMatch++;
+  if (sumMatch > 0) {
+    score += sumMatch * 0.75;
+    reasons.push(`summaryMatch=${sumMatch}`);
+  }
+
+  const days = ageDays(entry.updatedAt, ref);
+  if (Number.isFinite(days)) {
+    const recency = Math.max(0, 1 - days / 90);
+    if (recency > 0) {
+      score += recency;
+      reasons.push(`recency=${recency.toFixed(2)}`);
+    }
+  }
+
+  if (entry.staleness === "possibly_stale") {
+    score -= 0.5;
+    reasons.push("staleness:possibly_stale -0.5");
+  } else if (entry.staleness === "stale") {
+    score -= 1.0;
+    reasons.push("staleness:stale -1.0");
+  }
+
+  if (entry.fullnessPct >= 85) {
+    score -= 1.0;
+    reasons.push(`fullness=${entry.fullnessPct.toFixed(1)}% -1.0`);
+  } else if (entry.fullnessPct >= 75) {
+    score -= 0.5;
+    reasons.push(`fullness=${entry.fullnessPct.toFixed(1)}% -0.5`);
+  }
+
+  if (entry.status === "archived" || entry.status === "deleted") {
+    score -= 5;
+    reasons.push(`status:${entry.status} -5`);
+  } else if (entry.status === "frozen") {
+    score -= 0.25;
+    reasons.push("status:frozen -0.25");
+  }
+
+  return { score, reasons };
 }
 
 /** Simple, transparent MVP scorer:
@@ -63,78 +157,7 @@ export function selectCandidates(opts: RouteOptions): CandidateScore[] {
   const ref = new Date();
 
   const scored: CandidateScore[] = directory.entries.map((entry) => {
-    const reasons: string[] = [];
-    let score = 0;
-
-    // Prefix-tolerant tag overlap: "authentication" in the query matches a
-    // shard tag of "auth", etc. See `termMatchesAnyTag` / `prefixMatch`.
-    const tagSet = new Set(entry.tags.map((t) => t.toLowerCase()));
-    let tagOverlap = 0;
-    for (const t of queryTerms) {
-      if (termMatchesAnyTag(t, tagSet)) tagOverlap++;
-    }
-    if (tagOverlap > 0) {
-      score += tagOverlap * 2;
-      reasons.push(`tagOverlap=${tagOverlap}`);
-    }
-
-    const descTerms = new Set(tokenize(entry.description));
-    let descMatch = 0;
-    for (const t of queryTerms) if (termMatchesAnyTag(t, descTerms)) descMatch++;
-    if (descMatch > 0) {
-      score += descMatch;
-      reasons.push(`descMatch=${descMatch}`);
-    }
-
-    const nameTerms = new Set(tokenize(entry.name));
-    let nameMatch = 0;
-    for (const t of queryTerms) if (termMatchesAnyTag(t, nameTerms)) nameMatch++;
-    if (nameMatch > 0) {
-      score += nameMatch * 1.5;
-      reasons.push(`nameMatch=${nameMatch}`);
-    }
-
-    const summaryTerms = new Set(tokenize(entry.summaryShort));
-    let sumMatch = 0;
-    for (const t of queryTerms) if (termMatchesAnyTag(t, summaryTerms)) sumMatch++;
-    if (sumMatch > 0) {
-      score += sumMatch * 0.75;
-      reasons.push(`summaryMatch=${sumMatch}`);
-    }
-
-    const days = ageDays(entry.updatedAt, ref);
-    if (Number.isFinite(days)) {
-      const recency = Math.max(0, 1 - days / 90);
-      if (recency > 0) {
-        score += recency;
-        reasons.push(`recency=${recency.toFixed(2)}`);
-      }
-    }
-
-    if (entry.staleness === "possibly_stale") {
-      score -= 0.5;
-      reasons.push("staleness:possibly_stale -0.5");
-    } else if (entry.staleness === "stale") {
-      score -= 1.0;
-      reasons.push("staleness:stale -1.0");
-    }
-
-    if (entry.fullnessPct >= 85) {
-      score -= 1.0;
-      reasons.push(`fullness=${entry.fullnessPct.toFixed(1)}% -1.0`);
-    } else if (entry.fullnessPct >= 75) {
-      score -= 0.5;
-      reasons.push(`fullness=${entry.fullnessPct.toFixed(1)}% -0.5`);
-    }
-
-    if (entry.status === "archived" || entry.status === "deleted") {
-      score -= 5;
-      reasons.push(`status:${entry.status} -5`);
-    } else if (entry.status === "frozen") {
-      score -= 0.25;
-      reasons.push("status:frozen -0.25");
-    }
-
+    const { score, reasons } = scoreEntryLexical(queryTerms, entry, ref);
     return { entry, score, reasons };
   });
 

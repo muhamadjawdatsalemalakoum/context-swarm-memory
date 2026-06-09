@@ -110,6 +110,21 @@ export function cosine(a: Float32Array, b: Float32Array): number {
 }
 
 /**
+ * Additive T2 export: bind `embed` to a (model, root) pair, producing an
+ * `EmbedFn` (see `src/core/routerEmbed.ts`) for dependency injection into the
+ * hybrid router. Core declares the type; this module provides the only real
+ * implementation — keeping the core → eval dependency direction inverted.
+ * Disk cache writes land under `data/eval/embeddings/` (the established
+ * non-durable-memory cache precedent; not hashed by mutationSafety tests).
+ */
+export function makeCachedEmbedder(
+  modelName: string = EMBED_MODEL_NAME,
+  rootDir?: string,
+): (texts: string[]) => Promise<Float32Array[]> {
+  return (texts: string[]) => embed(texts, modelName, rootDir);
+}
+
+/**
  * Top-K by cosine similarity. Returns indexes into `vectors` sorted by
  * descending similarity, plus the score for each.
  */
