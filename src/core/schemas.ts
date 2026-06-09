@@ -91,6 +91,28 @@ const tolerantKeyClaimsArray = z
     return good;
   });
 
+/** One timeline line in coverage-mode LLM output (T1). Strict per-item shape
+ *  used inside the tolerant array below. `event_ref` must be the full
+ *  "shard_id@snapshot_id:event_id" citation. */
+const timelineEntrySchema = z.object({
+  date: z.string().nullable(),
+  event_ref: z.string(),
+  line: z.string(),
+});
+
+type TimelineEntry = z.infer<typeof timelineEntrySchema>;
+/** Same per-item tolerance as `tolerantClaimsArray` — see comment there. */
+const tolerantTimelineArray = z
+  .array(z.unknown())
+  .transform((arr): TimelineEntry[] => {
+    const good: TimelineEntry[] = [];
+    for (const item of arr) {
+      const r = timelineEntrySchema.safeParse(item);
+      if (r.success) good.push(r.data);
+    }
+    return good;
+  });
+
 export const memoryPacketSchema = z.object({
   query: z.string(),
   summary: z.string(),
@@ -98,8 +120,38 @@ export const memoryPacketSchema = z.object({
   caveats: z.array(z.string()),
   conflicts: z.array(z.string()),
   recommended_main_context: z.string(),
+  // Additive (T1 coverage): the synth prompt does not request a timeline
+  // today, so this is absent on every current path and on all cached
+  // responses. It exists so a future gated synth/coverage-recall prompt can
+  // emit one without a schema change.
+  timeline: tolerantTimelineArray.optional(),
 });
 export type MemoryPacketJson = z.infer<typeof memoryPacketSchema>;
+
+/**
+ * Coverage-mode recall output (T1, DESIGN-ONLY — not wired to any runtime
+ * path yet). The gated "coverage recall" prompt variant
+ * (`coverageRecallPrompt` in prompts.ts) asks the shard for a date-ordered,
+ * citation-complete digest of ALL matching events in addition to the normal
+ * claims. Kept additive and separate from `recallResultSchema` so the
+ * existing recall path stays byte-identical.
+ *
+ * Merge-window note: when this ships, `CSM_JSON_SCHEMAS` in
+ * `src/providers/GeminiProvider.ts` (T4's file) gets a
+ * "CoverageRecallResult" entry; until then absence degrades gracefully
+ * (providerJson retry + this Zod schema still validate).
+ */
+export const coverageRecallResultSchema = z.object({
+  shard_id: z.string(),
+  snapshot_id: z.string(),
+  confidence: llmConfidence,
+  answer: z.string(),
+  claims: tolerantClaimsArray,
+  unknowns: z.array(z.string()),
+  conflicts: z.array(z.string()),
+  timeline: tolerantTimelineArray,
+});
+export type CoverageRecallResultJson = z.infer<typeof coverageRecallResultSchema>;
 
 export const commitDecisionSchema = z.object({
   action: z.enum(["write", "update", "split", "merge", "freeze", "no_op", "ask_confirmation"]),

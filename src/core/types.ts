@@ -123,6 +123,20 @@ export interface MemoryPacketClaim {
   confidence: number;
 }
 
+/** One date-ordered evidence line in a MemoryPacket timeline (T1 coverage).
+ *  Produced by the deterministic chronicle assembler in `src/core/coverage.ts`;
+ *  never LLM-invented. Citation discipline matches `MemoryPacketClaim.sources`:
+ *  `eventRef` is always "shard_id@snapshot_id:event_id". */
+export interface MemoryPacketTimelineEntry {
+  /** ISO calendar date (YYYY-MM-DD) derived from the event's createdAt, or
+   *  null when the event carries no parseable date. */
+  date: string | null;
+  /** Full citation: "shard_id@snapshot_id:event_id". */
+  eventRef: string;
+  /** Short, term-centered excerpt of the event content. */
+  line: string;
+}
+
 export interface MemoryPacket {
   query: string;
   summary: string;
@@ -130,6 +144,35 @@ export interface MemoryPacket {
   caveats: string[];
   conflicts: string[];
   recommendedMainContext: string;
+  /** Optional date-ordered evidence chronicle for coverage-shaped queries
+   *  (summaries, event ordering, temporal arithmetic, aggregation). Additive:
+   *  absent on point lookups and whenever coverage mode is off. */
+  timeline?: MemoryPacketTimelineEntry[];
+}
+
+// Query-intent classification (T1 coverage) — deterministic and lexical.
+// Shared by the core read path and the AMB bridge so the two can never
+// disagree about what "coverage-shaped" means.
+export interface QueryIntentFacets {
+  /** Narrative/summary breadth: "summarize", "overview", "in hindsight",
+   *  "impact of X on Y", … */
+  summary: boolean;
+  /** Sequence questions: "in what order", "which came first", … */
+  ordering: boolean;
+  /** Date arithmetic: "how many days between", "how long", … Triggers the
+   *  deterministic date-anchor computation — never LLM date math. */
+  temporalArithmetic: boolean;
+  /** Counting/enumeration across events: "how many distinct …", … */
+  aggregation: boolean;
+}
+
+export interface QueryIntent {
+  /** "coverage" iff any facet matched; otherwise "point". */
+  kind: "point" | "coverage";
+  facets: QueryIntentFacets;
+  /** Matched cue labels for CLI/debug explanations (mirrors
+   *  `CandidateScore.reasons`). */
+  cues: string[];
 }
 
 export interface CandidateScore {
