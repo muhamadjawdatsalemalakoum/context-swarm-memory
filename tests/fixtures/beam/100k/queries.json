@@ -1,0 +1,88 @@
+[
+  {
+    "id": "u1_summarization_0",
+    "query": "Provide a comprehensive summary of my LeafLoop hydroponics project across our discussions.",
+    "user_id": "u1",
+    "gold_answers": [
+      "The project began with a nutrient pump scheduler, moved to ESP32 MicroPython firmware, added two-point pH sensor calibration, and culminated in a peristaltic dosing pump plus a web dashboard with OTA updates."
+    ],
+    "gold_ids": ["u1"],
+    "meta": {
+      "question_category": "summarization",
+      "conversation_id": "u1",
+      "rubric": [
+        "LLM response should contain: nutrient pump scheduler as the first milestone",
+        "LLM response should mention: ESP32 microcontroller with MicroPython firmware",
+        "LLM response should state: two-point pH calibration using buffer solutions 4.0 and 7.0",
+        "LLM response should contain: peristaltic dosing pump and the LeafLoop web dashboard launch"
+      ]
+    }
+  },
+  {
+    "id": "u1_event_ordering_0",
+    "query": "List the LeafLoop milestones in the order they were first mentioned.",
+    "user_id": "u1",
+    "gold_answers": [],
+    "gold_ids": ["u1"],
+    "meta": {
+      "question_category": "event_ordering",
+      "conversation_id": "u1",
+      "rubric": [
+        "LLM response should list: the milestones in first-mention order"
+      ],
+      "ordering_tested": [
+        "1st: nutrient pump scheduler",
+        "2nd: ESP32 MicroPython firmware",
+        "3rd: two-point pH sensor calibration",
+        "4th: peristaltic pump and web dashboard"
+      ],
+      "total_mentions": 4
+    }
+  },
+  {
+    "id": "u1_abstention_0",
+    "query": "What did I say about the aquarium chiller wattage?",
+    "user_id": "u1",
+    "gold_answers": [
+      "Based on the provided chat, there is no information related to an aquarium chiller."
+    ],
+    "gold_ids": ["u1"],
+    "meta": {
+      "question_category": "abstention",
+      "conversation_id": "u1",
+      "rubric": [
+        "Based on the provided chat, there is no information about an aquarium chiller wattage"
+      ],
+      "why_unanswerable": "An aquarium chiller was never discussed in this conversation."
+    }
+  },
+  {
+    "id": "u2_information_extraction_0",
+    "query": "Which stepper motor and driver does the BarnOwl telescope mount use?",
+    "user_id": "u2",
+    "gold_answers": [
+      "The BarnOwl mount uses a NEMA 17 stepper with a TMC2209 driver. It sits on a 3D-printed equatorial wedge tuned for latitude 47 degrees."
+    ],
+    "gold_ids": ["u2"],
+    "meta": {
+      "question_category": "information_extraction",
+      "conversation_id": "u2"
+    }
+  },
+  {
+    "id": "u2_temporal_reasoning_0",
+    "query": "How many days passed between the autoguiding result and the dithering advice?",
+    "user_id": "u2",
+    "gold_answers": ["1 day"],
+    "gold_ids": ["u2"],
+    "meta": {
+      "question_category": "temporal_reasoning",
+      "conversation_id": "u2",
+      "rubric": [
+        "LLM response should state: 1 day between the two events"
+      ],
+      "time_points": ["April 1, 2031 autoguiding tracking error result", "April 2, 2031 dithering advice"],
+      "calculation_required": "subtract dates"
+    }
+  }
+]

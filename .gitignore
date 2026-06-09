@@ -75,6 +75,11 @@ data/eval/*.log
 # BABILong is fetched at runtime by scripts/fetch-babilong.ts
 data/eval/corpus-babilong/
 
+# BEAM slice is fetched at runtime by scripts/fetch-beam-slice.ts from the
+# upstream agent-memory-benchmark repo. NEVER commit real BEAM rows — the
+# committed test fixtures under tests/fixtures/beam/ are tiny + synthetic.
+data/eval/corpus-beam-slice/
+
 # PaySwift corpus: ship the merged events.jsonl (what src/eval/corpus.ts actually reads)
 # + queries.json + decisions + the corpus's own CC0 LICENSE. Exclude the per-tier build
 # intermediates that scripts/merge-phase-events.ts consumes to PRODUCE events.jsonl —
