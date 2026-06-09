@@ -5,6 +5,54 @@ green; the latency-sprint gate ledger in `docs/PERF_BREAKDOWN.md` landed in
 parallel and is reflected in the addendum at the bottom). Wave-1 briefs below
 are binding for the assigned R&D agents.
 
+## Wave-1 outcomes & errata (added at merge window, 2026-06-10)
+
+All four agents delivered; branches merged to main (333/333 tests), every
+feature behind a default-off flag. Verdicts and corrections that supersede
+statements below:
+
+- **T2/router:** mechanism proven offline (recall@3 0.714→0.857 at both 100K
+  and 1M; BEAM thin-metadata fixture gold-top-3 0/4→4/4) but **no measurable
+  effect at 100k scale** — PaySwift parity at +6.4% tokens, BEAM-slice 100k
+  inside CIs, because ~9-session units make alphabetical top-8 nearly
+  exhaustive. `CSM_ROUTER_HYBRID` stays default-off; re-gate on a 500k slice
+  (27 sessions/unit) before scale runs. Correction: q04 is recall/packing
+  starvation (T1 class), not router starvation — the router-starved class is
+  q03/q16/q17/q24/q30. The Gemma-era probe false-negative narrative is dead:
+  gemini-3.5-flash probes accept gold candidates at 98%, so the router-trust
+  top-2 extension is not worth its cost.
+- **T4/caching: Discovery B and the T4 row's "40-60% input-cost cut" did not
+  survive verification.** gemini-3.5-flash has a 4,096-token implicit-cache
+  floor (verified 2026-06-10); every CSM call is sub-floor (probe avg 557
+  tok, recall 1,384, synth 636), so today's pipeline gets exactly ZERO
+  caching and no restructuring under 4,096 earns anything. Best restructuring
+  arm ≈ −8% run cost with accuracy risk; explicit caching RAISES cost at
+  current budgets (break-even only vs full-context plans, where it is 6.1x
+  cheaper) and degrades with scale/router diversity. Caching is a
+  context-expansion enabler for T1-style bigger digests, not a cost lever,
+  and not a T8 funding source. Observability (cachedInputTokens /
+  thoughtsTokens) merged default-off; ~$2.00/run of thinking spend was
+  previously invisible.
+- **T3/harness:** BEAM has NO sub-conversation evidence refs (gold_ids ==
+  [user_id] on 400/400), so "recall@k" gates are the documented rubric-facet
+  coverage proxy (lexical ceiling 92-96%). Upstream ships FOUR splits incl.
+  10m — and 10m is one mega-document per unit (single shard; routing moot;
+  T8 needs unit chunking there). Found: event_ordering queries trip the
+  bridge's `preferUserTurns` k-cut and lose assistant-turn evidence —
+  re-examine with live numbers. Live 100k baselines (hybrid-off):
+  event_ordering packed 0.565 / cov@32 0.615; summarization packed 0.415 /
+  cov@24 0.561; ~12-13 s and ~16K input tokens per coverage-class query.
+- **T1/coverage:** deterministic chronicle assembler met both bars offline
+  (q27 12/13 gold, q04 5/6 with a probe foothold); ~640 of the bridge's
+  1,224 lines (incl. both domain tables) become deletable after its gates.
+  Correction: q04 and q27 are different failure classes (point-starved vs
+  coverage-shaped) — handled by separate triggers (starvation net vs intent
+  mode); live gates should not expect the intent classifier to fire on q04.
+- **Dispatch-process fix for future waves:** agent worktrees were cut from a
+  stale HEAD; all four self-corrected by fast-forwarding. Briefs must pin the
+  intended base SHA, and fresh worktrees need the gitignored caches (MiniLM
+  model, data/eval/embeddings) seeded or tests flake.
+
 ## Two load-bearing discoveries
 
 **Discovery A — the router is a no-op on AMB/BEAM corpora.** Bridge-built
