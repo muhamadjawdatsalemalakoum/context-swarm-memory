@@ -1,0 +1,32 @@
+[
+  {
+    "id": "u1_s0_0",
+    "content": "[Jan-05-2031 | Turn 0] User: I'm building a balcony hydroponics controller called LeafLoop. First milestone is the nutrient pump scheduler. ->-> 1,1\n\n[Jan-05-2031 | Turn 1] Assistant: For the nutrient pump scheduler, a cron-style interval table with a manual override switch works well.\n\n[Jan-06-2031 | Turn 2] User: I picked an ESP32 microcontroller and decided the firmware will be written in MicroPython for faster iteration.",
+    "user_id": "u1",
+    "timestamp": null
+  },
+  {
+    "id": "u1_s0_1",
+    "content": "[Feb-11-2031 | Turn 3] User: The pH sensor calibration drifted badly. I added a two-point calibration routine using buffer solution 4.0 and 7.0 on February 11, 2031.\n\n[Feb-12-2031 | Turn 4] Assistant: Two-point calibration is right. Store the slope and offset in NVS so reboots keep the calibration.",
+    "user_id": "u1",
+    "timestamp": null
+  },
+  {
+    "id": "u1_s1_2",
+    "content": "[Mar-02-2031 | Turn 5] User: Big update: I swapped the dosing pump for a peristaltic model and launched the LeafLoop web dashboard on March 2, 2031.\n\n[Mar-03-2031 | Turn 6] Assistant: Peristaltic pumps dose more precisely. For the dashboard, add a chart of electrical conductivity over time.\n\n[Mar-04-2031 | Turn 7] User: Also enabled OTA firmware updates so I can ship fixes without USB access.",
+    "user_id": "u1",
+    "timestamp": null
+  },
+  {
+    "id": "u2_s0_0",
+    "content": "A single un-turned memo document for unit u2: the BarnOwl telescope mount uses a NEMA 17 stepper, a TMC2209 driver, and a 3D-printed equatorial wedge tuned for latitude 47 degrees.",
+    "user_id": "u2",
+    "timestamp": null
+  },
+  {
+    "id": "u2_s1_0",
+    "content": "[Apr-01-2031 | Turn 0] User: For BarnOwl I wrote the autoguiding loop in Rust and got tracking error under 2 arcseconds on April 1, 2031.\n\n[Apr-02-2031 | Turn 1] Assistant: Under 2 arcseconds is excellent. Consider dithering between exposures to reduce fixed-pattern noise.",
+    "user_id": "u2",
+    "timestamp": null
+  }
+]
