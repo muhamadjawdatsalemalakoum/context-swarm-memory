@@ -1175,14 +1175,71 @@ export function resolveCoverageRecallTokens(
 
 /** Intent-conditional timeline size. Ordering/temporal queries get 32
  *  (mirrors the bridge's CSM_AMB_REASONING_RETURN_K), summary/aggregation 24
- *  (mirrors CSM_AMB_SUMMARY_RETURN_K / capsule summary snippets). */
+ *  (mirrors CSM_AMB_SUMMARY_RETURN_K / capsule summary snippets). Starvation
+ *  recovery gets 32 — breadth is the whole point of the recovery net. */
 export function resolveCoverageMaxEntries(
   intent: QueryIntent,
   raw = process.env.CSM_COVERAGE_MAX_ENTRIES,
+  starvation = false,
 ): number {
   const fallback =
-    intent.facets.ordering || intent.facets.temporalArithmetic ? 32 : 24;
+    starvation || intent.facets.ordering || intent.facets.temporalArithmetic
+      ? 32
+      : 24;
   return parsePositiveInt(raw, fallback);
+}
+
+/**
+ * Coverage orchestration for `ask()` — the whole merge-window integration is
+ * "compute intent, swap the recall token budget, call this once after the
+ * packet is built". Read-only: consumes already-loaded snapshots, performs
+ * no I/O and no LLM calls, returns a NEW packet (never mutates the input).
+ *
+ * Fires in two regimes:
+ *  - intent mode: the query is coverage-shaped (summary/ordering/temporal/
+ *    aggregation) — attach a chronicle timeline (and, for temporal
+ *    arithmetic, a deterministic date-difference claim with full citations).
+ *  - starvation mode: a point query whose packet cites fewer than the
+ *    starvation floor of distinct events (the q04 class: right shard probed,
+ *    recall conservative) — run the assembler as a recovery net with
+ *    breadth spread.
+ */
+export function attachCoverage(args: {
+  query: string;
+  intent: QueryIntent;
+  packet: MemoryPacket;
+  snapshots: MemoryShardSnapshot[];
+  /** Probe-identified event IDs (footholds). */
+  probeFootholdEventIds?: string[];
+}): MemoryPacket {
+  const { query, intent, packet, snapshots, probeFootholdEventIds = [] } = args;
+  const starvation = intent.kind !== "coverage";
+  if (starvation) {
+    const floor = resolveCoverageStarvationFloor();
+    if (floor <= 0 || countCitedEvents(packet) >= floor) return packet;
+  }
+  if (snapshots.length === 0) return packet;
+
+  const chronicle = assembleChronicle({
+    query,
+    intent,
+    snapshots,
+    footholdEventIds: probeFootholdEventIds,
+    maxEntries: resolveCoverageMaxEntries(intent, undefined, starvation),
+    forceSpread: starvation,
+  });
+  if (chronicle.length === 0) return packet;
+
+  let keyClaims = packet.keyClaims;
+  if (intent.facets.temporalArithmetic) {
+    const rel = computeTemporalRelation({
+      query,
+      snapshots,
+      footholdEventIds: probeFootholdEventIds,
+    });
+    if (rel) keyClaims = [temporalRelationToClaim(rel), ...keyClaims];
+  }
+  return { ...packet, keyClaims, timeline: timelineFromChronicle(chronicle) };
 }
 
 /** Starvation floor: when coverage mode is on and a POINT query's packet
