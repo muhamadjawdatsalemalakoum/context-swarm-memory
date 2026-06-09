@@ -108,6 +108,61 @@ Rules:
 - Set "query" to the exact user question above.`;
 }
 
+/**
+ * Coverage-mode recall prompt (T1, DESIGN-ONLY — additive; no runtime path
+ * calls this yet and no API spend has validated it). Pairs with
+ * `coverageRecallResultSchema` in schemas.ts (schemaName
+ * "CoverageRecallResult").
+ *
+ * Intent: for summary/ordering/temporal-shaped queries, the per-shard recall
+ * should return a DATE-ORDERED digest of every matching event with full
+ * event-ID citations, instead of the conservative few-claims answer the
+ * standard recall produces. The deterministic chronicle assembler in
+ * `src/core/coverage.ts` is the shipped primary mechanism; this LLM variant
+ * is the gated wave-2 alternative for when semantic dedup/abstraction is
+ * worth an extra LLM call.
+ *
+ * Gating before any wiring: PaySwift 30q A/B + T3 BEAM-slice recall@k (see
+ * docs/experiments/EXP-T1-coverage.md). Note: the model is NEVER asked to do
+ * date arithmetic — it only echoes the per-event dates shown in its digest;
+ * date math stays in `computeTemporalRelation` (deterministic).
+ */
+export function coverageRecallPrompt(args: {
+  userQuery: string;
+  shardId: string;
+  snapshotId: string;
+}): string {
+  return `Question:
+${args.userQuery}
+
+This question needs BROAD chronological coverage, not a single fact. Survey the
+entire event list above and return JSON only:
+{
+  "shard_id": "${args.shardId}",
+  "snapshot_id": "${args.snapshotId}",
+  "confidence": number between 0 and 1,
+  "answer": string,
+  "claims": [
+    { "claim": string, "support": string[], "confidence": number between 0 and 1 }
+  ],
+  "unknowns": string[],
+  "conflicts": string[],
+  "timeline": [
+    { "date": string in YYYY-MM-DD or null, "event_ref": "${args.shardId}@${args.snapshotId}:<event_id>", "line": string }
+  ]
+}
+
+Timeline rules — IMPORTANT:
+- Include ONE timeline entry for EVERY event in this shard that is relevant to the question, in ascending date order. Do not stop after the first few.
+- "date" must be copied from the event line's own date stamp. If an event shows no date, use null. NEVER compute, infer, or adjust dates.
+- "event_ref" must cite a real event ID from the Events list. Do not invent IDs.
+- "line" is a one-sentence factual restatement of that event (max ~25 words).
+- Order strictly by date ascending; undated entries go last.
+
+Claims rules are unchanged from standard recall: resolve aliases liberally,
+over-cite rather than under-cite, and never invent event IDs.`;
+}
+
 export function committerPrompt(args: { conversationExcerpt: string; memoryPacket: string }): string {
   return `You are the memory committer.
 

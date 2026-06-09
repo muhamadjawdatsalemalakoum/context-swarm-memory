@@ -1,4 +1,5 @@
 import { ask } from "../../core/ask.js";
+import { collectTimelineEventIds } from "../../core/coverage.js";
 import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
 import {
   buildRouterIndex,
@@ -504,9 +505,18 @@ export class CsmBaseline implements BaselineRunner {
     // events as a third retrieval tier. Reverted because at filler-heavy
     // corpora the probe accepts filler shards and pollutes the context.
     // See git log / CHANGELOG for the v1→v3 retraction story.
+    //
+    // **T1 coverage timeline** (CSM_COVERAGE, default off → empty array):
+    // the chronicle assembler's date-ordered evidence joins AFTER the
+    // recall-cited tiers, so the precise LLM-cited events still pack first
+    // and the timeline only widens coverage. Unlike the retracted
+    // probe-tier, timeline entries are term-scored against query+foothold
+    // vocabulary, not raw probe accepts — filler shards score ~0.
+    const timelineEventIds = collectTimelineEventIds(askResult.memoryPacket);
     const baseRetrievalOrder = dedupeInOrder([
       ...citedEventIds,
       ...recalledEventIds,
+      ...timelineEventIds,
     ]);
 
     // **RAG-floor augmentation** — the key insight from the q11 debug:
@@ -872,6 +882,8 @@ export class CsmBaseline implements BaselineRunner {
         entityBridgeFired,
         entityBridgeCount,
         entityBridgeShardIds,
+        coverageTimelineCount: timelineEventIds.length,
+        coverageFired: timelineEventIds.length > 0,
         routerTopScore: askResult.candidates[0]?.score ?? 0,
         routerHybrid: Boolean(routerIndex), // [T2 WORKTREE WIRING]
         packetCost: askResult.cost,
@@ -1125,12 +1137,22 @@ function formatPacketHeader(packet: MemoryPacket): string {
   const caveats = packet.caveats.length
     ? `\nCAVEATS:\n${packet.caveats.map((c) => `- ${c}`).join("\n")}`
     : "";
+  // T1 coverage: date-ordered cited timeline (absent unless CSM_COVERAGE
+  // produced one). This is the in-context analogue of the AMB evidence
+  // capsule — the answer model sees order + dates explicitly instead of
+  // inferring them from raw event prose.
+  const timeline = packet.timeline?.length
+    ? `\nTIMELINE (date-ordered evidence):\n${packet.timeline
+        .map((t) => `- ${t.date ?? "undated"} [${t.eventRef}] ${t.line}`)
+        .join("\n")}`
+    : "";
   return [
     "MEMORY PACKET (from CSM pipeline):",
     `SUMMARY: ${packet.summary}`,
     `KEY CLAIMS:\n${claims}`,
     conflicts,
     caveats,
+    timeline,
   ]
     .filter((s) => s.length > 0)
     .join("\n");

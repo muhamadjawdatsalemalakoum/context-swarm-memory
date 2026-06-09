@@ -14,6 +14,13 @@ import { selectCandidatesHybrid, type RouterIndex } from "./routerEmbed.js";
 import { probeShard } from "./probe.js";
 import { recallShard } from "./recall.js";
 import { synthesizeMemoryPacket, packetFromSingleRecall, emptyPacket } from "./synthesize.js";
+import {
+  attachCoverage,
+  classifyQueryIntent,
+  resolveCoverageMode,
+  resolveCoverageRecallTokens,
+} from "./coverage.js";
+import type { MemoryShardSnapshot } from "./types.js";
 import { DEFAULT_RECALL_BUDGET } from "./tokenBudget.js";
 import { newRunId } from "../utils/ids.js";
 import { nowIso } from "../utils/time.js";
@@ -67,6 +74,18 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   const runId = newRunId();
   const startedAt = nowIso();
   const t0 = Date.now();
+
+  // T1 coverage mode (CSM_COVERAGE, default OFF — when unset, coverageIntent
+  // is null, recallTokensPerShard equals the budget default, and every LLM
+  // input below is byte-identical to the pre-coverage pipeline). Coverage-
+  // shaped queries (summaries / event ordering / temporal arithmetic /
+  // aggregation) get a bigger recall event digest, and after synthesis the
+  // deterministic chronicle assembler attaches a date-ordered, fully-cited
+  // timeline to the packet (zero extra LLM calls, zero extra storage loads).
+  const coverageIntent = resolveCoverageMode() ? classifyQueryIntent(query) : null;
+  const recallTokensPerShard = coverageIntent
+    ? resolveCoverageRecallTokens(coverageIntent, budget.maxRecallTokensPerShard)
+    : budget.maxRecallTokensPerShard;
 
   const cost: AskRunCost = {
     inputTokensEstimate: 0,
@@ -182,7 +201,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
             userQuery: query,
             snapshot: snap,
             relevantEventIdsHint: o.result.relevantEventIds,
-            maxRecallTokensPerShard: budget.maxRecallTokensPerShard,
+            maxRecallTokensPerShard: recallTokensPerShard,
             model: stageModels.recall,
           }).then(({ result, usage }) => ({ result, usage }));
         })
@@ -272,7 +291,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
           userQuery: query,
           snapshot: snap,
           relevantEventIdsHint: p.relevantEventIds,
-          maxRecallTokensPerShard: budget.maxRecallTokensPerShard,
+          maxRecallTokensPerShard: recallTokensPerShard,
           model: stageModels.recall,
         }).then(({ result, usage }) => ({ result, usage }));
       });
@@ -284,7 +303,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
       userQuery: query,
       snapshot: snap,
       relevantEventIdsHint: p.relevantEventIds,
-      maxRecallTokensPerShard: budget.maxRecallTokensPerShard,
+      maxRecallTokensPerShard: recallTokensPerShard,
       model: stageModels.recall,
     }).then(({ result, usage }) => ({ result, usage }));
   });
@@ -331,6 +350,24 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     });
     accumulate(synth.usage);
     packet = synth.packet;
+  }
+
+  // T1 coverage attach (no-op when CSM_COVERAGE is off). Deterministic and
+  // read-only: reuses the snapshots already loaded for probing (zero extra
+  // storage reads), adds zero LLM calls, and returns a new packet with a
+  // date-ordered cited timeline (plus, for temporal-arithmetic queries, a
+  // deterministic date-difference claim). Fires on coverage-shaped intents
+  // and as a starvation net for under-cited point queries.
+  if (coverageIntent) {
+    packet = attachCoverage({
+      query,
+      intent: coverageIntent,
+      packet,
+      snapshots: snapshotsByCandidate.filter(
+        (s): s is MemoryShardSnapshot => Boolean(s),
+      ),
+      probeFootholdEventIds: probes.flatMap((p) => p.relevantEventIds),
+    });
   }
 
   return await finalize({
