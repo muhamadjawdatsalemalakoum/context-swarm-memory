@@ -76,7 +76,8 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
   - `CSM_PROVIDER=gemini`
   - `GEMINI_API_KEY=…` (or `GOOGLE_API_KEY=…` — `GeminiProvider` accepts either)
   - `CSM_GEMINI_MODEL=gemini-3.5-flash` (pinned stable model the docs/tests/evidence runs standardize on; rolling alias `gemini-flash-latest` also works)
-  - `CSM_GEMINI_THINKING=low`
+  - `CSM_GEMINI_THINKING=low` (`CSM_GEMINI_THINKING_MIN=minimal` is the per-call floor for `disableThinking` stages like probe; gemini-3-pro rejects `minimal` — set `low` there)
+- Probe/recall concurrency is parallel by default for hosted providers and serial for local `ollama`/`llama-server`; `CSM_PARALLEL_PROBES=0|1` overrides (`resolveParallelProbes` in `src/eval/baselines/csm.ts`). Measured latency/token attribution and A/B numbers live in `docs/PERF_BREAKDOWN.md`.
 - `GeminiProvider` (`src/providers/GeminiProvider.ts`) hits the native `…/v1beta/models/<model>:generateContent` endpoint with an `x-goog-api-key` header and redacts the key from all error messages.
 - Inspect / smoke the active provider: `npm run csm -- provider info` (provider, model, which key vars are set — never prints the key) and `npm run csm -- provider ping [--max-tokens N]` (one live round-trip). Use `--max-tokens` ≥ ~256 for thinking models or the reasoning budget can starve the reply.
 - Full setup (timeouts, retries, cost-safety, SOTA sidecar path): `docs/GEMINI.md`. Copyable template: `.env.example`.

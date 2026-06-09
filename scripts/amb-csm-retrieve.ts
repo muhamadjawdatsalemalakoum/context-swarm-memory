@@ -7,6 +7,7 @@ import { CsmBaseline } from "../src/eval/baselines/csm.js";
 import type { BenchEvent, Corpus } from "../src/eval/corpus.js";
 import type { FreeFormQuery } from "../src/eval/mcq.js";
 import { createProvider } from "../src/providers/index.js";
+import { loadLocalEnv } from "../src/utils/loadEnv.js";
 
 export interface AmbDocument {
   id: string;
@@ -45,9 +46,19 @@ interface Args {
   model: string;
   modelContext: number;
   maxOutputTokens: number;
+  /** A/B switch: run the legacy path that also computes CSM's internal final
+   *  answer (which AMB discards in rag mode). Default false = retrieve-only. */
+  withInternalAnswer: boolean;
 }
 
 async function main(): Promise<void> {
+  // The AMB provider spawns this script with cwd = CSM_REPO_DIR, so pick up
+  // the CSM repo's .env (provider, API key, model) exactly like the CLI does.
+  // Vars already exported by the AMB process still win. Without this, a
+  // missing shell export silently fell back to MockProvider — which must
+  // never be mistaken for a real benchmark retrieval (see llm_provider in
+  // the output, and the hard guard below).
+  loadLocalEnv();
   const args = parseArgs(process.argv.slice(2));
   if (!process.env.CSM_MODEL) process.env.CSM_MODEL = args.model;
 
@@ -65,7 +76,17 @@ async function main(): Promise<void> {
   }
 
   const corpus = buildCorpus(scopedDocs);
-  const baseline = new CsmBaseline({ provider: createProvider() });
+  const provider = createProvider();
+  // Benchmark-integrity guard: a missing key/provider config falls back to
+  // MockProvider, whose instant keyword results must never be mistaken for a
+  // real retrieval row. Opt in explicitly for plumbing smokes.
+  if (provider.name === "mock" && !isTruthyEnv(process.env.CSM_AMB_ALLOW_MOCK)) {
+    throw new Error(
+      "amb-csm-retrieve resolved the mock provider (no CSM_PROVIDER/API key in env or .env). " +
+        "Refusing to produce benchmark rows from mock retrieval. Set CSM_AMB_ALLOW_MOCK=1 to override for plumbing tests.",
+    );
+  }
+  const baseline = new CsmBaseline({ provider });
   const query: FreeFormQuery = {
     kind: "free-form",
     id: "amb-request",
@@ -74,16 +95,45 @@ async function main(): Promise<void> {
     relevantEventIds: [],
   };
 
-  const result = await baseline.answer(query, corpus, {
+  const runCtx = {
     maxInputTokens: args.modelContext,
     model: args.model,
     maxOutputTokens: args.maxOutputTokens,
     temperature: 0,
     seed: 42,
-  });
+  };
 
-  const retrievedEventIds = asStringArray(result.meta?.csmRetrievedEventIds);
-  const packedEventIds = asStringArray(result.meta?.packedEventIds);
+  // Default is retrieve-only: in AMB rag mode the harness answers with its
+  // own model, so CSM's internal answer call was pure discarded cost
+  // (~7.1K input tokens + ~2.7 s per query on the BEAM 100K run).
+  let meta: Record<string, unknown>;
+  let inputTokens: number;
+  let outputTokens: number;
+  let latencyMs: number;
+  let mode: string;
+  let note: string;
+  if (args.withInternalAnswer) {
+    const result = await baseline.answer(query, corpus, runCtx);
+    meta = (result.meta ?? {}) as Record<string, unknown>;
+    inputTokens = result.inputTokens;
+    outputTokens = result.outputTokens;
+    latencyMs = result.latencyMs;
+    mode = "retrieve-via-csm-baseline";
+    note =
+      "A/B bridge: CSM retrieval is exposed to AMB; the internal final answer call is computed and discarded.";
+  } else {
+    const retrieval = await baseline.retrieveContext(query, corpus, runCtx);
+    meta = retrieval.meta;
+    inputTokens = retrieval.pipelineCost.inputTokensEstimate;
+    outputTokens = retrieval.pipelineCost.outputTokensEstimate;
+    latencyMs = retrieval.pipelineCost.latencyMs;
+    mode = "retrieve-only";
+    note =
+      "Retrieve-only bridge: CSM retrieval is exposed to AMB; no internal answer call is made (AMB's answer model owns answering in rag mode).";
+  }
+
+  const retrievedEventIds = asStringArray(meta.csmRetrievedEventIds);
+  const packedEventIds = asStringArray(meta.packedEventIds);
   const baseIds = retrievedEventIds.length > 0 ? retrievedEventIds : packedEventIds;
   const intent = detectAmbQueryIntent(request.query);
   const ids = selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
@@ -111,16 +161,17 @@ async function main(): Promise<void> {
     documents: responseDocuments,
     raw_response: {
       provider: "context-swarm-memory",
-      mode: "retrieve-via-csm-baseline",
-      note:
-        "Smoke bridge: CSM retrieval is exposed to AMB; the internal final answer call is discarded.",
-      meta: result.meta ?? {},
+      llm_provider: provider.name,
+      llm_model: args.model,
+      mode,
+      note,
+      meta,
       ambIntent: intent,
       evidenceCapsule: Boolean(capsule),
       returnedEventIds: ids,
-      inputTokens: result.inputTokens,
-      outputTokens: result.outputTokens,
-      latencyMs: result.latencyMs,
+      inputTokens,
+      outputTokens,
+      latencyMs,
     },
   });
 }
@@ -1052,16 +1103,23 @@ function stripBom(value: string): string {
   return value.charCodeAt(0) === 0xfeff ? value.slice(1) : value;
 }
 
+const BOOLEAN_FLAGS = new Set(["with-internal-answer"]);
+
 function parseArgs(argv: string[]): Args {
   const raw = new Map<string, string>();
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i];
     if (!key?.startsWith("--")) continue;
+    const name = key.slice(2);
+    if (BOOLEAN_FLAGS.has(name)) {
+      raw.set(name, "1");
+      continue;
+    }
     const value = argv[i + 1];
     if (value === undefined || value.startsWith("--")) {
       throw new Error(`Missing value for ${key}`);
     }
-    raw.set(key.slice(2), value);
+    raw.set(name, value);
     i++;
   }
 
@@ -1086,7 +1144,16 @@ function parseArgs(argv: string[]): Args {
       raw.get("max-output-tokens") ?? process.env.CSM_AMB_MAX_OUTPUT_TOKENS,
       8,
     ),
+    withInternalAnswer:
+      raw.has("with-internal-answer") ||
+      isTruthyEnv(process.env.CSM_AMB_WITH_INTERNAL_ANSWER),
   };
+}
+
+function isTruthyEnv(value: string | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {

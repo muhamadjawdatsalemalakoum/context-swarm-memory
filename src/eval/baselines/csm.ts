@@ -283,6 +283,45 @@ export function resolveEntityBridgeMax(
 }
 
 /**
+ * Probe/recall concurrency policy. Local single-GPU servers serialize
+ * internally anyway, and concurrent fetches against them tripped Undici's
+ * connection-pool limits (see CHANGELOG "Serialised CSM probes"), so they
+ * stay serial. Hosted APIs handle concurrency fine, and serializing them is
+ * the single biggest latency cost in the pipeline: the BEAM 100K run paid
+ * ~7.25 probes + ~3.55 recalls per query back-to-back (~28.4 s of a ~29.2 s
+ * average retrieval). `CSM_PARALLEL_PROBES=0|1` overrides the heuristic —
+ * use `0` when pointing the "openai" provider at a local OpenAI-compat
+ * endpoint.
+ */
+export function resolveParallelProbes(
+  providerName: string,
+  raw = process.env.CSM_PARALLEL_PROBES,
+): boolean {
+  if (raw !== undefined && raw.trim().length > 0) {
+    const v = raw.trim().toLowerCase();
+    return !(v === "0" || v === "false" || v === "no");
+  }
+  return providerName !== "ollama" && providerName !== "llama-server";
+}
+
+/** Everything `answer()` needs from the retrieval half of the baseline, and
+ *  everything the AMB bridge needs WITHOUT the final answer call. */
+export interface CsmRetrieval {
+  contextString: string;
+  contextTokens: number;
+  packedEventIds: string[];
+  packetTokens: number;
+  csmRetrievedEventIds: string[];
+  pipelineCost: {
+    inputTokensEstimate: number;
+    outputTokensEstimate: number;
+    estimatedUsd: number;
+    latencyMs: number;
+  };
+  meta: Record<string, unknown>;
+}
+
+/**
  * CSM baseline for the Phase C scaling study.
  *
  * Drives the existing read-only CSM pipeline (`router → probe → recall →
@@ -322,6 +361,84 @@ export class CsmBaseline implements BaselineRunner {
     corpus: Corpus,
     ctx: BaselineRunContext,
   ): Promise<BaselineResult> {
+    const retrieval = await this.retrieveContext(query, corpus, ctx);
+
+    // 3. Ask the answering LLM. Prompt + system come from the shared
+    //    dispatcher so MCQ and free-form queries are wrapped uniformly.
+    //
+    //    Phase α (initial): tried `disableThinking: true` to skip Gemma 4's
+    //    2-3K reasoning tokens before the `ANSWER: N` line. Measured on
+    //    `phase-alpha-10q`: CSM dropped 9/10 → 8/10 (q02 + q23 regressed) on
+    //    multi-option discrimination queries that genuinely needed the
+    //    reasoning trace. Reverted: the answer stage KEEPS thinking enabled.
+    //    Probe (binary classification, e4b) still benefits from disabling —
+    //    that change stays. Keep this note here so the retired runbook doc
+    //    is not needed to preserve the benchmark rationale.
+    const { system, prompt } = buildPrompt(query, retrieval.contextString);
+    const llm = await callLlmCached({
+      provider: this.opts.provider,
+      model: ctx.model,
+      system,
+      prompt,
+      maxOutputTokens: ctx.maxOutputTokens ?? 256,
+      temperature: ctx.temperature ?? 0,
+      seed: ctx.seed ?? 42,
+      // disableThinking intentionally NOT set — answer accuracy > latency on
+      // multi-option MCQs. See phase-alpha-10q A/B above.
+    });
+
+    // 4. Parse. Apply citation fallback: if the model produced a usable
+    //    answer but echoed no event IDs, fall back to what CSM retrieved
+    //    — the system DID use those events even if the model didn't list
+    //    them.
+    const parsed = parseAnswer(query, llm.response);
+    const hasAnswer =
+      parsed.kind === "free-form"
+        ? parsed.chosenAnswer !== null
+        : parsed.chosenOption !== null;
+    if (hasAnswer && parsed.citedEventIds.length === 0) {
+      parsed.citedEventIds = retrieval.packedEventIds.length
+        ? retrieval.packedEventIds
+        : retrieval.csmRetrievedEventIds;
+    }
+
+    // Honest accounting: top-level `inputTokens` / `outputTokens` / `latencyMs`
+    // must reflect the WHOLE pipeline (probes + recalls + synth + final MCQ
+    // answer), not just the final call. Reporting only `llm.*` here was a real
+    // bug that made CSM look 60-70% cheaper than it actually is. The full
+    // breakdown stays in `meta` so the report can show both.
+    return {
+      answer: parsed,
+      inputTokens: retrieval.pipelineCost.inputTokensEstimate + llm.inputTokens,
+      outputTokens:
+        retrieval.pipelineCost.outputTokensEstimate + llm.outputTokens,
+      latencyMs: retrieval.pipelineCost.latencyMs + llm.latencyMs,
+      model: ctx.model,
+      meta: {
+        ...retrieval.meta,
+        // Per-stage breakdown so the report can disambiguate pipeline vs final.
+        finalCallInputTokens: llm.inputTokens,
+        finalCallOutputTokens: llm.outputTokens,
+        finalCallLatencyMs: llm.latencyMs,
+      },
+    };
+  }
+
+  /**
+   * The retrieval half of the baseline: CSM pipeline + retrieval-order
+   * augmentation + budgeted context assembly — everything `answer()` does
+   * EXCEPT the final answering-LLM call.
+   *
+   * This is the AMB bridge entry point. In AMB's rag mode the harness runs
+   * its own answer model over the returned documents, so the internal answer
+   * call was pure discarded cost there: ~7.1K input tokens and ~2.7 s per
+   * query on the BEAM 100K run.
+   */
+  async retrieveContext(
+    query: Query,
+    corpus: Corpus,
+    ctx: BaselineRunContext,
+  ): Promise<CsmRetrieval> {
     const storage = this.getAdapter(corpus);
 
     // 1. Drive the full CSM pipeline. `skipQueryLog: true` short-circuits
@@ -332,11 +449,10 @@ export class CsmBaseline implements BaselineRunner {
       storage,
       query: query.question,
       skipQueryLog: true,
-      // Serialise probes for local Ollama: with single-daemon serialisation
-      // plus Node's fetch connection-pool limits, parallel probes were
-      // reliably failing with "fetch failed" mid-pipeline. Sequential is the
-      // same wall-clock on Ollama anyway (server queues internally).
-      parallelProbes: false,
+      // Parallel probes/recalls for hosted providers; serial for local
+      // single-GPU servers (Ollama/llama-server) where concurrent fetches
+      // tripped Undici's connection pool. See resolveParallelProbes.
+      parallelProbes: resolveParallelProbes(this.opts.provider.name),
     });
 
     // 2. Convert the MemoryPacket + cited events to a context string the
@@ -671,50 +787,6 @@ export class CsmBaseline implements BaselineRunner {
         budgetTokens: contextBudget,
       });
 
-    // 3. Ask the answering LLM. Prompt + system come from the shared
-    //    dispatcher so MCQ and free-form queries are wrapped uniformly.
-    //
-    //    Phase α (initial): tried `disableThinking: true` to skip Gemma 4's
-    //    2-3K reasoning tokens before the `ANSWER: N` line. Measured on
-    //    `phase-alpha-10q`: CSM dropped 9/10 → 8/10 (q02 + q23 regressed) on
-    //    multi-option discrimination queries that genuinely needed the
-    //    reasoning trace. Reverted: the answer stage KEEPS thinking enabled.
-    //    Probe (binary classification, e4b) still benefits from disabling —
-    //    that change stays. Keep this note here so the retired runbook doc
-    //    is not needed to preserve the benchmark rationale.
-    const { system, prompt } = buildPrompt(query, contextString);
-    const llm = await callLlmCached({
-      provider: this.opts.provider,
-      model: ctx.model,
-      system,
-      prompt,
-      maxOutputTokens: ctx.maxOutputTokens ?? 256,
-      temperature: ctx.temperature ?? 0,
-      seed: ctx.seed ?? 42,
-      // disableThinking intentionally NOT set — answer accuracy > latency on
-      // multi-option MCQs. See phase-alpha-10q A/B above.
-    });
-
-    // 4. Parse. Apply citation fallback: if the model produced a usable
-    //    answer but echoed no event IDs, fall back to what CSM retrieved
-    //    — the system DID use those events even if the model didn't list
-    //    them.
-    const parsed = parseAnswer(query, llm.response);
-    const hasAnswer =
-      parsed.kind === "free-form"
-        ? parsed.chosenAnswer !== null
-        : parsed.chosenOption !== null;
-    if (hasAnswer && parsed.citedEventIds.length === 0) {
-      parsed.citedEventIds = packedEventIds.length
-        ? packedEventIds
-        : csmRetrievedEventIds;
-    }
-
-    // Honest accounting: top-level `inputTokens` / `outputTokens` / `latencyMs`
-    // must reflect the WHOLE pipeline (probes + recalls + synth + final MCQ
-    // answer), not just the final call. Reporting only `llm.*` here was a real
-    // bug that made CSM look 60-70% cheaper than it actually is. The full
-    // breakdown stays in `meta` so the report can show both.
     const pipelineCost = askResult.cost ?? {
       inputTokensEstimate: 0,
       outputTokensEstimate: 0,
@@ -723,11 +795,12 @@ export class CsmBaseline implements BaselineRunner {
     };
 
     return {
-      answer: parsed,
-      inputTokens: pipelineCost.inputTokensEstimate + llm.inputTokens,
-      outputTokens: pipelineCost.outputTokensEstimate + llm.outputTokens,
-      latencyMs: pipelineCost.latencyMs + llm.latencyMs,
-      model: ctx.model,
+      contextString,
+      contextTokens,
+      packedEventIds,
+      packetTokens,
+      csmRetrievedEventIds,
+      pipelineCost,
       meta: {
         csmRetrievedEventIds,
         packedEventIds,
@@ -756,10 +829,6 @@ export class CsmBaseline implements BaselineRunner {
         entityBridgeShardIds,
         routerTopScore: askResult.candidates[0]?.score ?? 0,
         packetCost: askResult.cost,
-        // Per-stage breakdown so the report can disambiguate pipeline vs final.
-        finalCallInputTokens: llm.inputTokens,
-        finalCallOutputTokens: llm.outputTokens,
-        finalCallLatencyMs: llm.latencyMs,
         pipelineInputTokens: pipelineCost.inputTokensEstimate,
         pipelineOutputTokens: pipelineCost.outputTokensEstimate,
         pipelineLatencyMs: pipelineCost.latencyMs,

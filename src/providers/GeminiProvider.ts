@@ -97,7 +97,7 @@ export class GeminiProvider implements LlmProvider {
 
     const model = args.model ?? this.defaultModel;
     const endpoint = `${this.baseURL}/models/${encodeURIComponent(model)}:generateContent`;
-    const thinkingConfig = geminiThinkingConfig(model);
+    const thinkingConfig = geminiThinkingConfig(model, args.disableThinking);
     const body: Record<string, unknown> = {
       systemInstruction: {
         parts: [{ text: args.system }],
@@ -261,15 +261,30 @@ function redactedEndpoint(baseURL: string, model: string): string {
   return `${stripSlash(baseURL)}/models/${encodeURIComponent(model)}:generateContent`;
 }
 
-function geminiThinkingConfig(model: string): Record<string, unknown> | undefined {
+function geminiThinkingConfig(
+  model: string,
+  disableThinking?: boolean,
+): Record<string, unknown> | undefined {
+  const lower = model.toLowerCase();
+  if (!lower.startsWith("gemini-3")) return undefined;
+
+  // Per-call thinking floor for classification-style stages (probe sets
+  // `disableThinking: true`). Measured on gemini-3.5-flash with a probe-shaped
+  // call (scripts/probe-thinking-levels.ts, 2026-06-09): "minimal" emits 0
+  // thought tokens at ~1.6 s vs 125 thoughts at ~2.1 s for "low" and 436
+  // thoughts at ~4.0 s at API default. "none" is NOT a valid thinkingLevel
+  // (HTTP 400). CSM_GEMINI_THINKING_MIN overrides for models whose floor
+  // differs (e.g. gemini-3-pro rejects "minimal" — use "low" there).
+  const minLevel = process.env.CSM_GEMINI_THINKING_MIN ?? "minimal";
+  if (disableThinking) return { thinkingLevel: minLevel };
+
   const mode = (process.env.CSM_GEMINI_THINKING ?? "low").toLowerCase().trim();
   if (mode === "default") return undefined;
-  const lower = model.toLowerCase();
-  if (lower.startsWith("gemini-3")) {
-    if (mode === "none") return undefined;
-    return { thinkingLevel: mode };
-  }
-  return undefined;
+  // Historical footgun: "none" used to omit thinkingConfig entirely, which is
+  // the API DEFAULT (= the most thinking, 436 thought tokens above), the
+  // opposite of the requested behavior. Map it to the floor instead.
+  if (mode === "none") return { thinkingLevel: minLevel };
+  return { thinkingLevel: mode };
 }
 
 function geminiResponseSchema(schemaName: string): Record<string, unknown> {

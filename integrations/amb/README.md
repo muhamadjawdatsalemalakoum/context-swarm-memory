@@ -18,6 +18,17 @@ a memory provider without forking AMB.
 - Returns the retrieved CSM documents to AMB's normal `rag` mode, so AMB still
   owns the BEAM prompt and judge path.
 
+Since 2026-06-10 the bridge is **retrieve-only by default**: it stops after
+CSM's probe → recall → synthesis pipeline and never runs CSM's internal final
+answer call (which AMB discards in rag mode anyway; it cost ~7.1K input tokens
+and ~2.7 s per query on the May BEAM run). `--with-internal-answer` (or
+`CSM_AMB_WITH_INTERNAL_ANSWER=1`) restores the legacy path for A/B. Probes and
+recalls also now run in parallel against hosted providers
+(`CSM_PARALLEL_PROBES` overrides), and the bridge auto-loads the CSM repo's
+`.env`, reports `llm_provider`/`llm_model` in `raw_response`, and refuses to
+run on MockProvider unless `CSM_AMB_ALLOW_MOCK=1`. Measured effects:
+[`../../docs/PERF_BREAKDOWN.md`](../../docs/PERF_BREAKDOWN.md).
+
 The current bridge is intentionally conservative: each
 AMB retrieval launches the Node CSM retrieval command. That keeps the integration
 simple and reproducible. The full BEAM 100K run completed through this path, but
@@ -119,11 +130,14 @@ export CSM_AMB_TELEMETRY_JSONL="$CSM_REPO_DIR/data/eval/runs/amb-beam-100k-full-
 Each row includes:
 
 - CSM internal input/output/total tokens across all LLM calls the bridge made,
-- the split between CSM pipeline tokens and the internal CSM answer call that
-  AMB discards,
 - probe/recall counts, returned event counts, evidence-capsule flags, and bridge
   wall-clock latency,
 - a query hash and query text for joining back to AMB's saved per-query rows.
+
+In the default retrieve-only mode the `csm_internal_answer_*` fields are null
+because no internal answer call is made; internal totals equal pipeline
+totals. Legacy rows (May 2026 run, or `--with-internal-answer`) split out the
+discarded answer call explicitly.
 
 Final BEAM reports should show both numbers: AMB `context_tokens` for the answer
 model's visible context, and CSM internal token totals from this JSONL sidecar.
