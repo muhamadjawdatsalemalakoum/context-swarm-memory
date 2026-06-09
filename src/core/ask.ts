@@ -10,7 +10,6 @@ import type {
   RecallResult,
 } from "./types.js";
 import { selectCandidates } from "./router.js";
-// [T2 WORKTREE WIRING — merge-window material] hybrid router entry point.
 import { selectCandidatesHybrid, type RouterIndex } from "./routerEmbed.js";
 import { probeShard } from "./probe.js";
 import { recallShard } from "./recall.js";
@@ -36,9 +35,9 @@ export interface AskOptions {
    *  the server effectively serializes; with hosted models or two loaded models
    *  this gives real parallelism. Disable for deterministic cost ordering in tests. */
   parallelProbes?: boolean;
-  /** [T2 WORKTREE WIRING — merge-window material] Pre-built hybrid router
-   *  index (content-derived descriptors + local-embedding centroids). When
-   *  absent/null, candidate selection is byte-identical to Phase 0. */
+  /** Pre-built hybrid router index (content-derived descriptors +
+   *  local-embedding centroids). When absent/null, candidate selection is
+   *  byte-identical to Phase 0. */
   routerIndex?: RouterIndex | null;
 }
 
@@ -83,9 +82,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   };
 
   const directory = await storage.loadDirectory();
-  // [T2 WORKTREE WIRING — merge-window material] The exact ≤5-line edit from
-  // docs/experiments/EXP-T2-router.md §5: hybrid when an index is supplied,
-  // byte-identical Phase-0 path otherwise.
+  // Hybrid when an index is supplied, byte-identical Phase-0 path otherwise
+  // (docs/experiments/EXP-T2-router.md §5).
   const candidates: CandidateScore[] = opts.routerIndex
     ? await selectCandidatesHybrid({
         query, directory, index: opts.routerIndex,

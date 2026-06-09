@@ -1,5 +1,4 @@
 import { ask } from "../../core/ask.js";
-// [T2 WORKTREE WIRING — merge-window material]
 import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
 import {
   buildRouterIndex,
@@ -312,15 +311,20 @@ export function resolveParallelProbes(
 }
 
 /**
- * [T2 WORKTREE WIRING — merge-window material]
- * Hybrid-router toggle for the baseline adapter. Default ON in this worktree
- * to demonstrate end-to-end behavior; `CSM_ROUTER_HYBRID=0` restores the
- * Phase-0 byte-identical path (the live A/B's "old" arm).
+ * Hybrid-router toggle for the baseline adapter (`CSM_ROUTER_HYBRID=1`).
+ * Default OFF on mainline: the 2026-06-10 live PaySwift 30q gate
+ * (rd-t2hybrid-30q-v1 vs rd-probelite-30q-v1) showed parity (29/30 both,
+ * −5% latency) but +6.4% pipeline input tokens — outside the +5% bar — and
+ * PaySwift's augmentation stack masks router differences anyway (embedding
+ * floor fired on 28/30 queries in BOTH arms). The hybrid's offline wins are
+ * decisive where routing actually starves (BEAM-shaped corpora, Discovery A
+ * in docs/RD_PORTFOLIO_2026_06.md), so the default flips after the T3
+ * BEAM-slice recall@k A/B confirms it on real BEAM data.
  */
 export function resolveRouterHybrid(
   raw = process.env.CSM_ROUTER_HYBRID,
 ): boolean {
-  if (raw === undefined || raw.trim().length === 0) return true;
+  if (raw === undefined || raw.trim().length === 0) return false;
   const v = raw.trim().toLowerCase();
   return !(v === "0" || v === "false" || v === "no");
 }
@@ -375,9 +379,9 @@ export class CsmBaseline implements BaselineRunner {
    *  corpus sample. */
   private adapterCache = new WeakMap<Corpus, InMemoryStorageReader>();
 
-  /** [T2 WORKTREE WIRING — merge-window material] One hybrid RouterIndex per
-   *  corpus (descriptors + MiniLM centroids), built lazily on first query.
-   *  Promise-cached so concurrent queries share the single build. */
+  /** One hybrid RouterIndex per corpus (descriptors + MiniLM centroids),
+   *  built lazily on first query. Promise-cached so concurrent queries share
+   *  the single build. */
   private routerIndexCache = new WeakMap<Corpus, Promise<RouterIndex>>();
 
   constructor(private opts: { provider: LlmProvider }) {}
@@ -467,9 +471,9 @@ export class CsmBaseline implements BaselineRunner {
   ): Promise<CsmRetrieval> {
     const storage = this.getAdapter(corpus);
 
-    // [T2 WORKTREE WIRING — merge-window material] Content-derived hybrid
-    // router index (local MiniLM only; zero LLM). CSM_ROUTER_HYBRID=0 gives
-    // the byte-identical Phase-0 arm for the live A/B.
+    // Content-derived hybrid router index (local MiniLM only; zero LLM).
+    // Opt-in via CSM_ROUTER_HYBRID=1 — see resolveRouterHybrid for the gate
+    // verdict; default is the byte-identical Phase-0 path.
     const routerIndex = resolveRouterHybrid()
       ? await this.getRouterIndex(corpus)
       : null;
