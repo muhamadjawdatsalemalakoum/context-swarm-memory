@@ -1,5 +1,12 @@
 # Agent Memory Benchmark Bridge
 
+> **Status 2026-06-09:** the officialization effort is paused while CSM core
+> R&D (warm service, token cost, summarization/ordering) lands. Everything
+> verified against AMB HEAD and the exact resume runbook live in
+> [`../../docs/AMB_OFFICIALIZATION_STATUS.md`](../../docs/AMB_OFFICIALIZATION_STATUS.md).
+> Note: at AMB HEAD `45fa38052` the real CLI is still `omb` with `--split`;
+> the upstream README's `amb`/`--domain` syntax is ahead of the code.
+
 This bridge lets the public Agent Memory Benchmark (AMB) runner evaluate CSM as
 a memory provider without forking AMB.
 
