@@ -24,10 +24,14 @@ import { GEMINI_DEFAULT_MODEL, createProvider, resolveStageModels, selectProvide
 import { JsonlStorage } from "../storage/jsonlStorage.js";
 import { newShardId } from "../utils/ids.js";
 import { stableStringify } from "../utils/json.js";
+import { loadLocalEnv } from "../utils/loadEnv.js";
 import type { CommitDecision } from "../core/types.js";
 import { type ParsedArgs, flagBool, flagString, parseArgs } from "./args.js";
 
 async function main(): Promise<number> {
+  // Pick up a local .env (provider, API keys, model) before reading any config.
+  // Shell-exported vars still win — see loadLocalEnv.
+  loadLocalEnv();
   const argv = process.argv.slice(2);
   if (argv.length === 0 || argv[0] === "--help" || argv[0] === "-h") {
     printHelp();
@@ -92,7 +96,7 @@ Usage:
   csm commit dry-run --shard <id> --action write|update|freeze|no_op --content "..." [--memory-type fact] [--tags a,b]
   csm commit apply  --shard <id> --action write|update|freeze|no_op --content "..." [--memory-type fact] [--tags a,b]
   csm provider info                       Show effective provider, base URL, models
-  csm provider ping [--model X]           Round-trip a tiny JSON request through the active provider
+  csm provider ping [--model X] [--max-tokens N]  Round-trip a tiny JSON request through the active provider
   csm bench run [--corpus DIR] [--systems csm,longctx,rag,hybrid] [--trials N] [--model M]
                 [--corpus-sizes 10K,100K,1M,...] [--model-contexts 1K,8K,...] [--queries q1,q2]
                                           Sweep matrix benchmark; writes results.jsonl + summary.json
@@ -493,13 +497,19 @@ async function cmdProvider(rest: string[]): Promise<number> {
     const args = parseArgs(rest.slice(1));
     const provider = createProvider();
     const model = flagString(args, "model") ?? process.env.CSM_OPENAI_MODEL;
+    // Budget must clear the model's hidden reasoning tokens. Thinking-style
+    // models (Gemini 3.x, Gemma 4, …) can spend the entire output budget on
+    // reasoning and return empty content (finishReason=MAX_TOKENS) when it is
+    // too small. 1024 is ample for a one-line JSON reply; override with
+    // --max-tokens for an even tighter or looser smoke.
+    const maxOutputTokens = Number(flagString(args, "max-tokens")) || 1024;
     try {
       const t0 = Date.now();
       const r = await provider.completeJson<{ ok: boolean }>({
         system: "You return JSON only. Be brief.",
         prompt: 'Return exactly this JSON: {"ok": true}',
         schemaName: "Ping",
-        maxOutputTokens: 50,
+        maxOutputTokens,
         temperature: 0,
         model,
         disableThinking: true,
@@ -513,7 +523,7 @@ async function cmdProvider(rest: string[]): Promise<number> {
       return 1;
     }
   }
-  console.error("csm provider info | csm provider ping [--model X]");
+  console.error("csm provider info | csm provider ping [--model X] [--max-tokens N]");
   return 2;
 }
 

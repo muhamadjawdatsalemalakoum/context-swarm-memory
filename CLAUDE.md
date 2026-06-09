@@ -25,9 +25,9 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - `src/core/split.ts` — Phase 3 fullness recommendations
 - `src/core/{prompts,providerJson,tokenBudget}.ts` — prompt constants, retry+extractJson+Zod helper, token budgeting
 - `src/storage/jsonlStorage.ts` — JSON / JSONL filesystem layer (refuses snapshot overwrites)
-- `src/providers/` — `LlmProvider`, `MockProvider`, `OpenAIProvider` (real fetch, also backs Ollama via OpenAI-compat endpoint), `OllamaProvider` (thin wrapper with Gemma-4090 defaults), `AnthropicProvider` (stub)
+- `src/providers/` — `LlmProvider`, `MockProvider`, `GeminiProvider` (native Gemini API — the default for real API AI usage, see **Provider configuration & secrets**), `OpenAIProvider` (real fetch, also backs Ollama via OpenAI-compat endpoint), `OllamaProvider` (thin wrapper with Gemma-4090 defaults), `LlamaServerProvider` (llama.cpp `llama-server`), `AnthropicProvider` (stub)
 - `src/cli/index.ts` — the `csm` CLI; `src/cli/args.ts` — tiny argv parser
-- `src/utils/` — `ids.ts`, `json.ts` (incl. `extractJson`, `stableStringify`), `time.ts`
+- `src/utils/` — `ids.ts`, `json.ts` (incl. `extractJson`, `stableStringify`), `time.ts`, `loadEnv.ts` (auto-loads the root `.env` on CLI startup)
 - `src/eval/` — full benchmark harness:
   - `mcq.ts` — `Query` discriminated union (`McqQuery | FreeFormQuery`), `Answer` union, prompt formatters, output parsers, type guards
   - `answer.ts` — `buildPrompt` + `parseAnswer` dispatchers used by every baseline
@@ -69,6 +69,19 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - Run `npm run eval` after changing router/probe/recall/synthesis/split thresholds.
 - All LLM JSON outputs MUST go through a Zod schema in `src/core/schemas.ts` and the `providerJson` retry/parse helper. Never `JSON.parse` provider output directly.
 
+## Provider configuration & secrets
+- **Google Gemini is the active provider for real (non-mock) API AI usage in this project.** `npm test` still defaults to `MockProvider` (offline, no key); the CLI and benchmarks route to Gemini when a `.env` is present.
+- Provider selection and the API key live in **`.env` at the repo root**. It is **gitignored** (`.gitignore` excludes `.env*` except `.env.example`), so the key is never committed. The CLI auto-loads `.env` on startup via `src/utils/loadEnv.ts`; **shell-exported / CI env vars override `.env`**, and a missing `.env` is a no-op (falls back to shell env, else `MockProvider`).
+- Active `.env` keys for the Gemini setup:
+  - `CSM_PROVIDER=gemini`
+  - `GEMINI_API_KEY=…` (or `GOOGLE_API_KEY=…` — `GeminiProvider` accepts either)
+  - `CSM_GEMINI_MODEL=gemini-3.5-flash` (pinned stable model the docs/tests/evidence runs standardize on; rolling alias `gemini-flash-latest` also works)
+  - `CSM_GEMINI_THINKING=low`
+- `GeminiProvider` (`src/providers/GeminiProvider.ts`) hits the native `…/v1beta/models/<model>:generateContent` endpoint with an `x-goog-api-key` header and redacts the key from all error messages.
+- Inspect / smoke the active provider: `npm run csm -- provider info` (provider, model, which key vars are set — never prints the key) and `npm run csm -- provider ping [--max-tokens N]` (one live round-trip). Use `--max-tokens` ≥ ~256 for thinking models or the reasoning budget can starve the reply.
+- Full setup (timeouts, retries, cost-safety, SOTA sidecar path): `docs/GEMINI.md`. Copyable template: `.env.example`.
+- **Never paste the real key into any committed file** (CLAUDE.md, docs, code, `.env.example`) — only into the gitignored `.env`.
+
 ## Mock provider convention
 `MockProvider` returns deterministic results pre-computed by Phase 0 keyword logic, embedded in a `<<MOCK_RESULT>>...<</MOCK_RESULT>>` fence inside the prompt. The mock provider extracts from the fence; real providers (OpenAI/Ollama) have it stripped before send. **Do not "clean up" or remove these fences** when editing prompts in `src/core/prompts.ts` — tests depend on them.
 
@@ -81,7 +94,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 
 ## Phase status (2026-05-11)
 - Phase 0 (mock runtime): done
-- Phase 1 (provider interface, schemas, retry/parse): done; OpenAI provider has real fetch; OllamaProvider thin wrapper with Gemma-4090 defaults; Anthropic still stub
+- Phase 1 (provider interface, schemas, retry/parse): done; OpenAI provider has real fetch; OllamaProvider thin wrapper with Gemma-4090 defaults; **GeminiProvider has real fetch and is the active hosted provider (key in `.env`, see Provider configuration & secrets)**; Anthropic still stub
 - Phase 2 (Committer dry-run + apply): done; not autonomous
 - Phase 3 (split/compact): threshold check only (`csm split check`), no automatic action
 - **Phase 4 (eval suite expansion): MCQ benchmark harness shipped** — 4 baselines (CSM, longctx, vanilla RAG, hybrid RAG), sweep-aware runner with adaptive 50%-accuracy early-stop, cache-first design, Vega-Lite plotter; synthetic 22K-event / 9M-token PaySwift corpus with 30 MCQ queries (40 options each); BABILong free-form support for Tasks 1–3. Real Ollama benchmark runs are documented in the results docs.
