@@ -278,5 +278,7 @@ describe("payload scoring", () => {
     expect(summarizationAgg.n).toBe(1);
     expect(summarizationAgg.coverageAtK["@10"]!.mean).toBeCloseTo(1.0);
     expect(summarizationAgg.meanInputTokens).toBe(100);
+    expect(summarizationAgg.meanReturnedCount).toBe(4);
+    expect(summarizationAgg.meanRetrievedCount).toBe(0);
   });
 });

@@ -117,10 +117,10 @@ function buildMarkdown(
   lines.push("");
   const kCols = ks.map((k) => `cov@${k}`).join(" | ");
   lines.push(
-    `| category | n | ${kCols} | packed | retrieved | oracle | ret.n | packed.n | in.tok | lat.ms |`,
+    `| category | n | ${kCols} | packed | retrieved | oracle | ret.n | packed.n | retr.n | in.tok | lat.ms |`,
   );
   lines.push(
-    `|---|---:|${ks.map(() => "---:").join("|")}|---:|---:|---:|---:|---:|---:|---:|`,
+    `|---|---:|${ks.map(() => "---:").join("|")}|---:|---:|---:|---:|---:|---:|---:|---:|`,
   );
   for (const agg of aggregates) {
     const kCells = ks
@@ -132,6 +132,7 @@ function buildMarkdown(
         `${fmt(agg.retrievedCoverage.mean)} ${ci(agg.retrievedCoverage)} | ` +
         `${fmt(agg.oracleCoverage.mean)} ${ci(agg.oracleCoverage)} | ` +
         `${agg.meanReturnedCount.toFixed(1)} | ${agg.meanPackedCount.toFixed(1)} | ` +
+        `${agg.meanRetrievedCount.toFixed(1)} | ` +
         `${Math.round(agg.meanInputTokens)} | ${Math.round(agg.meanLatencyMs)} |`,
     );
   }

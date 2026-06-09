@@ -403,6 +403,7 @@ export interface RowScore {
   normalizedAtK: Record<string, number | null>;
   returnedCount: number;
   packedCount: number;
+  retrievedCount: number;
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
@@ -461,6 +462,7 @@ export function scorePayloadRow(
     normalizedAtK,
     returnedCount: row.returnedEventIds.length,
     packedCount: row.packedEventIds.length,
+    retrievedCount: row.csmRetrievedEventIds.length,
     inputTokens: row.inputTokens,
     outputTokens: row.outputTokens,
     latencyMs: row.latencyMs,
@@ -488,6 +490,7 @@ export interface CategoryAggregate {
   oracleCoverage: MetricAggregate;
   meanReturnedCount: number;
   meanPackedCount: number;
+  meanRetrievedCount: number;
   meanInputTokens: number;
   meanOutputTokens: number;
   meanLatencyMs: number;
@@ -569,6 +572,7 @@ export function aggregateByCategory(
       oracleCoverage: aggregateMetric(rows.map((r) => r.oracleCoverage), opts),
       meanReturnedCount: meanOf(rows.map((r) => r.returnedCount)),
       meanPackedCount: meanOf(rows.map((r) => r.packedCount)),
+      meanRetrievedCount: meanOf(rows.map((r) => r.retrievedCount)),
       meanInputTokens: meanOf(rows.map((r) => r.inputTokens)),
       meanOutputTokens: meanOf(rows.map((r) => r.outputTokens)),
       meanLatencyMs: meanOf(rows.map((r) => r.latencyMs)),
