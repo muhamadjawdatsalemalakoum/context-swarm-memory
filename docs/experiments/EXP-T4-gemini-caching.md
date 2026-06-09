@@ -167,7 +167,7 @@ sums (additive field).
 
 ---
 
-## 4. Experiment A — measurement matrix (~66 calls, ≈$0.60)
+## 4. Experiment A — measurement matrix (54 calls, ≈$0.47)
 
 **Goal.** Empirically pin F6 (implicit discount %), F9 (systemInstruction
 participation), F10 (thinking × cache), F11 (JSON schema × cachedContent), the
@@ -186,9 +186,11 @@ CSM_MEASURE_BUDGET_CALLS=100 npx tsx scripts/measure-gemini-caching.ts --live \
 # artifacts → data/eval/runs/gemini-caching-measure/<timestamp>/{rows.jsonl,summary.json,report.md}
 ```
 
-Budget: ~340K fresh input tokens ≈ $0.51 + outputs/thoughts ≈ $0.09; hard call
-cap 100; inter-call delay 500ms (implicit caching wants temporally-close
-repeats). Expected wall time ≈ 3-5 min.
+Budget (from the dry-run plan, which prints these numbers before any call):
+54 calls, ~225K fresh input tokens ≈ $0.34 + outputs/thoughts allowance ≈
+$0.13 → **≈$0.47 total**; hard call cap 100 (`CSM_MEASURE_BUDGET_CALLS`);
+inter-call delay 500ms (implicit caching wants temporally-close repeats).
+Expected wall time ≈ 2-4 min.
 
 | Exp | Calls | Establishes | Success criterion |
 |---|---:|---|---|
@@ -198,9 +200,9 @@ repeats). Expected wall time ≈ 3-5 min.
 | A4 edit-position (head/middle/tail) | 5 | prefix semantics for restructure design | tail-edit retains most cached tokens; head-edit retains none |
 | A5 thinking levels on stable prefix | 4 | F10 | cross-level hits ⇒ thinkingConfig doesn't key the cache |
 | A6 explicit lifecycle (create/use/use-json/conflict/patch/below-min/delete) | 8 | F3, F7, F8, F11; cached-use latency; whether systemInstruction-only caches are allowed (open) | create 200 with name; conflict & below-min both 400; use-json 200 |
-| A7 production-shaped probe/recall payloads ×2 | 8* | the brief's "prove it" live leg | zero hits (matches the offline census) |
+| A7 production-shaped probe/recall payloads ×2 | 4 | the brief's "prove it" live leg | zero hits (matches the offline census) |
 
-*A7 includes probe- and recall-shaped calls. If `A6-create-sysonly` is
+A7 includes probe- and recall-shaped calls. If `A6-create-sysonly` is
 rejected (systemInstruction-only caches disallowed), the script records the
 failure, dependent `A6-use-*` calls self-skip, and the fallback design is to
 move the cached text into `contents[0]` at cache-creation time — re-run with

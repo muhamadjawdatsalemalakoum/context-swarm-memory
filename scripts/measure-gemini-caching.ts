@@ -21,10 +21,11 @@
  *                       caps total calls at CSM_MEASURE_BUDGET_CALLS (default
  *                       100), and writes JSONL + a markdown report under
  *                       data/eval/runs/gemini-caching-measure/<timestamp>/.
- *                       Estimated spend ≈ $0.60 at gemini-3.5-flash prices
- *                       (~340K input tokens, tiny outputs). The run protocol —
- *                       what each experiment establishes and how to read the
- *                       results — is docs/experiments/EXP-T4-gemini-caching.md.
+ *                       54 calls, ≈$0.47 at gemini-3.5-flash prices (~225K
+ *                       fresh input tokens, tiny outputs) — the dry run
+ *                       prints the exact plan. The run protocol — what each
+ *                       experiment establishes and how to read the results —
+ *                       is docs/experiments/EXP-T4-gemini-caching.md.
  *
  * Verified API facts this harness measures against (2026-06-10, see
  * docs/experiments/EXP-T4-gemini-caching.md for the citation table):

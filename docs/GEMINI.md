@@ -175,7 +175,7 @@ Offline census of request sizes / stable prefixes (no API key needed):
 npx tsx scripts/measure-gemini-caching.ts --offline-census
 ```
 
-Live measurement matrix (~66 calls, ≈$0.60 — see the experiment doc first):
+Live measurement matrix (54 calls, ≈$0.47 — see the experiment doc first):
 
 ```bash
 npx tsx scripts/measure-gemini-caching.ts          # dry run: prints the plan
