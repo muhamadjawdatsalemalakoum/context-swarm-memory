@@ -23,6 +23,19 @@ export interface CompleteJsonInput<TSchema = unknown> {
    *  reasoning enabled because their mid-pipeline reasoning earns its keep. See
    *  CHANGELOG for the Phase α justification. */
   disableThinking?: boolean;
+  /** Declares that this call's `system` text is BYTE-STABLE for this key (e.g.
+   *  `"s-auth@S001:probe-v2"` once probe prompts are snapshot-stable). Providers
+   *  with explicit context caching (GeminiProvider under
+   *  `CSM_GEMINI_CACHE=explicit`) MAY then cache the system text server-side
+   *  under (model, cacheKey) and reuse it across calls. Ignored by every other
+   *  provider and in every other cache mode. NO CSM call site sets this yet —
+   *  probe/recall system prompts vary per query (query-ranked event index /
+   *  hint-ordered digest), so caching them under a snapshot key would serve
+   *  stale content. Wave-2 prompt restructuring is the intended first caller;
+   *  see docs/experiments/EXP-T4-gemini-caching.md. GeminiProvider additionally
+   *  verifies a SHA-256 of the system text per key and refuses cache reuse on
+   *  mismatch, so a buggy caller degrades to uncached, never to wrong content. */
+  cacheKey?: string;
 }
 
 export interface CompleteTextInput {
@@ -38,6 +51,8 @@ export interface CompleteTextInput {
   /** See `CompleteJsonInput.disableThinking`. The final MCQ answer stage uses this
    *  to skip Gemma 4's 2-3K-token reasoning trace before the `ANSWER: N` line. */
   disableThinking?: boolean;
+  /** See `CompleteJsonInput.cacheKey`. */
+  cacheKey?: string;
 }
 
 export interface ProviderUsage {
@@ -45,6 +60,22 @@ export interface ProviderUsage {
   outputTokensEstimate: number;
   estimatedUsd: number;
   latencyMs: number;
+  /** Input tokens served from the provider's context cache for this call
+   *  (Gemini: `usageMetadata.cachedContentTokenCount`, populated on implicit
+   *  cache hits and on explicit `cachedContent` use). A SUBSET of
+   *  `inputTokensEstimate`, not additional spend — cached tokens bill at the
+   *  provider's reduced cached-input rate. Only present when the provider
+   *  reported it (T4 observability, 2026-06); absent ≠ 0 for providers that
+   *  don't report cache metrics. */
+  cachedInputTokens?: number;
+  /** Reasoning/thinking tokens the provider spent before the visible output
+   *  (Gemini: `usageMetadata.thoughtsTokenCount`). Billed as OUTPUT tokens by
+   *  Gemini but NOT included in `candidatesTokenCount`, so
+   *  `outputTokensEstimate` alone undercounts billed output for thinking
+   *  models. Kept separate (not folded into `outputTokensEstimate`) so all
+   *  existing accounting stays byte-identical; consumers that want billed
+   *  output should add the two. Only present when the provider reported it. */
+  thoughtsTokens?: number;
 }
 
 export interface ProviderResponse<T> {

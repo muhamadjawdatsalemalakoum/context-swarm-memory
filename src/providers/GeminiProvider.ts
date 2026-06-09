@@ -1,3 +1,6 @@
+import { appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+
 import type {
   CompleteJsonInput,
   CompleteTextInput,
@@ -9,6 +12,55 @@ import type {
 export const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
+// ─── Context-cache mode (T4, 2026-06) ────────────────────────────────────────
+//
+// `CSM_GEMINI_CACHE` selects the provider's caching behavior. Default is `off`
+// and `off` is BYTE-IDENTICAL to the pre-T4 provider: same request bytes, same
+// endpoints, no cache reads or writes. All in-flight accuracy/latency gates
+// therefore stay valid with the flag unset.
+//
+//   off              (default) no cache behavior at all.
+//   implicit-observe request bytes still byte-identical; the provider logs one
+//                    observation per call (JSONL when CSM_GEMINI_USAGE_LOG is
+//                    set, stderr otherwise) so implicit-cache hits
+//                    (usageMetadata.cachedContentTokenCount) and thinking spend
+//                    (thoughtsTokenCount) become visible per stage.
+//   explicit         additionally manages `cachedContents` server-side caches
+//                    for calls that declare a byte-stable system prompt via
+//                    `cacheKey` (no CSM call site does yet — see
+//                    LlmProvider.CompleteJsonInput.cacheKey). Calls without a
+//                    cacheKey behave exactly like `off`.
+//
+// Response-side usage parsing (cachedInputTokens / thoughtsTokens on
+// ProviderUsage) is unconditional in every mode: it reads fields Gemini
+// already returns and changes no request bytes.
+export type GeminiCacheMode = "off" | "implicit-observe" | "explicit";
+
+let warnedUnknownCacheMode = false;
+export function resolveGeminiCacheMode(
+  raw = process.env.CSM_GEMINI_CACHE,
+): GeminiCacheMode {
+  if (raw === undefined || raw.trim().length === 0) return "off";
+  const v = raw.trim().toLowerCase();
+  if (v === "off" || v === "implicit-observe" || v === "explicit") return v;
+  if (!warnedUnknownCacheMode) {
+    warnedUnknownCacheMode = true;
+    console.error(
+      `GeminiProvider: unknown CSM_GEMINI_CACHE value "${raw}" — falling back to "off". ` +
+        `Valid: off | implicit-observe | explicit.`,
+    );
+  }
+  return "off";
+}
+
+/** Minimum tokens Google will accept for a cachedContents entry on
+ *  gemini-3.5-flash (also the implicit-cache floor). Verified 2026-06-10 at
+ *  https://ai.google.dev/gemini-api/docs/caching ("Gemini 3.5 Flash: 4096").
+ *  Override with CSM_GEMINI_CACHE_MIN_TOKENS if Google changes it. */
+export const GEMINI_EXPLICIT_CACHE_MIN_TOKENS_DEFAULT = 4096;
+const GEMINI_CACHE_TTL_S_DEFAULT = 3600; // API default TTL ("defaults to 1 hour")
+const NEGATIVE_CACHE_MS = 10 * 60 * 1000; // don't retry failed cache creates for 10 min
+
 export interface GeminiProviderOptions {
   apiKey?: string;
   baseURL?: string;
@@ -17,6 +69,44 @@ export interface GeminiProviderOptions {
   timeoutMs?: number;
   maxRetries?: number;
   retryBaseDelayMs?: number;
+  /** Cache mode override; falls back to CSM_GEMINI_CACHE, default "off". */
+  cacheMode?: GeminiCacheMode;
+  /** Explicit-cache TTL override; falls back to CSM_GEMINI_CACHE_TTL_S, default 3600. */
+  cacheTtlSeconds?: number;
+  /** Explicit-cache minimum-token guard override; falls back to
+   *  CSM_GEMINI_CACHE_MIN_TOKENS, default 4096 (gemini-3.5-flash floor). */
+  cacheMinTokens?: number;
+  /** Usage-log path override; falls back to CSM_GEMINI_USAGE_LOG. Pass null to
+   *  silence file logging in tests regardless of env. */
+  usageLogPath?: string | null;
+  /** Injectable clock for cache-TTL tests. */
+  now?: () => number;
+}
+
+/** Aggregate cache/thinking observation counters for one provider instance.
+ *  Pure in-memory observability — consumed by scripts/measure-gemini-caching.ts
+ *  and the (written, not yet run) observability soak in
+ *  docs/experiments/EXP-T4-gemini-caching.md. */
+export interface GeminiCacheStats {
+  calls: number;
+  promptTokens: number;
+  cachedInputTokens: number;
+  thoughtsTokens: number;
+  outputTokens: number;
+  explicitCacheCreates: number;
+  explicitCacheReuses: number;
+  explicitCacheFallbacks: number;
+  /** A caller passed `cacheKey` but the system text's SHA-256 did not match the
+   *  text cached under that key — the provider refused the cache (correctness
+   *  over savings) and fell back to an uncached call. Always a caller bug. */
+  cacheKeyContractViolations: number;
+}
+
+interface ExplicitCacheEntry {
+  name: string; // "cachedContents/..."
+  systemSha256: string;
+  expiresAtMs: number;
+  totalTokenCount?: number;
 }
 
 interface GeminiResponse {
@@ -30,12 +120,23 @@ interface GeminiResponse {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
     totalTokenCount?: number;
+    /** Tokens served from context cache (implicit hit or explicit cachedContent). */
+    cachedContentTokenCount?: number;
+    /** Reasoning tokens; billed as output but NOT in candidatesTokenCount. */
+    thoughtsTokenCount?: number;
   };
   error?: {
     code?: number;
     message?: string;
     status?: string;
   };
+}
+
+interface CachedContentsCreateResponse {
+  name?: string;
+  usageMetadata?: { totalTokenCount?: number };
+  expireTime?: string;
+  error?: { code?: number; message?: string; status?: string };
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
@@ -51,6 +152,27 @@ export class GeminiProvider implements LlmProvider {
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly retryBaseDelayMs: number;
+  // ── T4 cache/observability state (inert when CSM_GEMINI_CACHE=off) ──
+  private readonly cacheModeOverride?: GeminiCacheMode;
+  private readonly cacheTtlSeconds: number;
+  private readonly cacheMinTokens: number;
+  private readonly usageLogPathOverride: string | null | undefined;
+  private readonly now: () => number;
+  /** Explicit-cache registry: `${model}::${cacheKey}` → live cachedContents entry. */
+  private readonly explicitCaches = new Map<string, ExplicitCacheEntry>();
+  /** Failed cache creations we should not retry for a while: key → retry-after ms. */
+  private readonly negativeCache = new Map<string, number>();
+  private readonly stats: GeminiCacheStats = {
+    calls: 0,
+    promptTokens: 0,
+    cachedInputTokens: 0,
+    thoughtsTokens: 0,
+    outputTokens: 0,
+    explicitCacheCreates: 0,
+    explicitCacheReuses: 0,
+    explicitCacheFallbacks: 0,
+    cacheKeyContractViolations: 0,
+  };
 
   constructor(opts: GeminiProviderOptions = {}) {
     this.apiKey = opts.apiKey ?? process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
@@ -69,6 +191,50 @@ export class GeminiProvider implements LlmProvider {
       opts.retryBaseDelayMs ??
       parseNonNegativeInt(process.env.CSM_GEMINI_RETRY_BASE_DELAY_MS) ??
       DEFAULT_RETRY_BASE_DELAY_MS;
+    this.cacheModeOverride = opts.cacheMode;
+    this.cacheTtlSeconds =
+      opts.cacheTtlSeconds ??
+      parsePositiveInt(process.env.CSM_GEMINI_CACHE_TTL_S) ??
+      GEMINI_CACHE_TTL_S_DEFAULT;
+    this.cacheMinTokens =
+      opts.cacheMinTokens ??
+      parsePositiveInt(process.env.CSM_GEMINI_CACHE_MIN_TOKENS) ??
+      GEMINI_EXPLICIT_CACHE_MIN_TOKENS_DEFAULT;
+    this.usageLogPathOverride = opts.usageLogPath;
+    this.now = opts.now ?? Date.now;
+  }
+
+  /** Current cache mode. Env is read per call (mirrors how thinking config is
+   *  resolved) so long-lived processes — the warm AMB bridge service — pick up
+   *  changes without a restart; the constructor override pins it for tests. */
+  private cacheMode(): GeminiCacheMode {
+    return this.cacheModeOverride ?? resolveGeminiCacheMode();
+  }
+
+  /** Aggregate per-instance cache/thinking counters (all modes; pure memory). */
+  getCacheStats(): Readonly<GeminiCacheStats> {
+    return { ...this.stats };
+  }
+
+  /** Best-effort DELETE of every explicit cachedContents entry this instance
+   *  created (cost hygiene at the end of a benchmark unit). Returns the number
+   *  of caches successfully deleted. Never throws; failures are dropped because
+   *  TTL expiry deletes the entry server-side anyway. */
+  async clearExplicitCaches(): Promise<number> {
+    let deleted = 0;
+    for (const [key, entry] of [...this.explicitCaches]) {
+      this.explicitCaches.delete(key);
+      try {
+        const res = await this.fetchImpl(`${this.baseURL}/${entry.name}`, {
+          method: "DELETE",
+          headers: { "x-goog-api-key": this.apiKey },
+        });
+        if (res.ok) deleted++;
+      } catch {
+        // TTL will reap it server-side.
+      }
+    }
+    return deleted;
   }
 
   async completeJson<T>(input: CompleteJsonInput): Promise<ProviderResponse<T>> {
@@ -88,6 +254,9 @@ export class GeminiProvider implements LlmProvider {
     jsonMode: boolean;
     schemaName?: string;
     disableThinking?: boolean;
+    shardId?: string;
+    snapshotId?: string;
+    cacheKey?: string;
   }): Promise<ProviderResponse<T>> {
     if (!this.apiKey) {
       throw new Error(
@@ -98,6 +267,10 @@ export class GeminiProvider implements LlmProvider {
     const model = args.model ?? this.defaultModel;
     const endpoint = `${this.baseURL}/models/${encodeURIComponent(model)}:generateContent`;
     const thinkingConfig = geminiThinkingConfig(model, args.disableThinking);
+    // The legacy request body. This construction is shared by ALL cache modes
+    // and MUST stay byte-identical to the pre-T4 provider when serialized —
+    // `off` and `implicit-observe` send exactly this object. Pinned by
+    // tests/geminiCaching.test.ts (exact JSON equality, not toMatchObject).
     const body: Record<string, unknown> = {
       systemInstruction: {
         parts: [{ text: args.system }],
@@ -121,16 +294,55 @@ export class GeminiProvider implements LlmProvider {
       },
     };
 
+    // Explicit-cache path: only when the mode is `explicit` AND the caller
+    // declared a byte-stable system prompt via `cacheKey`. Every failure mode
+    // (below-minimum, creation error, hash mismatch, expiry) degrades to the
+    // legacy body — never to an error and never to stale content.
+    const mode = this.cacheMode();
+    let cachedContentName: string | undefined;
+    if (mode === "explicit" && args.cacheKey) {
+      cachedContentName = await this.ensureExplicitCache(model, args.cacheKey, args.system);
+    }
+
     let lastError: unknown;
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      // When a cachedContents entry is engaged, the cached systemInstruction
+      // replaces the request's — Gemini rejects requests that set BOTH
+      // `cachedContent` and `system_instruction` (HTTP 400, verified against
+      // live-API behavior reports; see docs/experiments/EXP-T4-gemini-caching.md A6).
+      const effectiveBody = cachedContentName
+        ? {
+            contents: body.contents,
+            generationConfig: body.generationConfig,
+            cachedContent: cachedContentName,
+          }
+        : body;
       try {
         return await this.generateOnce<T>({
           args,
-          body,
+          body: effectiveBody,
           endpoint,
           model,
+          observe: {
+            mode,
+            schemaName: args.schemaName,
+            shardId: args.shardId,
+            snapshotId: args.snapshotId,
+            cacheKey: args.cacheKey,
+            cachedContentName,
+          },
         });
       } catch (err) {
+        // Cache-flavored failure (e.g. the server already evicted the cache):
+        // drop the registry entry and retry WITHOUT the cache. Does not consume
+        // a transient-retry attempt — the uncached call keeps the full budget.
+        if (cachedContentName && isCacheRelatedError(err)) {
+          this.invalidateExplicitCache(model, args.cacheKey);
+          cachedContentName = undefined;
+          this.stats.explicitCacheFallbacks++;
+          attempt--;
+          continue;
+        }
         lastError = err;
         if (attempt >= this.maxRetries || !isTransientGeminiError(err)) {
           throw err;
@@ -139,6 +351,88 @@ export class GeminiProvider implements LlmProvider {
       }
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  /** Look up / create the cachedContents entry for (model, cacheKey). Returns
+   *  the cache resource name, or undefined to signal "send the legacy body".
+   *  Never throws and never leaks the API key into errors (it surfaces none). */
+  private async ensureExplicitCache(
+    model: string,
+    cacheKey: string,
+    systemText: string,
+  ): Promise<string | undefined> {
+    const registryKey = `${model}::${cacheKey}`;
+    const sha = sha256Hex(systemText);
+    const nowMs = this.now();
+
+    const existing = this.explicitCaches.get(registryKey);
+    if (existing && existing.expiresAtMs > nowMs) {
+      if (existing.systemSha256 !== sha) {
+        // The caller's "byte-stable" promise is broken. Refuse the cache:
+        // correctness (fresh content at full price) beats savings.
+        this.stats.cacheKeyContractViolations++;
+        warnCacheContractViolation(cacheKey);
+        return undefined;
+      }
+      this.stats.explicitCacheReuses++;
+      return existing.name;
+    }
+    if (existing) this.explicitCaches.delete(registryKey);
+
+    const negativeUntil = this.negativeCache.get(registryKey);
+    if (negativeUntil !== undefined && negativeUntil > nowMs) {
+      this.stats.explicitCacheFallbacks++;
+      return undefined;
+    }
+
+    // Cheap size guard (~4 chars/token): creation below the model's minimum
+    // (4,096 tokens on gemini-3.5-flash) is a guaranteed 400 — skip the round
+    // trip. The API remains the authority; if the estimate is wrong the
+    // creation call below fails and we negative-cache the key.
+    if (Math.ceil(systemText.length / 4) < this.cacheMinTokens) {
+      this.negativeCache.set(registryKey, nowMs + NEGATIVE_CACHE_MS);
+      this.stats.explicitCacheFallbacks++;
+      return undefined;
+    }
+
+    try {
+      const res = await this.fetchImpl(`${this.baseURL}/cachedContents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
+        body: JSON.stringify({
+          model: `models/${model}`,
+          systemInstruction: { parts: [{ text: systemText }] },
+          ttl: `${this.cacheTtlSeconds}s`,
+          displayName: `csm:${cacheKey}`.slice(0, 128),
+        }),
+      });
+      const rawBody = await safeReadBody(res);
+      const json = JSON.parse(rawBody) as CachedContentsCreateResponse;
+      if (!res.ok || json.error || !json.name) {
+        this.negativeCache.set(registryKey, nowMs + NEGATIVE_CACHE_MS);
+        this.stats.explicitCacheFallbacks++;
+        return undefined;
+      }
+      const ttlMs = this.cacheTtlSeconds * 1000;
+      this.explicitCaches.set(registryKey, {
+        name: json.name,
+        systemSha256: sha,
+        // Safety margin so we never send a name the server is about to reap.
+        expiresAtMs: nowMs + ttlMs - Math.min(30_000, Math.floor(ttlMs / 10)),
+        totalTokenCount: json.usageMetadata?.totalTokenCount,
+      });
+      this.stats.explicitCacheCreates++;
+      return json.name;
+    } catch {
+      this.negativeCache.set(registryKey, nowMs + NEGATIVE_CACHE_MS);
+      this.stats.explicitCacheFallbacks++;
+      return undefined;
+    }
+  }
+
+  private invalidateExplicitCache(model: string, cacheKey: string | undefined): void {
+    if (!cacheKey) return;
+    this.explicitCaches.delete(`${model}::${cacheKey}`);
   }
 
   private async generateOnce<T>(input: {
@@ -150,8 +444,16 @@ export class GeminiProvider implements LlmProvider {
     body: Record<string, unknown>;
     endpoint: string;
     model: string;
+    observe?: {
+      mode: GeminiCacheMode;
+      schemaName?: string;
+      shardId?: string;
+      snapshotId?: string;
+      cacheKey?: string;
+      cachedContentName?: string;
+    };
   }): Promise<ProviderResponse<T>> {
-    const { args, body, endpoint, model } = input;
+    const { args, body, endpoint, model, observe } = input;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     if (typeof (timer as unknown as { unref?: () => void }).unref === "function") {
@@ -200,20 +502,79 @@ export class GeminiProvider implements LlmProvider {
         `${this.name}: empty response from ${redactedEndpoint(this.baseURL, model)} (finishReason=${finishReason})`,
       );
     }
+    const um = json.usageMetadata;
     const usage: ProviderUsage = {
       inputTokensEstimate:
-        json.usageMetadata?.promptTokenCount ?? Math.ceil((args.system.length + args.prompt.length) / 4),
+        um?.promptTokenCount ?? Math.ceil((args.system.length + args.prompt.length) / 4),
       outputTokensEstimate:
-        json.usageMetadata?.candidatesTokenCount ?? Math.ceil(content.length / 4),
+        um?.candidatesTokenCount ?? Math.ceil(content.length / 4),
       estimatedUsd: 0,
       latencyMs: Date.now() - start,
+      // T4 observability: surface cache hits and thinking spend when Gemini
+      // reports them. Response-side parsing only — request bytes unchanged.
+      // Absent (not 0) when the API omitted the field, so consumers can tell
+      // "no cache hit reported" from "provider doesn't report cache metrics".
+      ...(typeof um?.cachedContentTokenCount === "number"
+        ? { cachedInputTokens: um.cachedContentTokenCount }
+        : {}),
+      ...(typeof um?.thoughtsTokenCount === "number"
+        ? { thoughtsTokens: um.thoughtsTokenCount }
+        : {}),
     };
+
+    this.stats.calls++;
+    this.stats.promptTokens += usage.inputTokensEstimate;
+    this.stats.cachedInputTokens += usage.cachedInputTokens ?? 0;
+    this.stats.thoughtsTokens += usage.thoughtsTokens ?? 0;
+    this.stats.outputTokens += usage.outputTokensEstimate;
+
+    if (observe && observe.mode !== "off") {
+      this.emitObservation({
+        ts: new Date(this.now()).toISOString(),
+        mode: observe.mode,
+        model,
+        schemaName: observe.schemaName,
+        shardId: observe.shardId,
+        snapshotId: observe.snapshotId,
+        cacheKey: observe.cacheKey,
+        cachedContent: observe.cachedContentName,
+        promptTokens: usage.inputTokensEstimate,
+        cachedInputTokens: usage.cachedInputTokens ?? 0,
+        thoughtsTokens: usage.thoughtsTokens ?? 0,
+        outputTokens: usage.outputTokensEstimate,
+        latencyMs: usage.latencyMs,
+      });
+    }
 
     return {
       data: content as unknown as T,
       rawText: content,
       usage,
     };
+  }
+
+  /** One observation row per LLM call when mode ≠ off. JSONL append when
+   *  CSM_GEMINI_USAGE_LOG points at a file (NEVER point it inside a CSM data
+   *  store — it is diagnostics, not memory), compact stderr line otherwise.
+   *  Logging must never break the call: failures are swallowed. */
+  private emitObservation(row: Record<string, unknown>): void {
+    try {
+      const path =
+        this.usageLogPathOverride !== undefined
+          ? this.usageLogPathOverride
+          : process.env.CSM_GEMINI_USAGE_LOG || null;
+      if (path) {
+        appendFileSync(path, `${JSON.stringify(row)}\n`, "utf8");
+      } else {
+        console.error(
+          `[gemini-cache] schema=${row.schemaName ?? "-"} shard=${row.shardId ?? "-"} ` +
+            `prompt=${row.promptTokens} cached=${row.cachedInputTokens} ` +
+            `thoughts=${row.thoughtsTokens} out=${row.outputTokens} lat=${row.latencyMs}ms`,
+        );
+      }
+    } catch {
+      // Observability must never take down the request path.
+    }
   }
 }
 
@@ -242,6 +603,29 @@ function isTransientGeminiError(err: unknown): boolean {
     /timed out|fetch failed|overloaded|RESOURCE_EXHAUSTED|ECONNRESET|ETIMEDOUT|UND_ERR/i.test(
       msg,
     )
+  );
+}
+
+/** Failures that implicate the explicit cachedContents entry (expired/evicted/
+ *  rejected) rather than the request itself. These trigger an immediate retry
+ *  with the legacy (uncached) body instead of failing the call. */
+function isCacheRelatedError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return /cached\s*content|cachedContent|CACHED_CONTENT/i.test(err.message);
+}
+
+function sha256Hex(text: string): string {
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+const warnedContractKeys = new Set<string>();
+function warnCacheContractViolation(cacheKey: string): void {
+  if (warnedContractKeys.has(cacheKey)) return;
+  warnedContractKeys.add(cacheKey);
+  console.error(
+    `GeminiProvider: cacheKey "${cacheKey}" was reused with DIFFERENT system bytes — ` +
+      `explicit cache refused for it (calls proceed uncached). The caller's ` +
+      `byte-stability promise is broken; fix the call site.`,
   );
 }
 
