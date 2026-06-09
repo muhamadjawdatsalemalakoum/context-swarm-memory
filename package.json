@@ -27,6 +27,7 @@
     "bench:babilong:csm": "tsx scripts/run-babilong-standard.ts --systems csm",
     "amb:patch": "tsx scripts/patch-amb-csm-provider.ts",
     "amb:csm:retrieve": "tsx scripts/amb-csm-retrieve.ts",
+    "amb:csm:serve": "tsx scripts/amb-csm-server.ts",
     "bench:fill-cache": "tsx src/cli/index.ts bench fill-cache",
     "bench:replay": "tsx src/cli/index.ts bench replay",
     "bench:report": "tsx src/cli/index.ts bench report",

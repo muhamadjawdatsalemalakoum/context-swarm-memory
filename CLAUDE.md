@@ -41,7 +41,8 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
   - `plotter.ts` — Vega-Lite spec generator for Graphs A–F of the context-scaling study
   - `baselines/{types.ts, longContext.ts, vanillaRag.ts, hybridRag.ts, csm.ts}` — 4 baseline runners sharing a common interface
   - `runEval.ts` + `fixtures.ts` — the legacy smoke eval (preserved for `npm run eval`)
-- `scripts/` — one-shot helpers: `merge-phase-events.ts`, `merge-query-batches.ts`, `expand-filler.ts`, `build-corpus.ts`, `verify-corpus.ts`, `verify-no-leakage.ts`, `fetch-babilong.ts`, `run-babilong-bench.ts`, `render-plots.ts` (Vega-Lite spec → SVG)
+- `scripts/` — one-shot helpers: `merge-phase-events.ts`, `merge-query-batches.ts`, `expand-filler.ts`, `build-corpus.ts`, `verify-corpus.ts`, `verify-no-leakage.ts`, `fetch-babilong.ts`, `run-babilong-bench.ts`, `render-plots.ts` (Vega-Lite spec → SVG), `probe-thinking-levels.ts` (Gemini thinking-level diagnostic)
+- AMB bridge: `scripts/amb-csm-retrieve.ts` (one-shot, exports the shared `executeAmbRetrieve` core), `scripts/amb-csm-server.ts` (warm ingest-once/query-many HTTP service, `npm run amb:csm:serve`), `integrations/amb/csm_provider.py` (AMB-side provider; starts/stops the warm service via AMB `initialize()`/`cleanup()`)
 - `data/eval/corpus-synthetic/` — PaySwift corpus (163 core events + tier-1/2/3 filler), `decisions.md`, `queries.json`
 - `data/eval/corpus-babilong/` — BABILong raw downloads + README (filled by `scripts/fetch-babilong.ts`)
 - `tests/` — flat layout, vitest, includes `mutationSafety.test.ts`

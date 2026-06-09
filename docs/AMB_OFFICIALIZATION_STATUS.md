@@ -120,14 +120,16 @@ AMB = <https://github.com/vectorize-io/agent-memory-benchmark>, default branch
    `--split` are still the reality, use them and note the README mismatch.
 
 4. Create a branch in the AMB checkout (this is the upstream PR vehicle, not
-   the patch script): add `src/memory_bench/memory/csm.py` (adapted from
+   the patch script): add `src/memory_bench/memory/csm.py` (copy of
    [`integrations/amb/csm_provider.py`](../integrations/amb/csm_provider.py))
-   and register `"csm"` in the registry. Adopt the new `initialize()`/
-   `cleanup()` hooks to start/stop the warm CSM sidecar once it exists —
-   that's the whole point of redoing the run after the R&D phase. Provider
-   env contract to document upstream: Node 22+, `CSM_REPO_DIR`, `npm install`
-   in CSM, `GEMINI_API_KEY`, optional `CSM_AMB_MODEL`/`CSM_AMB_MODEL_CONTEXT`/
-   `CSM_AMB_RETURN_K`/`CSM_AMB_TELEMETRY_JSONL`.
+   and register `"csm"` in the registry. **The provider is already
+   warm-service based** (2026-06-10): it starts `npm run amb:csm:serve` in
+   AMB's `initialize()` hook, talks localhost HTTP, and shuts down in
+   `cleanup()`. Provider env contract to document upstream: Node 22+,
+   `CSM_REPO_DIR`, `npm install` in CSM, `GEMINI_API_KEY`, optional
+   `CSM_AMB_MODEL`/`CSM_AMB_MODEL_CONTEXT`/`CSM_AMB_RETURN_K`/
+   `CSM_AMB_TELEMETRY_JSONL` (full list in the provider docstring).
+   Latency/token work since the May run: `PERF_BREAKDOWN.md`.
 
 5. Sanity commands (capture stdout for artifacts):
    `uv run omb providers` and `uv run omb splits --dataset beam`.

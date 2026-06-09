@@ -17,11 +17,23 @@ export interface AmbDocument {
   context?: string | null;
 }
 
-interface AmbRetrieveRequest {
+export interface AmbRetrieveRequest {
   query: string;
   k?: number;
   user_id?: string | null;
   query_timestamp?: string | null;
+}
+
+export interface AmbBridgeOptions {
+  model: string;
+  modelContext: number;
+  maxOutputTokens: number;
+  withInternalAnswer: boolean;
+}
+
+export interface AmbRetrievePayload {
+  documents: AmbDocument[];
+  raw_response: Record<string, unknown>;
 }
 
 export interface AmbQueryIntent {
@@ -57,7 +69,7 @@ async function main(): Promise<void> {
   // Vars already exported by the AMB process still win. Without this, a
   // missing shell export silently fell back to MockProvider — which must
   // never be mistaken for a real benchmark retrieval (see llm_provider in
-  // the output, and the hard guard below).
+  // the output, and the hard guard in createBridgeProvider).
   loadLocalEnv();
   const args = parseArgs(process.argv.slice(2));
   if (!process.env.CSM_MODEL) process.env.CSM_MODEL = args.model;
@@ -66,27 +78,62 @@ async function main(): Promise<void> {
     readDocumentsJsonl(join(args.storeDir, "documents.jsonl")),
     readRequest(args.requestPath),
   ]);
-  const scopedDocs = request.user_id
-    ? documents.filter((doc) => doc.user_id === request.user_id)
-    : documents;
+  const scopedDocs = scopeDocuments(documents, request.user_id);
 
   if (scopedDocs.length === 0) {
-    writeJson({ documents: [], raw_response: { reason: "no_documents_in_scope" } });
+    writeJson(emptyAmbPayload("no_documents_in_scope"));
     return;
   }
 
-  const corpus = buildCorpus(scopedDocs);
+  const provider = createBridgeProvider();
+  const payload = await executeAmbRetrieve({
+    baseline: new CsmBaseline({ provider }),
+    providerName: provider.name,
+    corpus: buildCorpus(scopedDocs),
+    request,
+    opts: args,
+  });
+  writeJson(payload);
+}
+
+export function scopeDocuments(
+  documents: AmbDocument[],
+  userId?: string | null,
+): AmbDocument[] {
+  return userId ? documents.filter((doc) => doc.user_id === userId) : documents;
+}
+
+export function emptyAmbPayload(reason: string): AmbRetrievePayload {
+  return { documents: [], raw_response: { reason } };
+}
+
+/** Provider factory with the benchmark-integrity guard: a missing key or
+ *  provider config falls back to MockProvider, whose instant keyword results
+ *  must never be mistaken for a real retrieval row. Opt in explicitly for
+ *  plumbing smokes via CSM_AMB_ALLOW_MOCK=1. */
+export function createBridgeProvider(): ReturnType<typeof createProvider> {
   const provider = createProvider();
-  // Benchmark-integrity guard: a missing key/provider config falls back to
-  // MockProvider, whose instant keyword results must never be mistaken for a
-  // real retrieval row. Opt in explicitly for plumbing smokes.
   if (provider.name === "mock" && !isTruthyEnv(process.env.CSM_AMB_ALLOW_MOCK)) {
     throw new Error(
-      "amb-csm-retrieve resolved the mock provider (no CSM_PROVIDER/API key in env or .env). " +
+      "AMB bridge resolved the mock provider (no CSM_PROVIDER/API key in env or .env). " +
         "Refusing to produce benchmark rows from mock retrieval. Set CSM_AMB_ALLOW_MOCK=1 to override for plumbing tests.",
     );
   }
-  const baseline = new CsmBaseline({ provider });
+  return provider;
+}
+
+/** The shared core of the AMB bridge: run CSM retrieval over a pre-built
+ *  corpus and shape the response AMB expects. Used by the one-shot script
+ *  (per-query process) and the warm server (`scripts/amb-csm-server.ts`,
+ *  ingest once / query many). */
+export async function executeAmbRetrieve(input: {
+  baseline: CsmBaseline;
+  providerName: string;
+  corpus: Corpus;
+  request: AmbRetrieveRequest;
+  opts: AmbBridgeOptions;
+}): Promise<AmbRetrievePayload> {
+  const { baseline, providerName, corpus, request, opts } = input;
   const query: FreeFormQuery = {
     kind: "free-form",
     id: "amb-request",
@@ -96,9 +143,9 @@ async function main(): Promise<void> {
   };
 
   const runCtx = {
-    maxInputTokens: args.modelContext,
-    model: args.model,
-    maxOutputTokens: args.maxOutputTokens,
+    maxInputTokens: opts.modelContext,
+    model: opts.model,
+    maxOutputTokens: opts.maxOutputTokens,
     temperature: 0,
     seed: 42,
   };
@@ -112,7 +159,7 @@ async function main(): Promise<void> {
   let latencyMs: number;
   let mode: string;
   let note: string;
-  if (args.withInternalAnswer) {
+  if (opts.withInternalAnswer) {
     const result = await baseline.answer(query, corpus, runCtx);
     meta = (result.meta ?? {}) as Record<string, unknown>;
     inputTokens = result.inputTokens;
@@ -157,12 +204,12 @@ async function main(): Promise<void> {
   });
   const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
 
-  writeJson({
+  return {
     documents: responseDocuments,
     raw_response: {
       provider: "context-swarm-memory",
-      llm_provider: provider.name,
-      llm_model: args.model,
+      llm_provider: providerName,
+      llm_model: opts.model,
       mode,
       note,
       meta,
@@ -173,7 +220,7 @@ async function main(): Promise<void> {
       outputTokens,
       latencyMs,
     },
-  });
+  };
 }
 
 async function readDocumentsJsonl(path: string): Promise<AmbDocument[]> {

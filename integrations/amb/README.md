@@ -29,11 +29,14 @@ recalls also now run in parallel against hosted providers
 run on MockProvider unless `CSM_AMB_ALLOW_MOCK=1`. Measured effects:
 [`../../docs/PERF_BREAKDOWN.md`](../../docs/PERF_BREAKDOWN.md).
 
-The current bridge is intentionally conservative: each
-AMB retrieval launches the Node CSM retrieval command. That keeps the integration
-simple and reproducible. The full BEAM 100K run completed through this path, but
-larger BEAM splits should replace it with a warm Node service so CSM does not
-reload state per query.
+Since 2026-06-10 the provider uses a **warm Node service**
+(`npm run amb:csm:serve`, `scripts/amb-csm-server.ts`): it is started once in
+AMB's `initialize()` hook, ingests documents over localhost HTTP, caches the
+built corpus per user scope, and serves every retrieval from the same process
+(`cleanup()` shuts it down). The original per-query subprocess script
+(`npm run amb:csm:retrieve`) is kept for one-shot debugging and for
+reproducing the May 2026 BEAM run. The May full BEAM 100K run used the
+per-query path; future runs use the warm service.
 
 ## North Star: Hindsight
 

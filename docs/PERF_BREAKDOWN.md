@@ -76,21 +76,35 @@ correct in both runs (`perf-ab-serial-v1` / `perf-ab-parallel-v1`,
 Bridge end-to-end on a 3-shard smoke store: retrieve-only 6.7 s wall;
 the legacy internal-answer call added ~2.7 s + ~700 input tokens when it ran.
 
+## Warm bridge service (landed 2026-06-10)
+
+`scripts/amb-csm-server.ts` (`npm run amb:csm:serve`) replaces the per-query
+process spawn: the AMB provider (`integrations/amb/csm_provider.py`) starts
+it once via AMB's `initialize()` hook, ingests over localhost HTTP, and the
+server caches the built corpus per user scope (invalidated by an ingest
+version counter, ≤4 corpora warm). Retrieval reuses the identical
+`executeAmbRetrieve` core, so AMB-visible output is unchanged for unchanged
+inputs (`tests/ambServer.test.ts`).
+
+Live smoke (3-shard store, gemini-3.5-flash): one-shot bridge 6.7 s wall for
+a query → warm server 4.0-4.5 s wall for the same query, with wall − pipeline
+≈ 0-30 ms (vs ~0.6-2 s process residual + npm wrapper before). The saving
+grows with corpus size, since the rebuild and lazy embedding-model load were
+per-query costs.
+
 ## Projected BEAM-scale stack (to be re-measured on resume)
 
-Starting point 29.2 s avg → after parallelization (~2.4x on the pipeline) and
-retrieve-only: **~11-12 s** expected. Remaining levers, in planned order:
+Starting point 29.2 s avg → after parallelization (~2.4x on the pipeline),
+retrieve-only, and the warm service: **~10-11 s** expected. Remaining levers,
+in planned order:
 
-1. **Warm service** (ingest once, query many): removes the ~0.8 s/query
-   process+rebuild residual and amortizes embedding/model warmup; also the
-   precondition for concurrency above one query.
-2. **Speculative top-1 recall**: `ask()` force-recalls the router's top
+1. **Speculative top-1 recall**: `ask()` force-recalls the router's top
    candidate regardless of probe outcome (router-trust safety net), so that
    recall can launch at t=0 alongside the probes instead of after them.
    Saves ~one full recall round trip on the critical path.
-3. **Recall-as-probes-complete pipelining**: start each accepted shard's
+2. **Recall-as-probes-complete pipelining**: start each accepted shard's
    recall the moment its probe resolves instead of barriering on all probes.
-4. **Probe model routing** (e.g. `gemini-2.5-flash-lite` for probes via the
+3. **Probe model routing** (e.g. `gemini-2.5-flash-lite` for probes via the
    existing `CSM_PROBE_MODEL` stage override) — only behind a measured
    internal-bench quality gate.
 
