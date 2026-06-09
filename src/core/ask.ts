@@ -1,4 +1,4 @@
-import type { LlmProvider, StageModels } from "../providers/LlmProvider.js";
+import type { LlmProvider, ProviderUsage, StageModels } from "../providers/LlmProvider.js";
 import { resolveStageModels } from "../providers/LlmProvider.js";
 import type { StorageReader } from "../storage/jsonlStorage.js";
 import type {
@@ -118,7 +118,47 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     );
   });
 
-  const probeOutputs = await runJobs(probeJobs, parallelProbes);
+  // Speculative top-1 recall (parallel mode only). The router's top candidate
+  // is ALWAYS recalled (router-trust safety net below), and its recall input
+  // depends only on its OWN probe's relevant_event_ids hint — so the recall
+  // can launch the moment probe #0 resolves instead of waiting for the whole
+  // probe barrier. Schedule-only: the recall set, hints, and the order of
+  // `recalls` (and therefore every downstream LLM input) are unchanged.
+  type RecallOutput = { result: RecallResult; usage: ProviderUsage } | null;
+  let speculativeTopRecall: Promise<RecallOutput> | null = null;
+  let speculativeTopError: unknown = null;
+  let probeOutputs: Array<{ result: ProbeResult; usage: ProviderUsage } | null>;
+
+  if (parallelProbes) {
+    const probePromises = probeJobs.map((job) => job());
+    const topPromise = probePromises[0];
+    if (topPromise && budget.maxRecallShards > 0) {
+      speculativeTopRecall = topPromise
+        .then((o): Promise<RecallOutput> | RecallOutput => {
+          const snap = snapshotsByCandidate[0];
+          if (!o || !snap) return null;
+          return recallShard({
+            provider,
+            userQuery: query,
+            snapshot: snap,
+            relevantEventIdsHint: o.result.relevantEventIds,
+            maxRecallTokensPerShard: budget.maxRecallTokensPerShard,
+            model: stageModels.recall,
+          }).then(({ result, usage }) => ({ result, usage }));
+        })
+        // Capture instead of rejecting NOW: a rejection with no handler
+        // attached in the same tick would crash as unhandledRejection while
+        // the probe barrier is still settling. The error is rethrown at the
+        // recall barrier below, preserving the old failure semantics.
+        .catch((err): RecallOutput => {
+          speculativeTopError = err;
+          return null;
+        });
+    }
+    probeOutputs = await Promise.all(probePromises);
+  } else {
+    probeOutputs = await runJobs(probeJobs, false);
+  }
 
   const probes: ProbeResult[] = [];
   for (const o of probeOutputs) {
@@ -184,6 +224,14 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   );
 
   const recallJobs = recallTargets.map((p, ix) => () => {
+    // The router's top candidate was speculatively recalled the moment its
+    // probe resolved — reuse that in-flight call instead of issuing another.
+    if (speculativeTopRecall && p.shardId === topRouterShardId) {
+      return speculativeTopRecall.then((o) => {
+        if (speculativeTopError) throw speculativeTopError;
+        return o;
+      });
+    }
     const snap = recallSnapshots[ix];
     if (!snap) return Promise.resolve(null);
     return recallShard({

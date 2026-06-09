@@ -92,19 +92,32 @@ a query → warm server 4.0-4.5 s wall for the same query, with wall − pipelin
 grows with corpus size, since the rebuild and lazy embedding-model load were
 per-query costs.
 
+## Speculative top-1 recall (landed 2026-06-10)
+
+`ask()` force-recalls the router's top candidate regardless of probe outcome
+(the router-trust safety net), and that recall's input depends only on its
+OWN probe's hint — so in parallel mode it now launches the moment probe #0
+resolves instead of waiting for the whole probe barrier.
+
+Verified schedule-only on a serial-vs-parallel 3-query A/B
+(`rd-spec-serial-3q` / `rd-spec-parallel-3q`): pipeline input/output tokens
+and recall counts identical per query, 3/3 correct both sides. Latency
+(parallel, with speculation): q01 13.0 s, q11 7.9 s, q28 3.3 s — mean
+**8.1 s** vs 9.3 s pre-speculation; the single-recall query collapsed
+6.4 s → 3.3 s because its recall fully overlaps the probe phase.
+
 ## Projected BEAM-scale stack (to be re-measured on resume)
 
 Starting point 29.2 s avg → after parallelization (~2.4x on the pipeline),
-retrieve-only, and the warm service: **~10-11 s** expected. Remaining levers,
-in planned order:
+retrieve-only, the warm service, and speculative top-1 recall: **~9-10 s**
+expected. Remaining levers, in planned order:
 
-1. **Speculative top-1 recall**: `ask()` force-recalls the router's top
-   candidate regardless of probe outcome (router-trust safety net), so that
-   recall can launch at t=0 alongside the probes instead of after them.
-   Saves ~one full recall round trip on the critical path.
-2. **Recall-as-probes-complete pipelining**: start each accepted shard's
-   recall the moment its probe resolves instead of barriering on all probes.
-3. **Probe model routing** (e.g. `gemini-2.5-flash-lite` for probes via the
+1. **Recall-as-probes-complete pipelining**: start each accepted shard's
+   recall the moment its probe resolves instead of barriering on all probes
+   (changes recall SELECTION from score-order to arrival-order when more
+   shards qualify than `maxRecallShards` — needs the accuracy gate, unlike
+   the top-1 speculation).
+2. **Probe model routing** (e.g. `gemini-2.5-flash-lite` for probes via the
    existing `CSM_PROBE_MODEL` stage override) — only behind a measured
    internal-bench quality gate.
 

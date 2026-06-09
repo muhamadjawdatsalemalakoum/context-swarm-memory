@@ -131,7 +131,11 @@ function scopedEventDigest(
   const lines: string[] = [];
   let usedTokens = 0;
   for (const e of candidates) {
-    const line = `- [${e.eventId}] (${e.role}) ${truncate(e.content, 480)}${
+    // Date-stamp each line (date part only — full ISO is token noise). The
+    // recall LLM otherwise only sees timestamps when they happen to appear in
+    // content text, which starves event-ordering/temporal claims of anchors.
+    const day = e.createdAt ? e.createdAt.slice(0, 10) : "";
+    const line = `- [${e.eventId}] (${e.role}${day ? ` ${day}` : ""}) ${truncate(e.content, 480)}${
       e.tags.length ? `  tags=[${e.tags.join(",")}]` : ""
     }`;
     const lineTokens = estimateTokens(line);
