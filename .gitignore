@@ -102,3 +102,7 @@ data/eval/corpus-synthetic/queries-stub.json
 !data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/
 !data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/census.json
 !data/eval/runs/gemini-caching-measure/offline-census-payswift-100k/census.md
+!data/eval/runs/gemini35-160k-30q-v2-wave1/
+!data/eval/runs/gemini35-160k-30q-v2-wave1/config.json
+!data/eval/runs/gemini35-160k-30q-v2-wave1/results.jsonl
+!data/eval/runs/gemini35-160k-30q-v2-wave1/summary.json

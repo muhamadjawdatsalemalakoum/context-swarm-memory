@@ -226,10 +226,10 @@ What was used for the headline benchmark claims:
 
 Hosted cross-model check, kept separate from the Gemma headline:
 
-- **Run:** `data/eval/runs/gemini35-160k-30q-v1/`
+- **Runs:** CSM rows `data/eval/runs/gemini35-160k-30q-v2-wave1/` (re-measured 2026-06-10 on the current pipeline, 90/90 cells, zero provider errors); baseline rows `data/eval/runs/gemini35-160k-30q-v1/` (unchanged by the June wave — same queries, same answering model, same scorer)
 - **Model:** Gemini 3.5 Flash, temperature 0, `CSM_GEMINI_THINKING=low`
 - **Setup:** same 30 questions over 100K, 1M, and 2M corpus sizes, with native model context capped at 160K tokens
-- **2M result:** CSM 28/30 at ~18K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens. The run completed 360/360 cells with zero provider errors.
+- **2M result:** CSM 30/30 at ~29K mean input tokens; hybrid RAG 27/30; vanilla RAG 26/30; long-context 15/30 at ~170K mean input tokens.
 
 <p align="center"><img src="docs/assets/gemini-accuracy-scaling.svg" width="680" alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens: CSM stays near 28 to 29 out of 30 while long-context drops to 15 out of 30 at 2M"></p>
 
@@ -237,7 +237,7 @@ Hosted cross-model check, kept separate from the Gemma headline:
 
 | Gemini 3.5 Flash system | 100K | 1M | 2M | 2M citation P/R/F1 | 2M mean input |
 |---|---:|---:|---:|---:|---:|
-| CSM | 28/30 | 29/30 | 28/30 | 0.789 / 0.446 / 0.515 | 18.1K |
+| CSM | 30/30 | 28/30 | 30/30 | 0.722 / 0.450 / 0.479 | 28.7K |
 | hybrid RAG | 27/30 | 27/30 | 27/30 | 0.677 / 0.364 / 0.386 | 5.6K |
 | vanilla RAG | 28/30 | 26/30 | 26/30 | 0.600 / 0.315 / 0.334 | 5.4K |
 | long-context | 30/30 | 27/30 | 15/30 | 0.211 / 0.122 / 0.086 | 170.5K |

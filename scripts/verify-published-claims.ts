@@ -92,6 +92,12 @@ const HASHES: Record<string, string> = {
     "7c468a0446f19810d79e20395560be24ee9e6b6fc7c29807dc3768d0b184c785",
   "data/eval/runs/gemini35-160k-30q-v1/report.md":
     "134115a5cab0737e18ff72172283c06d5ff92743355c822129a0352e1d66da1c",
+  "data/eval/runs/gemini35-160k-30q-v2-wave1/config.json":
+    "3e7b3a2037d10f70bea1f72a275820a131ded1901ff6c0daf9469ff2b09700be",
+  "data/eval/runs/gemini35-160k-30q-v2-wave1/results.jsonl":
+    "bac622132c740644fd994b55ecc5d86d7ac297a171e05d98411ab2652b2873a8",
+  "data/eval/runs/gemini35-160k-30q-v2-wave1/summary.json":
+    "e95e614aaa14783cc72f1dda9dc153a8f83dbe3b8fbbee7e2c193ed19f878e01",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/config.json":
     "a9270620fa34e90370f51526c8732140d99d69d7335bebb4d8a296f39ec657b9",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v1/results.jsonl":
@@ -110,8 +116,10 @@ const HASHES: Record<string, string> = {
     "42ea7ef23e87643c9b76167fc83887116b9582b23b9ae00ff8cbc830f8efa55a",
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json":
     "45d2f8a36b624c2f4a54a1026181d37a8072d7fe5341b2b7947fba54262db645",
+  // Repinned 2026-06-10 when hashing moved to LF-normalized bytes (this CSV
+  // was originally hashed with CRLF rows; git content unchanged since 3087170).
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight-category-deltas.csv":
-    "9e3424f7ed917b4d8ee0e43b0b13505d104e72db7c6eb25fe012de8d35a04125",
+    "f3fd2fed94720a1c2d3d2b4d1a69cdc94342dc5aeb13f7a322e37119d45faa03",
   "data/eval/external/babilong-leaderboard-v0_results.csv":
     "584b7daf5f8cfcab96a005dabe6e6df189acd545a093dfc48f223af15ca6e196",
   "data/eval/external/babilong-leaderboard-v0_SOURCE.md":
@@ -155,6 +163,36 @@ const EXPECTED: ExpectedMetric[] = [
     n: 30,
     correct: 28,
     f1: 0.515,
+  },
+  // 2026-06-10 re-measurement of the CSM rows on the post-wave defaults
+  // (coverage mode on, parallel pipeline). README showcases these; the v1
+  // CSM rows above remain pinned as the superseded artifact of record.
+  {
+    runId: "gemini35-160k-30q-v2-wave1",
+    system: "csm",
+    corpusSize: 100_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 30,
+    f1: 0.488,
+  },
+  {
+    runId: "gemini35-160k-30q-v2-wave1",
+    system: "csm",
+    corpusSize: 1_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 28,
+    f1: 0.505,
+  },
+  {
+    runId: "gemini35-160k-30q-v2-wave1",
+    system: "csm",
+    corpusSize: 2_000_000,
+    modelContext: 160_000,
+    n: 30,
+    correct: 30,
+    f1: 0.479,
   },
   {
     runId: "gemini35-160k-30q-v1",
@@ -312,9 +350,14 @@ const EXPECTED: ExpectedMetric[] = [
 ];
 
 function sha256(path: string): string {
-  return createHash("sha256")
-    .update(readFileSync(join(process.cwd(), path)))
-    .digest("hex");
+  // Normalize CRLF -> LF before hashing: with core.autocrlf=true a Windows
+  // checkout materializes these text artifacts with CRLF while macOS/Linux
+  // (and CI) see LF, so raw-byte hashes are OS-dependent. All pinned hashes
+  // were computed over LF bytes; normalization keeps them valid everywhere
+  // while still catching real content changes.
+  const raw = readFileSync(join(process.cwd(), path));
+  const normalized = raw.toString("utf8").replaceAll("\r\n", "\n");
+  return createHash("sha256").update(normalized, "utf8").digest("hex");
 }
 
 function loadRows(

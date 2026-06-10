@@ -104,6 +104,12 @@ function corpusLabel(corpusSize: number): string {
 
 const geminiRunId = "gemini35-160k-30q-v1";
 const geminiSummary = readSummary(geminiRunId);
+// CSM rows were re-measured 2026-06-10 on the post-wave defaults (coverage
+// mode on, parallel pipeline). The baseline systems are untouched by those
+// changes, so their v1 rows remain the rows of record — same queries, same
+// answering model, same scorer.
+const geminiCsmRunId = "gemini35-160k-30q-v2-wave1";
+const geminiCsmSummary = readSummary(geminiCsmRunId);
 const geminiSystems = [
   { id: "csm", label: "CSM" },
   { id: "hybrid", label: "hybrid RAG" },
@@ -113,7 +119,8 @@ const geminiSystems = [
 const geminiCorpusSizes = [100000, 1000000, 2000000];
 
 function geminiCell(system: string, corpusSize: number): SummaryCell {
-  const cell = geminiSummary.cells.find(
+  const summary = system === "csm" ? geminiCsmSummary : geminiSummary;
+  const cell = summary.cells.find(
     (c) =>
       c.system === system &&
       c.corpusSize === corpusSize &&
