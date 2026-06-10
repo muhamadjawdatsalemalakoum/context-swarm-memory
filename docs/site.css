@@ -318,16 +318,21 @@ tr.hl th { color: var(--focus-ink); font-weight: 700; }
 tr.hl:hover { background: var(--focus-tint); }
 .hl-cell { color: var(--focus); font-weight: 700; }
 
-/* ---------- Callouts (honesty notes) ---------- */
+/* ---------- Callouts (honesty notes) ----------
+   Plain white card, amber reserved for the heading + marker. No tinted
+   field, no one-sided accent border. */
 .callout {
   margin: 8px 0 24px;
   padding: 22px 26px;
-  border: 1px solid var(--trade-line);
-  border-left: 3px solid var(--trade);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--trade-tint);
+  background: var(--card);
+  box-shadow: var(--shadow);
 }
 .callout h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0 0 8px;
   font-size: 0.8rem;
   font-family: var(--mono);
@@ -335,6 +340,14 @@ tr.hl:hover { background: var(--focus-tint); }
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--trade);
+}
+.callout h3::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--trade);
+  flex: none;
 }
 .callout p { margin: 0; color: var(--ink-2); font-size: 0.95rem; }
 .callout strong { color: var(--ink); font-weight: 600; }
@@ -393,9 +406,7 @@ tr.hl:hover { background: var(--focus-tint); }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  transition: transform 0.25s ease, border-color 0.25s ease;
 }
-.stage:hover { transform: translateY(-3px); border-color: var(--focus-line); }
 .stage::after {
   content: "";
   position: absolute;
@@ -418,7 +429,7 @@ tr.hl:hover { background: var(--focus-tint); }
 .stage code { color: var(--ink); background: var(--line-2); padding: 1px 5px; border-radius: 5px; font-size: 0.85em; }
 .packet-stage {
   border-color: var(--focus-line);
-  background: linear-gradient(180deg, var(--focus-tint), var(--card) 130%);
+  background: var(--focus-tint);
 }
 
 /* ---------- Invariant cards ---------- */
@@ -464,9 +475,7 @@ tr.hl:hover { background: var(--focus-tint); }
   background: var(--card);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-.paper-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .paper-card img {
   display: block;
   width: 100%;
@@ -489,7 +498,7 @@ tr.hl:hover { background: var(--focus-tint); }
   gap: 18px;
   margin: 8px 0 24px;
 }
-.fact { padding: 4px 0 4px 18px; border-left: 2px solid var(--focus-2); }
+.fact { padding: 14px 0 4px; border-top: 1px solid var(--line); }
 .fact strong {
   display: block;
   font-family: var(--mono);
@@ -703,8 +712,4 @@ tr.hl:hover { background: var(--focus-tint); }
   .footer-nav { grid-template-columns: 1fr; }
 }
 
-/* Reduced motion: the global kill-switch lives in the critical CSS block;
-   this only removes residual hover transforms for completeness. */
-@media (prefers-reduced-motion: reduce) {
-  .stage:hover, .paper-card:hover { transform: none; }
-}
+/* Reduced motion: the global kill-switch lives in the critical CSS block. */

@@ -255,12 +255,6 @@
        shards come into focus (teal), flow through, and exit as one cited
        MemoryPacket. Color = selection, everything else stays dormant. */
     .hero-motif { position: relative; margin: clamp(26px, 4.5vw, 54px) auto 0; max-width: 1040px; }
-    .hero-motif::before {
-      content: "";
-      position: absolute; inset: -6% 26% 4% 26%;
-      background: radial-gradient(closest-side, rgba(16, 179, 154, 0.10), transparent 72%);
-      pointer-events: none;
-    }
     .hero-motif svg { position: relative; display: block; width: 100%; height: auto; }
     .m-shard { fill: var(--swarm-2); stroke: var(--swarm); stroke-width: 1.25; }
     .m-shard.sel { stroke-width: 1.4; }
