@@ -1,616 +1,1234 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Context Swarm Memory (CSM) | LLM Memory Beats Hindsight on BEAM 100K</title>
-    <meta
-      name="description"
-      content="Context Swarm Memory is an open-source LLM memory system with cited recall, commit-only writes, and a full BEAM 100K result beating Hindsight: 342/400 vs 326/400."
-    >
-    <meta name="robots" content="index, follow, max-image-preview:large">
-    <meta name="googlebot" content="index, follow, max-image-preview:large">
-    <meta
-      name="keywords"
-      content="Context Swarm Memory, CSM, LLM memory, agent memory, AI memory, Hindsight, BEAM 100K, Agent Memory Benchmark, RAG, long-context, cited recall, commit-only memory, memory benchmark"
-    >
-    <meta name="author" content="Mohamad Jawdat Alakoum">
-    <meta name="application-name" content="Context Swarm Memory">
-    <meta name="theme-color" content="#0E7C66">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <link rel="canonical" href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
-    <meta property="og:site_name" content="Context Swarm Memory">
-    <meta property="og:locale" content="en_US">
-    <meta property="og:title" content="Context Swarm Memory (CSM) beats Hindsight on BEAM 100K">
-    <meta property="og:updated_time" content="2026-05-27T00:00:00+03:00">
-    <meta
-      property="og:description"
-      content="Open-source LLM memory with bounded read-only shards, cited recall, and Committer-gated writes. Full BEAM 100K local accepted-artifact result: CSM 342/400 vs Hindsight 326/400."
-    >
-    <meta
-      property="og:image"
-      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png"
-    >
-    <meta
-      property="og:image:secure_url"
-      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png"
-    >
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:image:width" content="1916">
-    <meta property="og:image:height" content="821">
-    <meta
-      property="og:image:alt"
-      content="Context Swarm Memory cover: bounded memory shards routed into a cited memory packet"
-    >
-    <meta name="citation_title" content="Context Swarm Memory vs Hindsight on BEAM 100K">
-    <meta name="citation_author" content="Alakoum, Mohamad Jawdat">
-    <meta name="citation_publication_date" content="2026/05/27">
-    <meta name="citation_online_date" content="2026/05/27">
-    <meta name="citation_language" content="en">
-    <meta
-      name="citation_abstract"
-      content="Context Swarm Memory is an open-source LLM memory system. In the committed BEAM 100K local accepted-artifact comparison, CSM scores 0.757573 with 342/400 correct rows versus Hindsight at 0.733658 with 326/400 correct rows."
-    >
-    <meta name="dc.title" content="Context Swarm Memory (CSM)">
-    <meta name="dc.creator" content="Mohamad Jawdat Alakoum">
-    <meta
-      name="dc.description"
-      content="Open-source LLM memory system with BEAM 100K benchmark evidence against Hindsight."
-    >
-    <meta name="dc.language" content="en">
-    <meta name="dc.identifier" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Context Swarm Memory beats Hindsight on BEAM 100K">
-    <meta
-      name="twitter:description"
-      content="CSM is an open-source LLM memory system with cited recall and commit-only writes. BEAM 100K: 342/400 correct vs Hindsight 326/400."
-    >
-    <meta
-      name="twitter:image"
-      content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png"
-    >
-    <meta
-      name="twitter:image:alt"
-      content="Context Swarm Memory cover: bounded memory shards routed into a cited memory packet"
-    >
-    <link rel="alternate" type="text/plain" title="LLM-readable summary" href="llms.txt">
-    <script type="application/ld+json">
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory</title>
+  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. On the public AMB BEAM 100K runner CSM scores 0.743110 (337/400, 3.47s retrieve) vs Hindsight 0.733658 (326/400) — submitted upstream, pending maintainer acceptance.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="Muhamad J. Akoum">
+  <meta name="application-name" content="Context Swarm Memory">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#04090e">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="keywords" content="Context Swarm Memory, CSM, LLM memory, agent memory, AI memory, Agent Memory Benchmark, BEAM 100K, Hindsight, cited recall, RAG alternative, long-context, memory shards, Committer-gated writes">
+  <link rel="canonical" href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+  <link rel="alternate" type="text/plain" title="LLM-readable summary (llms.txt)" href="llms.txt">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+  <meta property="og:site_name" content="Context Swarm Memory">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
+  <meta property="og:description" content="Bounded read-only memory shards, cited recall, Committer-gated writes. BEAM 100K via the public AMB runner: CSM 0.743110 (337/400) vs Hindsight 0.733658 (326/400), retrieval 1.84x faster — pending upstream acceptance.">
+  <meta property="og:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1916">
+  <meta property="og:image:height" content="821">
+  <meta property="og:image:alt" content="Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet">
+  <meta property="og:updated_time" content="2026-06-10T00:00:00+00:00">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
+  <meta name="twitter:description" content="BEAM 100K via the public AMB runner: CSM 0.743110 (337/400, 3.47s retrieve) vs Hindsight 0.733658 (326/400, 6.38s) — submitted upstream, pending acceptance.">
+  <meta name="twitter:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
+  <meta name="twitter:image:alt" content="Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet">
+
+  <script>document.documentElement.className = document.documentElement.className.replace('no-js', 'js');</script>
+
+  <style>
+    /* ===== Critical CSS: tokens, shell, header, hero ===== */
+    :root {
+      --bg-0: #04090e;
+      --bg-1: #071019;
+      --bg-2: #0a1722;
+      --ink: #e9f4f3;
+      --ink-dim: #a3bcbe;
+      --ink-faint: #6d8a8e;
+      --brand: #0e7c66;
+      --teal: #14b8a6;
+      --mint: #2dd4bf;
+      --cyan: #22d3ee;
+      --amber: #fbbf24;
+      --line: rgba(148, 211, 205, 0.14);
+      --line-soft: rgba(148, 211, 205, 0.08);
+      --glass: rgba(13, 32, 40, 0.55);
+      --glass-hi: rgba(20, 46, 56, 0.6);
+      --glow: rgba(45, 212, 191, 0.32);
+      --radius: 18px;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+      --wrap: 1120px;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 520px at 78% -8%, rgba(34, 211, 238, 0.10), transparent 62%),
+        radial-gradient(900px 600px at 8% 12%, rgba(14, 124, 102, 0.16), transparent 60%),
+        radial-gradient(1200px 800px at 50% 115%, rgba(20, 184, 166, 0.07), transparent 55%),
+        var(--bg-0);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148, 211, 205, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 211, 205, 0.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000 0%, transparent 78%);
+      -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000 0%, transparent 78%);
+      z-index: 0;
+    }
+    main, header.site-header, footer.site-footer { position: relative; z-index: 1; }
+    a { color: var(--mint); text-decoration: none; }
+    a:hover, a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+    img, svg { max-width: 100%; height: auto; }
+    code { font-family: var(--mono); font-size: 0.92em; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; margin: -1px;
+      padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    .skip-link {
+      position: absolute; top: -48px; left: 16px; z-index: 100;
+      padding: 10px 16px; border-radius: 10px;
+      background: var(--teal); color: #03110d; font-weight: 600;
+      transition: top 0.2s ease;
+    }
+    .skip-link:focus { top: 12px; }
+
+    /* Header */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 14px clamp(16px, 4vw, 40px);
+      border-bottom: 1px solid transparent;
+      transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+    }
+    .site-header.is-scrolled {
+      background: rgba(5, 12, 17, 0.78);
+      border-bottom-color: var(--line-soft);
+      backdrop-filter: blur(14px) saturate(1.3);
+      -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    }
+    .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); }
+    .brand:hover { text-decoration: none; }
+    .brand-mark {
+      position: relative; width: 38px; height: 38px; flex: none;
+      border-radius: 11px;
+      background: linear-gradient(140deg, rgba(45, 212, 191, 0.22), rgba(34, 211, 238, 0.08));
+      border: 1px solid rgba(45, 212, 191, 0.45);
+      box-shadow: 0 0 22px rgba(45, 212, 191, 0.18), inset 0 0 12px rgba(45, 212, 191, 0.12);
+    }
+    .brand-mark::before, .brand-mark::after {
+      content: ""; position: absolute; border-radius: 3px;
+      background: linear-gradient(135deg, var(--mint), var(--cyan));
+    }
+    .brand-mark::before { width: 12px; height: 12px; left: 7px; top: 8px; transform: rotate(-8deg); opacity: 0.95; }
+    .brand-mark::after { width: 8px; height: 8px; right: 7px; bottom: 8px; transform: rotate(14deg); opacity: 0.7; }
+    .brand b { font-size: 1.02rem; letter-spacing: 0.02em; }
+    .brand small { display: block; font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+    .site-nav { display: flex; align-items: center; gap: clamp(10px, 1.8vw, 24px); flex-wrap: wrap; }
+    .site-nav a { color: var(--ink-dim); font-size: 0.92rem; font-weight: 500; }
+    .site-nav a:hover { color: var(--ink); text-decoration: none; }
+    .site-nav .nav-cta {
+      padding: 8px 16px; border-radius: 999px; color: var(--ink);
+      border: 1px solid rgba(45, 212, 191, 0.5);
+      background: rgba(45, 212, 191, 0.08);
+    }
+    .site-nav .nav-cta:hover { background: rgba(45, 212, 191, 0.16); }
+    .nav-toggle { display: none; }
+    .js .nav-toggle {
+      display: none; flex-direction: column; gap: 5px; justify-content: center;
+      width: 44px; height: 40px; padding: 0 10px;
+      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    }
+    .nav-toggle i { display: block; height: 2px; border-radius: 2px; background: var(--ink); transition: transform 0.25s ease, opacity 0.25s ease; }
+    @media (max-width: 860px) {
+      .js .nav-toggle { display: flex; }
+      .js .site-nav {
+        position: absolute; top: calc(100% + 8px); right: 16px; left: 16px;
+        flex-direction: column; align-items: stretch; gap: 4px;
+        padding: 12px;
+        background: rgba(7, 16, 25, 0.96);
+        border: 1px solid var(--line); border-radius: 16px;
+        backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        display: none;
+      }
+      .js .site-nav.is-open { display: flex; }
+      .js .site-nav a { padding: 10px 12px; border-radius: 10px; }
+      .js .site-nav a:hover { background: rgba(45, 212, 191, 0.08); }
+      .js .nav-toggle[aria-expanded="true"] i:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+      .js .nav-toggle[aria-expanded="true"] i:nth-child(2) { opacity: 0; }
+      .js .nav-toggle[aria-expanded="true"] i:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    }
+
+    /* Hero */
+    .hero {
+      max-width: var(--wrap); margin: 0 auto;
+      padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 40px) clamp(28px, 4vw, 48px);
+      text-align: center;
+    }
+    .hero-status {
+      display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+      margin: 0 0 22px; padding: 8px 16px;
+      border-radius: 999px; border: 1px solid rgba(45, 212, 191, 0.35);
+      background: rgba(13, 32, 40, 0.6);
+      font-size: 0.82rem; color: var(--ink-dim);
+    }
+    .hero-status .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex: none;
+      background: var(--mint); box-shadow: 0 0 10px var(--glow);
+    }
+    .hero-status strong { color: var(--ink); font-weight: 600; }
+    .hero h1 {
+      margin: 0 auto 18px; max-width: 17ch;
+      font-size: clamp(2.5rem, 6.4vw, 4.35rem);
+      line-height: 1.06; letter-spacing: -0.025em; font-weight: 800;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(92deg, #5eead4 0%, var(--cyan) 55%, #67e8f9 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero-lede {
+      margin: 0 auto; max-width: 62ch;
+      font-size: clamp(1.02rem, 1.6vw, 1.18rem); color: var(--ink-dim);
+    }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 30px 0 8px; }
+    .button {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 26px; border-radius: 999px;
+      font-weight: 600; font-size: 0.98rem; letter-spacing: 0.01em;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .button:hover { text-decoration: none; transform: translateY(-2px); }
+    .button-primary {
+      color: #03110d;
+      background: linear-gradient(120deg, var(--mint), var(--cyan));
+      box-shadow: 0 8px 30px rgba(34, 211, 238, 0.25);
+    }
+    .button-primary:hover { box-shadow: 0 12px 38px rgba(34, 211, 238, 0.38); }
+    .button-ghost { color: var(--ink); border: 1px solid var(--line); background: var(--glass); }
+    .button-ghost:hover { background: var(--glass-hi); }
+    .hero-traits {
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+      margin: 26px auto 0; padding: 0; list-style: none; max-width: 760px;
+    }
+    .hero-traits li {
+      padding: 7px 14px; border-radius: 999px;
+      border: 1px solid var(--line); background: rgba(10, 23, 34, 0.5);
+      font-size: 0.8rem; color: var(--ink-dim); font-family: var(--mono);
+    }
+
+    /* Hero motif SVG */
+    .hero-motif { margin: clamp(26px, 4.5vw, 54px) auto 0; max-width: 1040px; }
+    .hero-motif svg { display: block; width: 100%; height: auto; }
+    .m-shard { fill: url(#shardGrad); stroke: rgba(94, 234, 212, 0.5); stroke-width: 1; }
+    .m-shard.dim { opacity: 0.4; }
+    .m-dot { fill: var(--mint); opacity: 0.55; }
+    .m-flow { fill: none; stroke: url(#flowGrad); stroke-width: 1.6; stroke-dasharray: 7 9; opacity: 0.55; }
+    .m-flow.bright { stroke-width: 2.2; opacity: 0.9; }
+    .m-ring { fill: none; stroke: rgba(45, 212, 191, 0.4); stroke-width: 1.2; stroke-dasharray: 4 10; transform-box: fill-box; transform-origin: center; }
+    .m-lens-panel { fill: rgba(13, 35, 43, 0.72); stroke: url(#panelGrad); stroke-width: 1.4; }
+    .m-lens-core { fill: rgba(45, 212, 191, 0.1); stroke: rgba(94, 234, 212, 0.7); stroke-width: 1.5; }
+    .m-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em; fill: var(--ink-faint); text-transform: uppercase; }
+    .m-stage { font-family: var(--mono); font-size: 11.5px; fill: #7fe7d8; }
+    .m-stage-pill { fill: rgba(20, 184, 166, 0.1); stroke: rgba(45, 212, 191, 0.35); }
+    .m-packet { fill: rgba(11, 28, 36, 0.92); stroke: rgba(94, 234, 212, 0.55); stroke-width: 1.4; }
+    .m-packet-title { font-family: var(--mono); font-size: 13px; font-weight: 600; fill: #d7fff7; }
+    .m-line { fill: rgba(163, 188, 190, 0.35); }
+    .m-cite { fill: rgba(45, 212, 191, 0.12); stroke: rgba(45, 212, 191, 0.45); }
+    .m-cite-text { font-family: var(--mono); font-size: 10.5px; fill: #8ef0e0; }
+    .m-check { fill: none; stroke: var(--mint); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .m-glow { fill: url(#lensGlow); }
+    .m-particle { fill: #8ef0e0; opacity: 0; }
+
+    @keyframes m-drift { from { transform: translateY(-5px); } to { transform: translateY(5px); } }
+    @keyframes m-dash { to { stroke-dashoffset: -160; } }
+    @keyframes m-orbit { to { transform: rotate(360deg); } }
+    @keyframes m-float { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
+    @keyframes m-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.95; } }
+    @keyframes m-travel {
+      0% { offset-distance: 0%; opacity: 0; }
+      12% { opacity: 0.95; }
+      82% { opacity: 0.95; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .m-shard, .m-dot { animation: m-drift 5.5s ease-in-out infinite alternate; }
+      .m-flow { animation: m-dash 6s linear infinite; }
+      .m-ring { animation: m-orbit 30s linear infinite; }
+      .m-ring.r2 { animation-duration: 44s; animation-direction: reverse; }
+      .m-packet-g { animation: m-float 7s ease-in-out infinite alternate; }
+      .m-lens-core { animation: m-pulse 4.5s ease-in-out infinite; }
+      .m-particle { offset-rotate: 0deg; animation: m-travel 5.2s linear infinite; }
+    }
+    @supports not (offset-path: path("M0,0 L10,10")) { .m-particle { display: none; } }
+
+    /* Scroll reveal base (hidden only when JS is on) */
+    .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: var(--d, 0s); }
+    .js [data-reveal].in-view { opacity: 1; transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001s !important;
+      }
+      .js [data-reveal] { opacity: 1; transform: none; }
+    }
+  </style>
+
+  <link rel="stylesheet" href="site.css" media="print" onload="this.media='all'; this.onload = null;">
+  <noscript><link rel="stylesheet" href="site.css"></noscript>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
       {
-        "@context": "https://schema.org",
-        "@graph": [
+        "@type": "WebSite",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website",
+        "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
+        "name": "Context Swarm Memory",
+        "alternateName": ["CSM", "Context Swarm Memory (CSM)"],
+        "description": "Open-source LLM agent memory system with bounded read-only shards, cited recall, and Committer-gated writes, benchmarked head-to-head against Hindsight on BEAM 100K via the public AMB runner.",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#webpage",
+        "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
+        "name": "Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory",
+        "description": "Homepage and evidence summary for Context Swarm Memory: the BEAM 100K official-runner rerun versus Hindsight (submitted upstream, pending acceptance), Gemini cross-model scaling, BABILong diagnostics, and the June 2026 R&D wave.",
+        "isPartOf": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website" },
+        "primaryImageOfPage": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image" },
+        "mainEntity": [
+          { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#software" }
+        ],
+        "datePublished": "2026-05-27",
+        "dateModified": "2026-06-10",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "ImageObject",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image",
+        "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png",
+        "width": 1916,
+        "height": 821,
+        "caption": "Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet"
+      },
+      {
+        "@type": "Person",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person",
+        "name": "Muhamad J. Akoum",
+        "alternateName": "Mohamad Jawdat Alakoum",
+        "url": "https://www.linkedin.com/in/akoum/",
+        "sameAs": [
+          "https://www.linkedin.com/in/akoum/",
+          "https://github.com/muhamadjawdatsalemalakoum"
+        ]
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#software",
+        "name": "Context Swarm Memory",
+        "alternateName": "CSM",
+        "codeRepository": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory",
+        "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
+        "programmingLanguage": "TypeScript",
+        "runtimePlatform": "Node.js 22+",
+        "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
+        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. On the public AMB BEAM 100K runner it scores 0.743110 (337/400) versus Hindsight 0.733658 (326/400), with retrieval 1.84x faster; the result is submitted upstream and pending maintainer acceptance.",
+        "keywords": [
+          "LLM memory",
+          "agent memory",
+          "AI memory",
+          "Agent Memory Benchmark",
+          "BEAM 100K",
+          "Hindsight",
+          "cited recall",
+          "RAG",
+          "long-context",
+          "memory shards"
+        ],
+        "author": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#payswift-corpus",
+        "name": "PaySwift synthetic project-memory corpus",
+        "description": "Synthetic project-memory benchmark corpus of 22,363 events (about 9 million tokens) with 30 multiple-choice queries (40 options each) and gold citation event IDs, used for the CSM scaling and citation-grounding studies.",
+        "url": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/tree/main/data/eval/corpus-synthetic",
+        "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "isAccessibleForFree": true,
+        "creator": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#faq",
+        "mainEntity": [
           {
-            "@type": "WebSite",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website",
-            "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
-            "name": "Context Swarm Memory",
-            "alternateName": ["CSM", "Context Swarm Memory (CSM)"],
-            "description": "Open-source LLM memory system with bounded read-only shards, cited recall, Committer-gated writes, and BEAM 100K benchmark evidence against Hindsight.",
-            "inLanguage": "en",
-            "publisher": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person"
+            "@type": "Question",
+            "name": "Does CSM beat Hindsight on BEAM 100K?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, on the public AMB runner with the same answer/judge models as the accepted Hindsight artifact: 0.743110 and 337/400 correct rows for CSM versus 0.733658 and 326/400 for Hindsight, with CSM retrieval 1.84x faster."
             }
           },
           {
-            "@type": "WebPage",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#webpage",
-            "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
-            "name": "Context Swarm Memory (CSM) | LLM Memory Beats Hindsight on BEAM 100K",
-            "description": "Homepage and benchmark summary for Context Swarm Memory, including the full BEAM 100K local accepted-artifact comparison against Hindsight.",
-            "isPartOf": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website"
-            },
-            "primaryImageOfPage": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image"
-            },
-            "mainEntity": [
-              {
-                "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#software"
-              },
-              {
-                "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#benchmark-report"
-              }
-            ],
-            "datePublished": "2026-05-27",
-            "dateModified": "2026-05-27",
-            "inLanguage": "en"
-          },
-          {
-            "@type": "ImageObject",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image",
-            "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png",
-            "width": 1916,
-            "height": 821,
-            "caption": "Context Swarm Memory cover: bounded memory shards routed into a cited memory packet"
-          },
-          {
-            "@type": "Person",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person",
-            "name": "Mohamad Jawdat Alakoum",
-            "url": "https://www.linkedin.com/in/akoum/"
-          },
-          {
-            "@type": "SoftwareSourceCode",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#software",
-            "name": "Context Swarm Memory",
-            "alternateName": "CSM",
-            "codeRepository": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory",
-            "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
-            "programmingLanguage": "TypeScript",
-            "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
-            "runtimePlatform": "Node.js 22+",
-            "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only shards, manager routing, probe/recall/synthesis, cited answers, and Committer-gated writes.",
-            "keywords": [
-              "LLM memory",
-              "agent memory",
-              "AI memory",
-              "BEAM 100K",
-              "Agent Memory Benchmark",
-              "Hindsight",
-              "RAG",
-              "long-context",
-              "cited recall"
-            ],
-            "author": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person"
+            "@type": "Question",
+            "name": "Is this an official leaderboard claim?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The result was produced by AMB's own runner and has been submitted to the maintainers; the repo does not call it official until they accept the provider/result."
             }
           },
           {
-            "@type": "TechArticle",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#benchmark-report",
-            "headline": "Context Swarm Memory vs Hindsight on BEAM 100K",
-            "name": "BEAM 100K: CSM vs Hindsight",
-            "url": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md",
-            "description": "Full local accepted-artifact comparison where CSM scores 0.757573 with 342/400 correct rows versus Hindsight at 0.733658 with 326/400 correct rows on BEAM 100K.",
-            "datePublished": "2026-05-27",
-            "dateModified": "2026-05-27",
-            "author": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person"
-            },
-            "about": [
-              "Context Swarm Memory",
-              "Hindsight",
-              "BEAM 100K",
-              "Agent Memory Benchmark",
-              "LLM memory benchmark"
-            ],
-            "isPartOf": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website"
+            "@type": "Question",
+            "name": "Did CSM use gold answers or hardcoded benchmark logic?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. CSM retrieval receives only the ingested documents, the query, user id, and timestamp — no gold answers, rubrics, query IDs, or benchmark-specific hardcoding (the June wave also deleted the legacy domain term tables from the active path)."
             }
           },
           {
-            "@type": "Dataset",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#beam-summary",
-            "name": "CSM vs Hindsight BEAM 100K summary",
-            "description": "Committed benchmark summary comparing Context Swarm Memory with the accepted local Hindsight artifact on BEAM 100K.",
-            "url": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json",
-            "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
-            "creator": {
-              "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person"
-            },
-            "measurementTechnique": "Agent Memory Benchmark / BEAM 100K AMB standard retrieval-answer-judge path",
-            "variableMeasured": [
-              "AMB score",
-              "correct rows",
-              "answer-visible context tokens",
-              "retrieval latency",
-              "CSM internal token telemetry"
-            ]
+            "@type": "Question",
+            "name": "What is Context Swarm Memory?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Context Swarm Memory (CSM) is an open-source LLM memory system that treats memory as bounded, immutable, read-only shards. A Memory Manager routes a query to candidate shards, probes them cheaply, recalls from only the useful ones, and synthesizes a compact answer that cites shard, snapshot, and event IDs. Querying memory never mutates it; durable memory changes only through an explicit Committer protocol."
+            }
           },
           {
-            "@type": "FAQPage",
-            "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#faq",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "Does Context Swarm Memory beat Hindsight on BEAM 100K?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "In the committed full local accepted-artifact comparison, Context Swarm Memory scores 0.757573 with 342/400 correct rows on BEAM 100K, versus Hindsight at 0.733658 with 326/400 correct rows. The repo labels this as a local accepted-artifact comparison until independent replication or official chart acceptance."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What is Context Swarm Memory?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, cited answers, and explicit Committer-gated writes."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is the BEAM 100K result an official leaderboard claim?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. The BEAM 100K result is a committed full local accepted-artifact comparison against the accepted Hindsight artifact. The repo does not call it official SOTA until independent replication or official chart acceptance exists."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What is the main tradeoff versus Hindsight?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "CSM answers more BEAM 100K rows correctly and uses fewer AMB-visible answer-context tokens, but retrieval is slower: 29.23 seconds on average for CSM versus 6.38 seconds for Hindsight, with additional CSM internal probe, recall, and synthesis tokens."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark answers?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. CSM retrieval reads from memory shards and does not use gold answers, rubrics, query IDs, or hardcoded benchmark answers. Durable memory writes are Committer-gated and querying memory does not mutate durable memory."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Why can bounded shards help LLM memory scale?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Bounded shards keep individual recall contexts small and route only plausible memory regions before synthesis, reducing whole-corpus context saturation. The BEAM result is a 100K head-to-head; separate synthetic and Gemini scaling runs support the broader scaling thesis."
-                }
-              }
-            ]
+            "@type": "Question",
+            "name": "What is the honest tradeoff versus Hindsight?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "In the official-runner rerun CSM scores higher and retrieves 1.84x faster, but its answer-visible context is larger than Hindsight's (27.0K vs 17.7K tokens, +53%), it additionally spends 8.8K internal input tokens per query on its probe/recall/synthesis pipeline (reported separately so total cost is never under-stated), and the run is single-trial."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is CSM state-of-the-art on BABILong?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. On the shared QA1/QA2 slice at 4K and 8K, CSM matches the historical top systems on QA1 (100.0 / 96.7) and its QA2 result (73.3 / 83.3) beats GPT-4's historical line and ChatQA + RAG by a wide margin, while still trailing the fine-tuned ARMT/Mamba/RMT systems. The repo explicitly does not claim BABILong SOTA, and notes the public BABILong leaderboard is a historical v0 snapshot, not fresh 2026 frontier-model evidence."
+            }
           }
         ]
       }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    >
-    <link rel="stylesheet" href="site.css">
-  </head>
-  <body class="paper-page">
-    <a class="skip-link" href="#content">Skip to content</a>
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
 
-    <header class="site-header" data-header>
-      <a class="brand" href="#top" aria-label="Context Swarm Memory home">
-        <span class="brand-mark" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span>
-        </span>
-        <span>
-          <strong>CSM</strong>
-          <small>Context Swarm Memory</small>
-        </span>
-      </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
-        <span class="nav-toggle-line"></span>
-        <span class="nav-toggle-line"></span>
-        <span class="nav-toggle-line"></span>
-        <span class="sr-only">Menu</span>
-      </button>
-      <nav class="site-nav" id="site-nav" data-nav>
-        <a href="#abstract">Abstract</a>
-        <a href="#results">Results</a>
-        <a href="#method">Method</a>
-        <a href="#qa">Q&A</a>
-        <a href="#reproduce">Reproduce</a>
-        <a class="nav-github" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
-      </nav>
-    </header>
+  <header class="site-header" data-header>
+    <a class="brand" href="#top" aria-label="Context Swarm Memory home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span><b>CSM</b><small>Context Swarm Memory</small></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+      <i></i><i></i><i></i>
+      <span class="sr-only">Toggle navigation</span>
+    </button>
+    <nav class="site-nav" id="site-nav" data-nav aria-label="Primary">
+      <a href="#beam">BEAM 100K</a>
+      <a href="#how">How it works</a>
+      <a href="#scaling">Scaling</a>
+      <a href="#babilong">BABILong</a>
+      <a href="#rd">R&amp;D log</a>
+      <a href="#faq">FAQ</a>
+      <a class="nav-cta" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
+    </nav>
+  </header>
 
-    <main id="content">
-      <section class="hero paper-hero" id="top" aria-labelledby="hero-title">
-        <div class="paper-rule" aria-hidden="true"></div>
-        <div class="hero-content">
-          <p class="eyebrow">Open-source memory infrastructure</p>
-          <h1 id="hero-title">Context Swarm Memory</h1>
-          <p class="hero-subtitle">Bounded read-only shards for cited long-term AI memory.</p>
-          <p class="hero-lede">Memory whose edge grows as it scales.</p>
-          <p class="hero-copy">
-            CSM routes a query through immutable memory shards, probes for relevant evidence,
-            recalls only from useful snapshots, and synthesizes a compact cited packet. Durable
-            memory changes only through explicit Committer-gated writes.
-          </p>
-          <div class="paper-meta" aria-label="Benchmark metadata">
-            <span>BEAM 100K</span>
-            <span>Gemini 3.5 Flash scaling</span>
-            <span>218 tests</span>
-            <span>MIT / CC0 corpus</span>
-          </div>
-          <div class="hero-actions" aria-label="Primary actions">
-            <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">
-              View repository
-            </a>
-            <a class="button button-secondary" href="#results">Read evidence</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section abstract" id="abstract" aria-labelledby="abstract-title">
-        <div class="section-inner paper-columns">
-          <div>
-            <div class="section-kicker">Abstract</div>
-            <h2 id="abstract-title">A memory layer engineered for auditability.</h2>
-          </div>
-          <div class="abstract-copy">
-            <p>
-              CSM is an R&D memory system for long-running agents. It treats memory as bounded,
-              inspectable shards rather than one ever-growing prompt. The read path is
-              branch-and-discard; the write path is Committer-only.
-            </p>
-            <p class="scope-note">
-              Scope note: the scaling thesis is supported by the synthetic and Gemini scaling
-              runs, where CSM stays stable as corpus size grows while RAG and long-context
-              baselines degrade. The completed BEAM result is a full 100K Hindsight head-to-head,
-              not yet a multi-scale BEAM study.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section evidence" id="results" aria-labelledby="results-title">
-        <div class="section-inner">
-          <div class="split-heading">
-            <div>
-              <div class="section-kicker">Results</div>
-              <h2 id="results-title">Measured claims, labeled with their limits.</h2>
-            </div>
-            <p>
-              The public evidence bundle separates the north-star BEAM/Hindsight comparison
-              from synthetic scaling, Gemini cross-model checks, and BABILong diagnostics.
-            </p>
-          </div>
-
-          <div class="metric-strip" aria-label="Benchmark highlights">
-            <div>
-              <strong>0.7576</strong>
-              <span>CSM BEAM 100K score</span>
-            </div>
-            <div>
-              <strong>342</strong>
-              <span>Correct rows out of 400</span>
-            </div>
-            <div>
-              <strong>+16</strong>
-              <span>Correct rows vs Hindsight</span>
-            </div>
-            <div>
-              <strong>38.2%</strong>
-              <span>Fewer answer-visible context tokens</span>
-            </div>
-          </div>
-
-          <figure class="headline-figure">
-            <img src="assets/beam-100k-csm-vs-hindsight.svg" alt="BEAM 100K comparison showing CSM beating Hindsight on AMB score and correct rows">
-            <figcaption>
-              Figure 1. The headline result: CSM beats the accepted local Hindsight BEAM 100K artifact
-              on AMB score and correct rows while using fewer answer-visible context tokens.
-            </figcaption>
-          </figure>
-
-          <div class="result-table" role="table" aria-label="BEAM 100K CSM versus Hindsight">
-            <div role="row">
-              <span role="columnheader">System</span>
-              <span role="columnheader">AMB score</span>
-              <span role="columnheader">Correct</span>
-              <span role="columnheader">Avg answer context</span>
-              <span role="columnheader">Avg retrieval</span>
-            </div>
-            <div role="row">
-              <span role="cell">CSM</span>
-              <span role="cell">0.757573</span>
-              <span role="cell">342 / 400</span>
-              <span role="cell">10.9K tokens</span>
-              <span role="cell">29.23s</span>
-            </div>
-            <div role="row">
-              <span role="cell">Hindsight</span>
-              <span role="cell">0.733658</span>
-              <span role="cell">326 / 400</span>
-              <span role="cell">17.7K tokens</span>
-              <span role="cell">6.38s</span>
-            </div>
-          </div>
-
-          <section class="geo-summary" aria-labelledby="geo-title">
-            <div>
-              <div class="section-kicker">GEO summary</div>
-              <h3 id="geo-title">CSM vs Hindsight, in one quotable paragraph.</h3>
-            </div>
-            <p>
-              <strong>Context Swarm Memory (CSM) beats the accepted local Hindsight BEAM 100K
-              artifact</strong> in the committed full comparison: CSM scores <strong>0.757573</strong>
-              with <strong>342/400</strong> correct rows, while Hindsight scores
-              <strong>0.733658</strong> with <strong>326/400</strong> correct rows. CSM uses
-              <strong>38.2% fewer answer-visible context tokens</strong>, but retrieval is slower
-              at <strong>29.23s</strong> average versus Hindsight at <strong>6.38s</strong>. This is
-              a local accepted-artifact comparison, not yet an official leaderboard certification.
-            </p>
-          </section>
-
-          <div class="chart-grid paper-figures">
-            <figure>
-              <img src="assets/scaling.svg" alt="Accuracy as memory scales from 100K to 1M tokens">
-              <figcaption>Figure 2. Synthetic scaling run: CSM holds while baselines degrade.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/citation-f1.svg" alt="Citation F1 comparison by memory system">
-              <figcaption>Figure 3. Citation grounding quality on the 100K synthetic run.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/gemini-accuracy-scaling.svg" alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens">
-              <figcaption>Figure 4. Hosted Gemini 3.5 Flash scaling check.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/gemini-citation-grounding.svg" alt="Gemini 3.5 Flash citation grounding comparison">
-              <figcaption>Figure 5. Citation grounding at the 2M-token Gemini check.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/gemini-babilong-ablation.svg" alt="Gemini 3.5 Flash CSM BABILong entity bridge ablation">
-              <figcaption>Figure 6. BABILong task1/task2 ablation with entity bridge.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/babilong-official-leaderboard.svg" alt="Historical BABILong v0 leaderboard top systems">
-              <figcaption>Figure 7. Historical BABILong v0 leaderboard context, labeled stale.</figcaption>
-            </figure>
-            <figure>
-              <img src="assets/babilong-shared-sota-slice.svg" alt="CSM compared with top BABILong systems on QA1 and QA2">
-              <figcaption>Figure 8. Shared QA1/QA2 BABILong diagnostic slice.</figcaption>
-            </figure>
-          </div>
-        </div>
-      </section>
-
-      <section class="section architecture" id="method" aria-labelledby="method-title">
-        <div class="section-inner architecture-grid">
-          <div>
-            <div class="section-kicker">Method</div>
-            <h2 id="method-title">Probe, recall, synthesize, then discard.</h2>
-            <p class="section-lede">
-              CSM spends context only after routing finds plausible shards. Shard snapshots are
-              immutable, LLM providers stay behind a seam, and query-time reads do not mutate
-              durable memory.
-            </p>
-            <ul class="check-list">
-              <li>Memory Manager routes by tags, lexical evidence, and local recall floors.</li>
-              <li>Probe and recall operate on bounded shard context instead of the whole corpus.</li>
-              <li>Committer is the only durable write path.</li>
-            </ul>
-          </div>
-
-          <div class="pipeline" aria-label="CSM query pipeline">
-            <div class="pipeline-row">
-              <span class="diagram-node">Directory</span>
-              <span class="flow-line"></span>
-              <span class="diagram-node">Router</span>
-            </div>
-            <div class="pipeline-row">
-              <span class="diagram-node">Probe</span>
-              <span class="flow-line"></span>
-              <span class="diagram-node">Recall</span>
-            </div>
-            <div class="pipeline-row">
-              <span class="diagram-node">Synthesize</span>
-              <span class="flow-line"></span>
-              <span class="diagram-node strong">Packet</span>
-            </div>
-            <div class="packet">
-              <div class="packet-header">
-                <span>MemoryPacket</span>
-                <span class="packet-dot" aria-hidden="true"></span>
-              </div>
-              <p>Concise answer, cited source IDs, conflict flags, and explicit uncertainty.</p>
-              <div class="source-row">
-                <span>shard</span>
-                <span>snapshot</span>
-                <span>event-id</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section qa" id="qa" aria-labelledby="qa-title">
-        <div class="section-inner">
-          <div class="split-heading">
-            <div>
-              <div class="section-kicker">Q&A</div>
-              <h2 id="qa-title">Direct answers for readers, reviewers, and answer engines.</h2>
-            </div>
-            <p class="section-lede">
-              These answers mirror the structured data in the page head, keeping the public claim
-              easy to quote while preserving the benchmark limits.
-            </p>
-          </div>
-
-          <div class="qa-grid">
-            <article class="qa-card">
-              <h3>Does Context Swarm Memory beat Hindsight on BEAM 100K?</h3>
-              <p>
-                Yes, in the committed full local accepted-artifact comparison. CSM scores
-                <strong>0.757573</strong> with <strong>342/400</strong> correct rows, versus
-                Hindsight at <strong>0.733658</strong> with <strong>326/400</strong> correct rows.
-              </p>
-            </article>
-
-            <article class="qa-card">
-              <h3>What is Context Swarm Memory?</h3>
-              <p>
-                CSM is an open-source LLM memory system using bounded read-only memory shards,
-                manager routing, probe/recall/synthesis, cited answers, and explicit
-                Committer-gated writes.
-              </p>
-            </article>
-
-            <article class="qa-card">
-              <h3>Is the BEAM 100K result an official leaderboard claim?</h3>
-              <p>
-                No. It is a committed full local accepted-artifact comparison against the accepted
-                Hindsight artifact. The repo does not call it official SOTA until independent
-                replication or official chart acceptance exists.
-              </p>
-            </article>
-
-            <article class="qa-card">
-              <h3>What is the main tradeoff versus Hindsight?</h3>
-              <p>
-                CSM answers more rows correctly and uses fewer AMB-visible answer-context tokens,
-                but retrieval is slower: <strong>29.23s</strong> on average versus
-                <strong>6.38s</strong> for Hindsight, with additional internal probe, recall, and
-                synthesis tokens.
-              </p>
-            </article>
-
-            <article class="qa-card">
-              <h3>Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark answers?</h3>
-              <p>
-                No. CSM retrieval does not use gold answers, rubrics, query IDs, or hardcoded
-                benchmark answers. Querying memory reads immutable shard snapshots and does not
-                mutate durable memory.
-              </p>
-            </article>
-
-            <article class="qa-card">
-              <h3>Why can bounded shards help LLM memory scale?</h3>
-              <p>
-                Bounded shards keep individual recall contexts small and route only plausible
-                memory regions before synthesis, reducing whole-corpus context saturation. BEAM is
-                the 100K head-to-head; separate synthetic and Gemini scaling runs support the
-                broader scaling thesis.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section run" id="reproduce" aria-labelledby="reproduce-title">
-        <div class="section-inner run-grid">
-          <div>
-            <div class="section-kicker">Reproducibility</div>
-            <h2 id="reproduce-title">Claims are backed by checked artifacts.</h2>
-            <p class="section-lede">
-              The verifier hashes committed evidence rows and recomputes headline metrics,
-              citation F1, McNemar checks, and the BEAM CSM-vs-Hindsight summary.
-            </p>
-          </div>
-          <pre class="terminal" aria-label="CSM verification commands"><code>npm install
-npm test
-npm run build
-npm run verify:published
-
-npm run amb:patch -- --amb-dir /path/to/agent-memory-benchmark</code></pre>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div>
-        <strong>Context Swarm Memory</strong>
-        <span>Scientific R&D prototype for auditable agent memory</span>
+  <main id="content">
+    <!-- ============ HERO ============ -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <p class="hero-status">
+        <span class="dot" aria-hidden="true"></span>
+        <span>BEAM 100K via the <strong>public AMB runner</strong> · submitted upstream as
+          <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">PR&nbsp;#19</a> ·
+          <strong>pending maintainer acceptance</strong></span>
+      </p>
+      <h1 id="hero-title">Memory whose edge <span class="grad">grows as it scales</span>.</h1>
+      <p class="hero-lede">
+        Context Swarm Memory (CSM) is an open-source R&amp;D memory system for LLM agents:
+        bounded read-only <strong>memory shards</strong>, cheap probes, cited recall, and a single
+        explicit write gate. Every answer cites shard, snapshot, and event IDs — and querying
+        memory never mutates it.
+      </p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">View on GitHub</a>
+        <a class="button button-ghost" href="#beam">See the evidence</a>
       </div>
-      <nav aria-label="Footer links">
-        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md">BEAM report</a>
-        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">Evidence</a>
-        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md">Methodology</a>
-        <a href="llms.txt">LLM summary</a>
-        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
-      </nav>
-    </footer>
+      <ul class="hero-traits" aria-label="Core properties">
+        <li>read-only shard reads</li>
+        <li>cited recall: shard · snapshot · event</li>
+        <li>Committer-gated writes</li>
+        <li>zero-LLM indexing</li>
+      </ul>
 
-    <script src="site.js" defer></script>
-  </body>
+      <div class="hero-motif">
+        <svg viewBox="0 0 1160 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="motif-title motif-desc">
+          <title id="motif-title">The CSM pipeline motif</title>
+          <desc id="motif-desc">Scattered memory shards flow through the CSM memory lens — route, probe, recall, synthesize — and emerge as a single cited MemoryPacket.</desc>
+          <defs>
+            <linearGradient id="shardGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="rgba(45,212,191,0.30)"/>
+              <stop offset="1" stop-color="rgba(34,211,238,0.10)"/>
+            </linearGradient>
+            <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#14b8a6"/>
+              <stop offset="1" stop-color="#22d3ee"/>
+            </linearGradient>
+            <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="rgba(94,234,212,0.85)"/>
+              <stop offset="1" stop-color="rgba(34,211,238,0.25)"/>
+            </linearGradient>
+            <radialGradient id="lensGlow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="rgba(45,212,191,0.22)"/>
+              <stop offset="1" stop-color="rgba(45,212,191,0)"/>
+            </radialGradient>
+          </defs>
+
+          <!-- left: scattered memory shards -->
+          <g>
+            <rect class="m-shard" x="60" y="96" width="40" height="40" rx="9" transform="rotate(-9 80 116)" style="animation-delay:-0.4s"/>
+            <rect class="m-shard dim" x="150" y="56" width="26" height="26" rx="7" transform="rotate(12 163 69)" style="animation-delay:-1.6s"/>
+            <rect class="m-shard" x="120" y="170" width="32" height="32" rx="8" transform="rotate(7 136 186)" style="animation-delay:-2.4s"/>
+            <rect class="m-shard dim" x="52" y="232" width="22" height="22" rx="6" transform="rotate(-14 63 243)" style="animation-delay:-3.1s"/>
+            <rect class="m-shard" x="170" y="262" width="44" height="44" rx="10" transform="rotate(-6 192 284)" style="animation-delay:-1.1s"/>
+            <rect class="m-shard dim" x="96" y="330" width="28" height="28" rx="7" transform="rotate(10 110 344)" style="animation-delay:-4.2s"/>
+            <rect class="m-shard" x="210" y="120" width="24" height="24" rx="6" transform="rotate(16 222 132)" style="animation-delay:-2.8s"/>
+            <rect class="m-shard dim" x="236" y="208" width="30" height="30" rx="8" transform="rotate(-11 251 223)" style="animation-delay:-0.9s"/>
+            <rect class="m-shard" x="186" y="356" width="34" height="34" rx="8" transform="rotate(5 203 373)" style="animation-delay:-3.7s"/>
+            <rect class="m-shard dim" x="282" y="298" width="22" height="22" rx="6" transform="rotate(-15 293 309)" style="animation-delay:-1.9s"/>
+            <rect class="m-shard" x="296" y="92" width="28" height="28" rx="7" transform="rotate(8 310 106)" style="animation-delay:-4.6s"/>
+            <circle class="m-dot" cx="250" cy="62" r="3.5" style="animation-delay:-2.2s"/>
+            <circle class="m-dot" cx="84" cy="186" r="3" style="animation-delay:-0.7s"/>
+            <circle class="m-dot" cx="306" cy="232" r="3.5" style="animation-delay:-3.3s"/>
+            <circle class="m-dot" cx="140" cy="288" r="2.6" style="animation-delay:-1.4s"/>
+            <circle class="m-dot" cx="262" cy="386" r="3" style="animation-delay:-4.0s"/>
+            <text class="m-label" x="60" y="436">memory shards</text>
+          </g>
+
+          <!-- converging flow paths -->
+          <path id="mp1" class="m-flow" d="M120 116 C 300 110, 380 170, 470 210"/>
+          <path id="mp2" class="m-flow" d="M180 200 C 320 200, 390 215, 468 232" style="animation-delay:-2s"/>
+          <path id="mp3" class="m-flow" d="M210 300 C 340 300, 400 268, 470 252" style="animation-delay:-3.5s"/>
+          <path id="mp4" class="m-flow" d="M210 376 C 360 374, 410 300, 472 272" style="animation-delay:-1.2s"/>
+          <circle class="m-particle" r="3.4" style="offset-path:path('M120 116 C 300 110, 380 170, 470 210')"/>
+          <circle class="m-particle" r="3" style="offset-path:path('M180 200 C 320 200, 390 215, 468 232');animation-delay:-1.8s"/>
+          <circle class="m-particle" r="3.4" style="offset-path:path('M210 300 C 340 300, 400 268, 470 252');animation-delay:-3.2s"/>
+          <circle class="m-particle" r="2.7" style="offset-path:path('M210 376 C 360 374, 410 300, 472 272');animation-delay:-4.4s"/>
+
+          <!-- center: the CSM lens -->
+          <g>
+            <circle class="m-glow" cx="580" cy="236" r="160"/>
+            <circle class="m-ring" cx="580" cy="236" r="128"/>
+            <circle class="m-ring r2" cx="580" cy="236" r="100"/>
+            <rect class="m-lens-panel" x="508" y="158" width="120" height="156" rx="16" transform="rotate(-7 568 236)"/>
+            <rect class="m-lens-panel" x="528" y="152" width="120" height="168" rx="16" transform="rotate(4 588 236)" opacity="0.85"/>
+            <rect class="m-lens-core" x="544" y="176" width="92" height="120" rx="13"/>
+            <text class="m-label" x="580" y="242" text-anchor="middle" style="letter-spacing:0.3em">CSM</text>
+            <text class="m-label" x="580" y="262" text-anchor="middle" style="font-size:10px">memory lens</text>
+            <g>
+              <rect class="m-stage-pill" x="440" y="356" width="64" height="24" rx="12"/>
+              <text class="m-stage" x="472" y="372" text-anchor="middle">route</text>
+              <rect class="m-stage-pill" x="512" y="356" width="64" height="24" rx="12"/>
+              <text class="m-stage" x="544" y="372" text-anchor="middle">probe</text>
+              <rect class="m-stage-pill" x="584" y="356" width="66" height="24" rx="12"/>
+              <text class="m-stage" x="617" y="372" text-anchor="middle">recall</text>
+              <rect class="m-stage-pill" x="658" y="356" width="98" height="24" rx="12"/>
+              <text class="m-stage" x="707" y="372" text-anchor="middle">synthesize</text>
+            </g>
+          </g>
+
+          <!-- exit flow -->
+          <path id="mp5" class="m-flow bright" d="M664 236 C 740 232, 770 218, 826 212"/>
+          <circle class="m-particle" r="4" style="offset-path:path('M664 236 C 740 232, 770 218, 826 212');animation-duration:3.2s"/>
+
+          <!-- right: the cited MemoryPacket -->
+          <g class="m-packet-g">
+            <rect class="m-packet" x="830" y="118" width="296" height="206" rx="18"/>
+            <text class="m-packet-title" x="856" y="156">MemoryPacket</text>
+            <path class="m-check" d="M1078 142 l8 9 l15 -16"/>
+            <rect class="m-line" x="856" y="176" width="216" height="9" rx="4.5"/>
+            <rect class="m-line" x="856" y="196" width="244" height="9" rx="4.5"/>
+            <rect class="m-line" x="856" y="216" width="178" height="9" rx="4.5"/>
+            <rect class="m-cite" x="856" y="248" width="76" height="26" rx="13"/>
+            <text class="m-cite-text" x="894" y="265" text-anchor="middle">shard S07</text>
+            <rect class="m-cite" x="940" y="248" width="78" height="26" rx="13"/>
+            <text class="m-cite-text" x="979" y="265" text-anchor="middle">snap S003</text>
+            <rect class="m-cite" x="1026" y="248" width="74" height="26" rx="13"/>
+            <text class="m-cite-text" x="1063" y="265" text-anchor="middle">ev e1289</text>
+            <text class="m-label" x="856" y="302" style="font-size:10px;letter-spacing:0.16em">cited · conflict-flagged · discardable</text>
+            <text class="m-label" x="830" y="436">cited memory packet</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ============ HEADLINE METRICS ============ -->
+    <section class="section metrics" id="numbers" aria-labelledby="numbers-title">
+      <div class="section-inner">
+        <h2 id="numbers-title" class="sr-only">Headline metrics</h2>
+        <div class="metric-grid">
+          <div class="metric-card" data-reveal>
+            <strong class="metric-num"><span data-count="0.743110" data-decimals="6">0.743110</span></strong>
+            <span class="metric-label">AMB BEAM 100K score</span>
+            <span class="metric-sub">vs Hindsight 0.733658</span>
+          </div>
+          <div class="metric-card" data-reveal style="--d:0.08s">
+            <strong class="metric-num"><span data-count="337">337</span><em>/400</em></strong>
+            <span class="metric-label">correct rows</span>
+            <span class="metric-sub">+11 vs Hindsight’s 326</span>
+          </div>
+          <div class="metric-card" data-reveal style="--d:0.16s">
+            <strong class="metric-num"><span data-count="1.84" data-decimals="2">1.84</span><em>×</em></strong>
+            <span class="metric-label">faster retrieval</span>
+            <span class="metric-sub">3.47s vs 6.38s average</span>
+          </div>
+          <div class="metric-card" data-reveal style="--d:0.24s">
+            <strong class="metric-num"><span data-count="333">333</span><em>/333</em></strong>
+            <span class="metric-label">tests passing</span>
+            <span class="metric-sub">offline, no API keys</span>
+          </div>
+        </div>
+        <p class="metric-note" data-reveal>
+          Produced by the <strong>unmodified public AMB runner</strong> (their CLI, their scoring, their judge path),
+          same answer/judge models as the accepted Hindsight artifact. Submitted upstream as
+          <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">vectorize-io/agent-memory-benchmark#19</a>
+          and <strong>pending maintainer acceptance — not claimed as an official leaderboard placement</strong>. Single-trial run.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ BEAM HEAD-TO-HEAD ============ -->
+    <section class="section" id="beam" aria-labelledby="beam-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">North-star comparison</p>
+          <h2 id="beam-title">BEAM 100K: CSM vs Hindsight, on their runner.</h2>
+          <p class="section-lede">
+            The full Agent Memory Benchmark / BEAM 100K head-to-head comes from the unmodified public AMB
+            runner (2026-06-10 rerun: a 3-file provider addition and nothing else). CSM is +0.95 score points,
+            +11 correct rows, wins 7 of 10 question categories, and retrieves 1.84× faster than Hindsight.
+          </p>
+        </div>
+
+        <div class="duel-grid">
+          <div class="duel glass" data-reveal>
+            <h3>AMB score <span class="duel-tag win">+0.95 pts</span></h3>
+            <p class="duel-note">higher is better</p>
+            <div class="duel-row">
+              <span class="duel-label">CSM</span>
+              <span class="duel-track"><i class="duel-bar csm" style="--w:100%"></i></span>
+              <span class="duel-val">0.743110</span>
+            </div>
+            <div class="duel-row">
+              <span class="duel-label">Hindsight</span>
+              <span class="duel-track"><i class="duel-bar ref" style="--w:98.7%"></i></span>
+              <span class="duel-val">0.733658</span>
+            </div>
+          </div>
+
+          <div class="duel glass" data-reveal style="--d:0.08s">
+            <h3>Correct rows <span class="duel-tag win">+11</span></h3>
+            <p class="duel-note">higher is better · 400 questions</p>
+            <div class="duel-row">
+              <span class="duel-label">CSM</span>
+              <span class="duel-track"><i class="duel-bar csm" style="--w:100%"></i></span>
+              <span class="duel-val">337</span>
+            </div>
+            <div class="duel-row">
+              <span class="duel-label">Hindsight</span>
+              <span class="duel-track"><i class="duel-bar ref" style="--w:96.7%"></i></span>
+              <span class="duel-val">326</span>
+            </div>
+          </div>
+
+          <div class="duel glass" data-reveal style="--d:0.16s">
+            <h3>Avg retrieve latency <span class="duel-tag win">1.84× faster</span></h3>
+            <p class="duel-note">lower is better</p>
+            <div class="duel-row">
+              <span class="duel-label">CSM</span>
+              <span class="duel-track"><i class="duel-bar csm" style="--w:54.4%"></i></span>
+              <span class="duel-val">3.47s</span>
+            </div>
+            <div class="duel-row">
+              <span class="duel-label">Hindsight</span>
+              <span class="duel-track"><i class="duel-bar ref" style="--w:100%"></i></span>
+              <span class="duel-val">6.38s</span>
+            </div>
+          </div>
+
+          <div class="duel glass" data-reveal style="--d:0.24s">
+            <h3>Avg answer-visible context <span class="duel-tag trade">honest trade: +53%</span></h3>
+            <p class="duel-note">lower is better — Hindsight is leaner here</p>
+            <div class="duel-row">
+              <span class="duel-label">CSM</span>
+              <span class="duel-track"><i class="duel-bar csm" style="--w:100%"></i></span>
+              <span class="duel-val">27.0K</span>
+            </div>
+            <div class="duel-row">
+              <span class="duel-label">Hindsight</span>
+              <span class="duel-track"><i class="duel-bar ref" style="--w:65.5%"></i></span>
+              <span class="duel-val">17.7K</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap glass" data-reveal>
+          <table>
+            <caption>Per-category AMB score, official-runner rerun (2026-06-10) vs the accepted Hindsight artifact</caption>
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">CSM (rerun)</th><th scope="col">Hindsight</th><th scope="col">Δ</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">abstention</th><td>1.0000</td><td>0.9750</td><td class="pos">+0.0250</td></tr>
+              <tr><th scope="row">contradiction_resolution</th><td>0.6250</td><td>0.6156</td><td class="pos">+0.0094</td></tr>
+              <tr><th scope="row">event_ordering</th><td>0.7495</td><td>0.8047</td><td class="neg">−0.0552</td></tr>
+              <tr><th scope="row">information_extraction</th><td>0.7354</td><td>0.6495</td><td class="pos">+0.0859</td></tr>
+              <tr><th scope="row">instruction_following</th><td>0.9000</td><td>0.9125</td><td class="neg">−0.0125</td></tr>
+              <tr><th scope="row">knowledge_update</th><td>0.6000</td><td>0.5875</td><td class="pos">+0.0125</td></tr>
+              <tr><th scope="row">multi_session_reasoning</th><td>0.5322</td><td>0.4738</td><td class="pos">+0.0584</td></tr>
+              <tr><th scope="row">preference_following</th><td>0.9500</td><td>0.9500</td><td class="zero">0.0000</td></tr>
+              <tr><th scope="row">summarization</th><td>0.7139</td><td>0.7929</td><td class="neg">−0.0790</td></tr>
+              <tr><th scope="row">temporal_reasoning</th><td>0.6250</td><td>0.5750</td><td class="pos">+0.0500</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout" data-reveal>
+          <h3>Disclosed trades, in plain sight</h3>
+          <p>
+            CSM’s answer-visible context is now <strong>larger than Hindsight’s (+53%)</strong> because the coverage
+            chronicle fills its return-K budget, and CSM additionally spends <strong>8,805 input / 625 output tokens
+            per query</strong> on its internal probe/recall/synthesis pipeline (down 58% from May’s 21,020) — reported
+            separately via a telemetry sidecar so total cost is never under-stated. The run is <strong>single-trial</strong>.
+            No gold answers, rubrics, or query IDs ever reach retrieval.
+          </p>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_100K_OFFICIAL_RERUN.md">AMB_BEAM_100K_OFFICIAL_RERUN.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">EVIDENCE.md</a>
+          <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">upstream PR #19</a>
+          <code>npm run verify:published</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">Architecture</p>
+          <h2 id="how-title">Route, probe, recall, synthesize — then discard.</h2>
+          <p class="section-lede">
+            Memory is a swarm of bounded, immutable shards behind a read-only manifest. CSM spends context
+            only after a zero-LLM router finds plausible shards; the answer arrives as one compact, cited packet.
+          </p>
+        </div>
+
+        <ol class="pipeline" aria-label="CSM query pipeline">
+          <li class="stage" data-reveal>
+            <span class="stage-num">01</span>
+            <h3>Router</h3>
+            <p>Keyword/tag scorer over the shard directory. No LLM, no vector DB required at index time.</p>
+          </li>
+          <li class="stage" data-reveal style="--d:0.07s">
+            <span class="stage-num">02</span>
+            <h3>Probe</h3>
+            <p>Cheap relevance pass per candidate shard — “is this memory worth recalling from?”</p>
+          </li>
+          <li class="stage" data-reveal style="--d:0.14s">
+            <span class="stage-num">03</span>
+            <h3>Recall</h3>
+            <p>Structured, citation-bearing extraction from only the shards that passed the probe.</p>
+          </li>
+          <li class="stage" data-reveal style="--d:0.21s">
+            <span class="stage-num">04</span>
+            <h3>Synthesize</h3>
+            <p>Merge, dedupe, flag conflicts — emit a compact <code>MemoryPacket</code> for the agent.</p>
+          </li>
+          <li class="stage packet-stage" data-reveal style="--d:0.28s">
+            <span class="stage-num">→</span>
+            <h3>MemoryPacket</h3>
+            <p>Answer + key claims, every line cited to shard, snapshot, and event IDs.</p>
+          </li>
+        </ol>
+
+        <div class="invariant-grid">
+          <article class="invariant glass" data-reveal>
+            <h3>Read path: branch-and-discard</h3>
+            <p>
+              <code>ask()</code> never appends events, writes snapshots, or mutates the chronicle.
+              Enforced in CI by SHA-256 file hashes (<code>tests/mutationSafety.test.ts</code>).
+            </p>
+          </article>
+          <article class="invariant glass" data-reveal style="--d:0.07s">
+            <h3>Write path: Committer-gated</h3>
+            <p>
+              Durable memory changes only through <code>appendEventAndSnapshot</code> or an explicit
+              Committer decision. Snapshots are immutable and versioned; the storage layer refuses overwrites.
+            </p>
+          </article>
+          <article class="invariant glass" data-reveal style="--d:0.14s">
+            <h3>Indexing: zero LLM cost</h3>
+            <p>
+              Routing starts from keywords and tags, with a local MiniLM embedding recall floor —
+              no LLM-generated index is ever built, so adding memory costs no API tokens.
+            </p>
+          </article>
+          <article class="invariant glass" data-reveal style="--d:0.21s">
+            <h3>Coverage chronicle, deterministic</h3>
+            <p>
+              Summary/ordering/temporal queries get a date-ordered, fully-cited timeline assembled without
+              extra LLM calls. Date arithmetic is computed, never delegated to the model.
+            </p>
+          </article>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/tests/mutationSafety.test.ts">mutationSafety.test.ts</a>
+          <code>npm test</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ SCALING (GEMMA HEADLINE) ============ -->
+    <section class="section" id="scaling" aria-labelledby="scaling-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">The headline thesis</p>
+          <h2 id="scaling-title">Conventional memory degrades as it fills. CSM is built so it doesn’t.</h2>
+          <p class="section-lede">
+            Scaling the corpus 10× (100K → 1M tokens) at a fixed 8K window with local Gemma 4 31B,
+            CSM holds 28/30 → 27/30 while vanilla RAG degrades and brute-force long-context collapses —
+            CSM beats long-context 27–9 (18–0 discordant pairs, exact McNemar p&lt;0.0001), at zero LLM-indexing cost.
+          </p>
+        </div>
+
+        <div class="chart-grid">
+          <figure class="paper-card" data-reveal>
+            <img src="assets/scaling.svg" width="580" height="416" loading="lazy" decoding="async"
+                 alt="Accuracy as memory scales 10x: CSM holds (93 to 90 percent), vanilla RAG degrades (97 to 83 percent), long-context stays collapsed (37 to 30 percent)">
+            <figcaption>Synthetic scaling run (PaySwift, 8K window): CSM holds while baselines degrade.</figcaption>
+          </figure>
+          <figure class="paper-card" data-reveal style="--d:0.08s">
+            <img src="assets/citation-f1.svg" width="694" height="376" loading="lazy" decoding="async"
+                 alt="Citation F1 by system at 100K: CSM 0.470, hybrid RAG 0.455, vanilla RAG 0.446, LightRAG 0.265, long-context 0.067">
+            <figcaption>Citation grounding at 100K: CSM 0.470 vs LightRAG 0.265 and long-context 0.067.</figcaption>
+          </figure>
+        </div>
+
+        <div class="fact-row" data-reveal>
+          <div class="fact">
+            <strong>28/30 → 27/30</strong>
+            <span>CSM accuracy, 100K → 1M (current-pipeline rows)</span>
+          </div>
+          <div class="fact">
+            <strong>27–9</strong>
+            <span>vs long-context at 1M · McNemar p&lt;0.0001</span>
+          </div>
+          <div class="fact">
+            <strong>0.470 vs 0.265</strong>
+            <span>citation F1 vs LightRAG (accuracy 28/30 vs 24/30)</span>
+          </div>
+          <div class="fact">
+            <strong>22,363 events</strong>
+            <span>~9M-token CC0 PaySwift corpus, 30 MCQs × 40 options</span>
+          </div>
+        </div>
+
+        <div class="callout" data-reveal>
+          <h3>Honest calibration</h3>
+          <p>
+            Single-trial; Gemma at temp=0 is not bitwise-deterministic across processes, so CSM’s absolute
+            accuracy is ~27–30/30 across runs. The robust claim is <strong>“does not degrade as memory grows,
+            while the alternatives do”</strong> — not that the raw score climbs. Against vanilla/hybrid RAG,
+            accuracy is a statistical tie; CSM’s honest edge is citation quality plus zero-LLM indexing.
+            Mem0 and HippoRAG are documented as <em>blocked locally, not beaten</em>.
+          </p>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/SOTA_COMPARISON.md">SOTA_COMPARISON.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/PHASE_30Q_RESULTS.md">PHASE_30Q_RESULTS.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">EVIDENCE.md</a>
+          <code>npm run verify:published</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ GEMINI CROSS-MODEL ============ -->
+    <section class="section" id="gemini" aria-labelledby="gemini-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">Cross-model check</p>
+          <h2 id="gemini-title">Same story on a hosted frontier model.</h2>
+          <p class="section-lede">
+            Gemini 3.5 Flash, temperature 0, same 30 questions over 100K, 1M, and 2M corpora with model
+            context capped at 160K. At 2M tokens CSM answers 30/30 at ~29K mean input tokens while
+            long-context drops to 15/30 at ~170K tokens.
+          </p>
+        </div>
+
+        <div class="table-wrap glass" data-reveal>
+          <table>
+            <caption>Gemini 3.5 Flash, 30 queries, corpus scaled 100K → 2M (single-trial, kept separate from the Gemma headline)</caption>
+            <thead>
+              <tr>
+                <th scope="col">System</th><th scope="col">100K</th><th scope="col">1M</th><th scope="col">2M</th>
+                <th scope="col">2M citation P/R/F1</th><th scope="col">2M mean input</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hl"><th scope="row">CSM</th><td>30/30</td><td>28/30</td><td>30/30</td><td>0.722 / 0.450 / 0.479</td><td>28.7K</td></tr>
+              <tr><th scope="row">hybrid RAG</th><td>27/30</td><td>27/30</td><td>27/30</td><td>0.677 / 0.364 / 0.386</td><td>5.6K</td></tr>
+              <tr><th scope="row">vanilla RAG</th><td>28/30</td><td>26/30</td><td>26/30</td><td>0.600 / 0.315 / 0.334</td><td>5.4K</td></tr>
+              <tr><th scope="row">long-context</th><td>30/30</td><td>27/30</td><td>15/30</td><td>0.211 / 0.122 / 0.086</td><td>170.5K</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chart-grid">
+          <figure class="paper-card" data-reveal>
+            <img src="assets/gemini-accuracy-scaling.svg" width="626" height="431" loading="lazy" decoding="async"
+                 alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens: CSM stays near 28 to 30 out of 30 while long-context drops to 15 out of 30 at 2M">
+            <figcaption>Accuracy from 100K to 2M: CSM stays at 28–30/30; long-context collapses at 2M.</figcaption>
+          </figure>
+          <figure class="paper-card" data-reveal style="--d:0.08s">
+            <img src="assets/gemini-citation-grounding.svg" width="618" height="363" loading="lazy" decoding="async"
+                 alt="Gemini 3.5 Flash citation grounding at 2M tokens: CSM leads hybrid RAG, vanilla RAG, and long-context on citation F1 while using far less input than long-context">
+            <figcaption>Citation grounding at 2M: CSM leads on F1 while using ~6× less input than long-context.</figcaption>
+          </figure>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/GEMINI.md">GEMINI.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">EVIDENCE.md</a>
+          <code>npm run verify:published</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ BABILONG ============ -->
+    <section class="section" id="babilong" aria-labelledby="babilong-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">External diagnostic</p>
+          <h2 id="babilong-title">BABILong: promising — and explicitly not SOTA.</h2>
+          <p class="section-lede">
+            On the shared QA1/QA2 slice at 4K and 8K, CSM matches the historical top systems on QA1 and its
+            QA2 now beats GPT-4’s historical line and ChatQA + RAG by a wide margin — while still trailing the
+            fine-tuned ARMT/Mamba/RMT systems. The public BABILong leaderboard is a historical v0 snapshot,
+            so this repo does not use it as proof of 2026 SOTA.
+          </p>
+        </div>
+
+        <div class="table-wrap glass" data-reveal>
+          <table>
+            <caption>BABILong shared slice (accuracy %), CSM vs historical leaderboard systems</caption>
+            <thead>
+              <tr>
+                <th scope="col">Slice</th><th scope="col">CSM</th><th scope="col">ARMT ft.</th>
+                <th scope="col">Mamba ft.</th><th scope="col">RMT ft.</th><th scope="col">GPT-4</th><th scope="col">ChatQA + RAG</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">QA1 / 4K</th><td class="hl-cell">100.0</td><td>100.0</td><td>100.0</td><td>100.0</td><td>95.0</td><td>58.0</td></tr>
+              <tr><th scope="row">QA1 / 8K</th><td class="hl-cell">96.7</td><td>100.0</td><td>100.0</td><td>100.0</td><td>93.0</td><td>58.0</td></tr>
+              <tr><th scope="row">QA2 / 4K</th><td class="hl-cell">73.3</td><td>100.0</td><td>98.0</td><td>98.0</td><td>68.0</td><td>19.0</td></tr>
+              <tr><th scope="row">QA2 / 8K</th><td class="hl-cell">83.3</td><td>100.0</td><td>98.0</td><td>97.0</td><td>65.0</td><td>14.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="fact-row" data-reveal>
+          <div class="fact">
+            <strong>3/30 → 22/30</strong>
+            <span>QA2 @ 4K across the June ablation (no bridge → entity bridge → chronicle)</span>
+          </div>
+          <div class="fact">
+            <strong>0/30 → 25/30</strong>
+            <span>QA2 @ 8K across the same three pipeline stages</span>
+          </div>
+          <div class="fact">
+            <strong>30/30 · 29/30</strong>
+            <span>QA1 stays at or near ceiling throughout</span>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <figure class="paper-card" data-reveal>
+            <img src="assets/babilong-shared-sota-slice.svg" width="825" height="450" loading="lazy" decoding="async"
+                 alt="BABILong shared QA1 and QA2 slice comparing CSM against ARMT, Mamba, RMT, GPT-4, and ChatQA plus RAG at 4K and 8K">
+            <figcaption>The shared QA1/QA2 diagnostic slice: useful evidence, clearly-labeled gap to fine-tuned recurrence.</figcaption>
+          </figure>
+          <figure class="paper-card" data-reveal style="--d:0.08s">
+            <img src="assets/gemini-babilong-ablation.svg" width="667" height="407" loading="lazy" decoding="async"
+                 alt="Gemini 3.5 Flash plus CSM on BABILong: the entity bridge and then the June 2026 chronicle pipeline lift task2 from 10 to 73 percent at 4K and from 0 to 83 percent at 8K while task1 stays at or near 100 percent">
+            <figcaption>CSM ablation on BABILong tasks 1–2: the chronicle pipeline lifts QA2 from near-zero to 73–83%.</figcaption>
+          </figure>
+          <figure class="paper-card wide" data-reveal style="--d:0.16s">
+            <img src="assets/babilong-official-leaderboard.svg" width="686" height="457" loading="lazy" decoding="async"
+                 alt="Historical BABILong v0 leaderboard top systems: ARMT and Mamba fine-tunes are near 98 percent at 4K and 8K, RMT is around 90 percent, GPT-4 is in the low 70s, and ChatQA plus RAG is around 45 percent">
+            <figcaption>The historical BABILong v0 leaderboard, kept only for context and labeled stale on purpose.</figcaption>
+          </figure>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BABILONG_RESULTS.md">BABILONG_RESULTS.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_FRESHNESS.md">BENCHMARK_FRESHNESS.md</a>
+          <code>npm run bench:babilong:csm</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ JUNE R&D WAVE ============ -->
+    <section class="section" id="rd" aria-labelledby="rd-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">June 2026 R&amp;D wave</p>
+          <h2 id="rd-title">One orchestrator, four research agents, every change gated.</h2>
+          <p class="section-lede">
+            A full-repo planning pass dispatched four parallel agent briefs — coverage/chronicle recall,
+            a hybrid router, a BEAM-slice retrieval harness, and Gemini caching. All four delivered; every
+            feature merged behind a default-off flag, and each landed only after accuracy gates. Two of the
+            wave’s load-bearing hypotheses <strong>did not survive measurement — and that’s published too</strong>.
+          </p>
+        </div>
+
+        <div class="rd-grid">
+          <article class="rd-card glass" data-reveal>
+            <span class="rd-id">T1</span>
+            <h3>Coverage chronicle — shipped, now default</h3>
+            <p>
+              A deterministic, fully-cited timeline assembler for summary/ordering/temporal queries.
+              Offline it recovered 12/13 and 5/6 gold events on the two known coverage failures;
+              on real BEAM 100K data it lifted event_ordering cov@24 from 0.475 to 0.659.
+            </p>
+          </article>
+          <article class="rd-card glass" data-reveal style="--d:0.07s">
+            <span class="rd-id">T2</span>
+            <h3>Hybrid router — proven, then shelved honestly</h3>
+            <p>
+              Mechanism proven offline (recall@3 0.714 → 0.857; thin-metadata gold-top-3 0/4 → 4/4) but
+              <strong>no measurable effect at 100K scale</strong> — so it stays default-off until a 500K
+              re-gate, exactly as measured.
+            </p>
+          </article>
+          <article class="rd-card glass" data-reveal style="--d:0.14s">
+            <span class="rd-id">T3</span>
+            <h3>BEAM-slice harness — the new gate</h3>
+            <p>
+              Retrieval-only recall@k on the two losing BEAM categories, minutes instead of a 400-query run.
+              Gold facets stay strictly eval-side, enforced by an import-graph leakage-firewall test.
+            </p>
+          </article>
+          <article class="rd-card glass falsified" data-reveal style="--d:0.21s">
+            <span class="rd-id">T4</span>
+            <h3>Gemini caching — hypothesis falsified</h3>
+            <p>
+              The projected “40–60% input-cost cut” <strong>did not survive verification</strong>: a measured
+              4,096-token implicit-cache floor means every CSM call is sub-floor — today’s pipeline gets exactly
+              zero caching. The observability shipped anyway, surfacing ~$2.00/run of previously invisible thinking spend.
+            </p>
+          </article>
+        </div>
+
+        <h3 class="sub-title" data-reveal>The latency rebuild, step by measured step</h3>
+        <div class="ladder glass" data-reveal aria-label="Average retrieval latency by pipeline stage">
+          <div class="ladder-row">
+            <span class="ladder-label">May architecture <em>(BEAM avg)</em></span>
+            <span class="ladder-track"><i style="--w:100%" class="old"></i></span>
+            <span class="ladder-val">29.2s</span>
+          </div>
+          <div class="ladder-row">
+            <span class="ladder-label">+ parallel probes &amp; recalls <em>(30q gate)</em></span>
+            <span class="ladder-track"><i style="--w:35.8%"></i></span>
+            <span class="ladder-val">10.45s</span>
+          </div>
+          <div class="ladder-row">
+            <span class="ladder-label">+ digest dates &amp; top-1 speculation <em>(30q gate)</em></span>
+            <span class="ladder-track"><i style="--w:30.7%"></i></span>
+            <span class="ladder-val">8.96s</span>
+          </div>
+          <div class="ladder-row">
+            <span class="ladder-label">+ flash-lite probes <em>(30q gate, 29/30 held)</em></span>
+            <span class="ladder-track"><i style="--w:24.5%"></i></span>
+            <span class="ladder-val">7.15s</span>
+          </div>
+          <div class="ladder-row final">
+            <span class="ladder-label">Official-runner BEAM rerun <em>(avg retrieve)</em></span>
+            <span class="ladder-track"><i style="--w:11.9%" class="best"></i></span>
+            <span class="ladder-val">3.47s</span>
+          </div>
+        </div>
+
+        <div class="table-wrap glass" data-reveal>
+          <table>
+            <caption>Retrieval coverage on the two BEAM categories CSM lost (real BEAM 100K data, 80 queries, gold-facet proxy, bootstrap 95% CIs; gold is eval-side only)</caption>
+            <thead>
+              <tr><th scope="col">Returned-to-harness coverage</th><th scope="col">Legacy pipeline</th><th scope="col">Coverage mode + chronicle</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">event_ordering cov@24</th><td>0.475</td><td class="hl-cell">0.659 <small>(CIs non-overlapping)</small></td></tr>
+              <tr><th scope="row">event_ordering cov@32</th><td>0.615</td><td class="hl-cell">0.715</td></tr>
+              <tr><th scope="row">retrieved gold coverage (both categories)</th><td>0.61–0.65</td><td class="hl-cell">0.80–0.83 <small>(CIs non-overlapping)</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/PERF_BREAKDOWN.md">PERF_BREAKDOWN.md</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/RD_PORTFOLIO_2026_06.md">RD_PORTFOLIO_2026_06.md</a>
+          <code>npm test</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section class="section" id="faq" aria-labelledby="faq-title">
+      <div class="section-inner narrow">
+        <div class="section-head" data-reveal>
+          <p class="kicker">Direct answers</p>
+          <h2 id="faq-title">Frequently asked questions.</h2>
+          <p class="section-lede">These mirror the structured FAQ data in the page head, so humans and answer engines quote the same hedged claims.</p>
+        </div>
+
+        <div class="faq-list" data-reveal>
+          <details class="faq-item" open>
+            <summary>Does CSM beat Hindsight on BEAM 100K?</summary>
+            <p>
+              Yes, on the public AMB runner with the same answer/judge models as the accepted Hindsight artifact:
+              <strong>0.743110</strong> and <strong>337/400</strong> correct rows for CSM versus
+              <strong>0.733658</strong> and <strong>326/400</strong> for Hindsight, with CSM retrieval 1.84× faster.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Is this an official leaderboard claim?</summary>
+            <p>
+              No. The result was produced by AMB’s own runner and has been submitted to the maintainers
+              (<a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">vectorize-io/agent-memory-benchmark#19</a>);
+              the repo does not call it official until they accept the provider/result.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Did CSM use gold answers or hardcoded benchmark logic?</summary>
+            <p>
+              No. CSM retrieval receives only the ingested documents, the query, user id, and timestamp —
+              no gold answers, rubrics, query IDs, or benchmark-specific hardcoding (the June wave also
+              deleted the legacy domain term tables from the active path).
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>What is Context Swarm Memory?</summary>
+            <p>
+              An open-source LLM memory system that treats memory as bounded, immutable, read-only shards.
+              A Memory Manager routes a query to candidate shards, probes them cheaply, recalls from only the
+              useful ones, and synthesizes a compact answer cited to shard, snapshot, and event IDs. Querying
+              memory never mutates it; durable changes go through an explicit Committer protocol.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>What is the honest tradeoff versus Hindsight?</summary>
+            <p>
+              CSM scores higher and retrieves 1.84× faster in the official-runner rerun, but its answer-visible
+              context is larger than Hindsight’s (27.0K vs 17.7K tokens, +53%), it spends 8.8K internal input
+              tokens per query on its probe/recall/synthesis pipeline (reported separately), and the run is single-trial.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>Is CSM state-of-the-art on BABILong?</summary>
+            <p>
+              No. On the shared QA1/QA2 slice CSM matches the historical top systems on QA1 (100.0 / 96.7) and its
+              QA2 (73.3 / 83.3) beats GPT-4’s historical line and ChatQA + RAG, while still trailing fine-tuned
+              ARMT/Mamba/RMT systems. The repo does not claim BABILong SOTA — the public board is a historical v0 snapshot.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ REPRODUCE ============ -->
+    <section class="section" id="reproduce" aria-labelledby="reproduce-title">
+      <div class="section-inner">
+        <div class="repro-grid">
+          <div class="section-head" data-reveal>
+            <p class="kicker">Reproducibility</p>
+            <h2 id="reproduce-title">Don’t trust the page. Run the verifier.</h2>
+            <p class="section-lede">
+              The test suite runs offline against a deterministic mock provider — no API keys.
+              The published-evidence verifier hashes the committed result rows and recomputes the
+              headline counts, citation F1, and McNemar checks from <code>results.jsonl</code>.
+            </p>
+            <p class="evidence-row">
+              <span>Go deeper</span>
+              <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/REPRODUCING.md">REPRODUCING.md</a>
+              <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/REPLICATION_KIT.md">REPLICATION_KIT.md</a>
+              <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md">BENCHMARK_METHODOLOGY.md</a>
+            </p>
+          </div>
+          <pre class="terminal glass" data-reveal aria-label="Verification commands"><code><span class="t-comment"># offline — no API keys required</span>
+<span class="t-prompt">$</span> npm install
+<span class="t-prompt">$</span> npm test                  <span class="t-comment"># 333 tests, MockProvider</span>
+<span class="t-prompt">$</span> npm run verify:published  <span class="t-comment"># re-hash + recompute claims</span>
+
+<span class="t-comment"># the read path cannot write — enforced by SHA-256 hashes</span>
+<span class="t-prompt">$</span> npx vitest run tests/mutationSafety.test.ts</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <strong>Context Swarm Memory</strong>
+        <span>Auditable agent memory — an open R&amp;D prototype.</span>
+        <span class="footer-license">MIT code · CC0 benchmark corpus · © 2026 Muhamad J. Akoum</span>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub repository</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_100K_OFFICIAL_RERUN.md">BEAM official-runner rerun</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">Evidence map</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md">Methodology</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/PERF_BREAKDOWN.md">Performance breakdown</a>
+        <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/RD_PORTFOLIO_2026_06.md">R&amp;D portfolio</a>
+        <a href="https://www.linkedin.com/in/akoum/">Author</a>
+        <a href="llms.txt">llms.txt</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+</body>
 </html>
