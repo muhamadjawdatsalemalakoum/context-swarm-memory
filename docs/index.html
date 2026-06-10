@@ -8,8 +8,8 @@
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="Muhamad J. Akoum">
   <meta name="application-name" content="Context Swarm Memory">
-  <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#04090e">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="keywords" content="Context Swarm Memory, CSM, LLM memory, agent memory, AI memory, Agent Memory Benchmark, BEAM 100K, Hindsight, cited recall, RAG alternative, long-context, memory shards, Committer-gated writes">
   <link rel="canonical" href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
@@ -36,30 +36,42 @@
 
   <script>document.documentElement.className = document.documentElement.className.replace('no-js', 'js');</script>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+
   <style>
-    /* ===== Critical CSS: tokens, shell, header, hero ===== */
+    /* ===== Critical CSS: tokens, shell, header, hero =====
+       Design system: "color = focus". White is the resting state of the
+       page, exactly as dormant shards are the resting state of memory.
+       Gray (--swarm) marks unselected memory, teal (--focus) marks what
+       CSM selects and cites, amber (--trade) marks disclosed trade-offs. */
     :root {
-      --bg-0: #04090e;
-      --bg-1: #071019;
-      --bg-2: #0a1722;
-      --ink: #e9f4f3;
-      --ink-dim: #a3bcbe;
-      --ink-faint: #6d8a8e;
-      --brand: #0e7c66;
-      --teal: #14b8a6;
-      --mint: #2dd4bf;
-      --cyan: #22d3ee;
-      --amber: #fbbf24;
-      --line: rgba(148, 211, 205, 0.14);
-      --line-soft: rgba(148, 211, 205, 0.08);
-      --glass: rgba(13, 32, 40, 0.55);
-      --glass-hi: rgba(20, 46, 56, 0.6);
-      --glow: rgba(45, 212, 191, 0.32);
-      --radius: 18px;
-      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+      --paper: #ffffff;
+      --paper-2: #f7fafa;
+      --ink: #0e1a1e;
+      --ink-2: #4b5b61;
+      --ink-3: #8b989d;
+      --swarm: #c2ccd1;
+      --swarm-2: #eef1f2;
+      --line: #e6ebec;
+      --line-2: #f0f3f4;
+      --focus: #0d7d68;
+      --focus-2: #10b39a;
+      --focus-ink: #0a6453;
+      --focus-tint: #e9f6f2;
+      --focus-line: #bfe3d8;
+      --trade: #9a5b22;
+      --trade-tint: #faf1e6;
+      --trade-line: #ecd9bf;
+      --card: #ffffff;
+      --shadow: 0 1px 2px rgba(14, 26, 30, 0.04), 0 12px 32px -12px rgba(14, 26, 30, 0.10);
+      --shadow-lg: 0 2px 4px rgba(14, 26, 30, 0.04), 0 24px 48px -16px rgba(14, 26, 30, 0.14);
+      --radius: 16px;
+      --font: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
       --wrap: 1120px;
-      color-scheme: dark;
+      color-scheme: light;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -70,30 +82,12 @@
       font-size: 1rem;
       line-height: 1.6;
       color: var(--ink);
-      background:
-        radial-gradient(1100px 520px at 78% -8%, rgba(34, 211, 238, 0.10), transparent 62%),
-        radial-gradient(900px 600px at 8% 12%, rgba(14, 124, 102, 0.16), transparent 60%),
-        radial-gradient(1200px 800px at 50% 115%, rgba(20, 184, 166, 0.07), transparent 55%),
-        var(--bg-0);
+      background: var(--paper);
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
       overflow-x: hidden;
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(148, 211, 205, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 211, 205, 0.035) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000 0%, transparent 78%);
-      -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000 0%, transparent 78%);
-      z-index: 0;
-    }
-    main, header.site-header, footer.site-footer { position: relative; z-index: 1; }
-    a { color: var(--mint); text-decoration: none; }
+    a { color: var(--focus); text-decoration: none; }
     a:hover, a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
     img, svg { max-width: 100%; height: auto; }
     code { font-family: var(--mono); font-size: 0.92em; }
@@ -104,7 +98,7 @@
     .skip-link {
       position: absolute; top: -48px; left: 16px; z-index: 100;
       padding: 10px 16px; border-radius: 10px;
-      background: var(--teal); color: #03110d; font-weight: 600;
+      background: var(--focus); color: #fff; font-weight: 600;
       transition: top 0.2s ease;
     }
     .skip-link:focus { top: 12px; }
@@ -114,46 +108,54 @@
       position: sticky; top: 0; z-index: 50;
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
       padding: 14px clamp(16px, 4vw, 40px);
+      background: rgba(255, 255, 255, 0.7);
       border-bottom: 1px solid transparent;
-      transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
     .site-header.is-scrolled {
-      background: rgba(5, 12, 17, 0.78);
-      border-bottom-color: var(--line-soft);
-      backdrop-filter: blur(14px) saturate(1.3);
-      -webkit-backdrop-filter: blur(14px) saturate(1.3);
+      background: rgba(255, 255, 255, 0.86);
+      border-bottom-color: var(--line);
+      backdrop-filter: blur(12px) saturate(1.4);
+      -webkit-backdrop-filter: blur(12px) saturate(1.4);
     }
     .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); }
     .brand:hover { text-decoration: none; }
+    /* Brand mark: two dormant gray shards, one in focus — the whole idea in 36px */
     .brand-mark {
-      position: relative; width: 38px; height: 38px; flex: none;
-      border-radius: 11px;
-      background: linear-gradient(140deg, rgba(45, 212, 191, 0.22), rgba(34, 211, 238, 0.08));
-      border: 1px solid rgba(45, 212, 191, 0.45);
-      box-shadow: 0 0 22px rgba(45, 212, 191, 0.18), inset 0 0 12px rgba(45, 212, 191, 0.12);
+      position: relative; width: 36px; height: 36px; flex: none;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
     }
-    .brand-mark::before, .brand-mark::after {
-      content: ""; position: absolute; border-radius: 3px;
-      background: linear-gradient(135deg, var(--mint), var(--cyan));
+    .brand-mark::before, .brand-mark::after { content: ""; position: absolute; border-radius: 3px; }
+    .brand-mark::before {
+      width: 9px; height: 9px; left: 7px; top: 7px;
+      background: var(--swarm);
+      box-shadow: 12px 12px 0 0 var(--swarm-2);
     }
-    .brand-mark::before { width: 12px; height: 12px; left: 7px; top: 8px; transform: rotate(-8deg); opacity: 0.95; }
-    .brand-mark::after { width: 8px; height: 8px; right: 7px; bottom: 8px; transform: rotate(14deg); opacity: 0.7; }
-    .brand b { font-size: 1.02rem; letter-spacing: 0.02em; }
-    .brand small { display: block; font-size: 0.7rem; color: var(--ink-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+    .brand-mark::after {
+      width: 10px; height: 10px; right: 6px; top: 7px;
+      background: var(--focus-2);
+      transform: rotate(8deg);
+    }
+    .brand b { font-size: 1.02rem; letter-spacing: 0.01em; }
+    .brand small { display: block; font-size: 0.68rem; color: var(--ink-3); letter-spacing: 0.14em; text-transform: uppercase; }
     .site-nav { display: flex; align-items: center; gap: clamp(10px, 1.8vw, 24px); flex-wrap: wrap; }
-    .site-nav a { color: var(--ink-dim); font-size: 0.92rem; font-weight: 500; }
+    .site-nav a { color: var(--ink-2); font-size: 0.92rem; font-weight: 500; }
     .site-nav a:hover { color: var(--ink); text-decoration: none; }
     .site-nav .nav-cta {
-      padding: 8px 16px; border-radius: 999px; color: var(--ink);
-      border: 1px solid rgba(45, 212, 191, 0.5);
-      background: rgba(45, 212, 191, 0.08);
+      padding: 8px 16px; border-radius: 999px; color: var(--focus-ink);
+      border: 1px solid var(--focus-line);
+      background: var(--focus-tint);
+      font-weight: 600;
     }
-    .site-nav .nav-cta:hover { background: rgba(45, 212, 191, 0.16); }
+    .site-nav .nav-cta:hover { background: #ddf0e9; color: var(--focus-ink); }
     .nav-toggle { display: none; }
     .js .nav-toggle {
       display: none; flex-direction: column; gap: 5px; justify-content: center;
       width: 44px; height: 40px; padding: 0 10px;
-      background: var(--glass); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
     }
     .nav-toggle i { display: block; height: 2px; border-radius: 2px; background: var(--ink); transition: transform 0.25s ease, opacity 0.25s ease; }
     @media (max-width: 860px) {
@@ -162,124 +164,172 @@
         position: absolute; top: calc(100% + 8px); right: 16px; left: 16px;
         flex-direction: column; align-items: stretch; gap: 4px;
         padding: 12px;
-        background: rgba(7, 16, 25, 0.96);
+        background: var(--card);
         border: 1px solid var(--line); border-radius: 16px;
-        backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        box-shadow: var(--shadow-lg);
         display: none;
       }
       .js .site-nav.is-open { display: flex; }
       .js .site-nav a { padding: 10px 12px; border-radius: 10px; }
-      .js .site-nav a:hover { background: rgba(45, 212, 191, 0.08); }
+      .js .site-nav a:hover { background: var(--paper-2); }
       .js .nav-toggle[aria-expanded="true"] i:nth-child(1) { transform: translateY(7px) rotate(45deg); }
       .js .nav-toggle[aria-expanded="true"] i:nth-child(2) { opacity: 0; }
       .js .nav-toggle[aria-expanded="true"] i:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
     }
 
-    /* Hero */
+    /* Hero — white field with a faint dormant-swarm dot grid; color appears
+       only where the pipeline focuses. */
     .hero {
+      position: relative;
       max-width: var(--wrap); margin: 0 auto;
-      padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 40px) clamp(28px, 4vw, 48px);
+      padding: clamp(40px, 7vw, 84px) clamp(16px, 4vw, 40px) clamp(28px, 4vw, 48px);
       text-align: center;
     }
+    .hero::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(14, 26, 30, 0.07) 1px, transparent 1.4px);
+      background-size: 26px 26px;
+      mask-image: radial-gradient(ellipse 78% 64% at 50% 22%, #000 0%, transparent 74%);
+      -webkit-mask-image: radial-gradient(ellipse 78% 64% at 50% 22%, #000 0%, transparent 74%);
+      pointer-events: none;
+    }
+    .hero > * { position: relative; }
     .hero-status {
       display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
-      margin: 0 0 22px; padding: 8px 16px;
-      border-radius: 999px; border: 1px solid rgba(45, 212, 191, 0.35);
-      background: rgba(13, 32, 40, 0.6);
-      font-size: 0.82rem; color: var(--ink-dim);
+      margin: 0 0 24px; padding: 8px 16px;
+      border-radius: 999px; border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      font-size: 0.82rem; color: var(--ink-2);
     }
     .hero-status .dot {
       width: 8px; height: 8px; border-radius: 50%; flex: none;
-      background: var(--mint); box-shadow: 0 0 10px var(--glow);
+      background: var(--focus-2);
     }
     .hero-status strong { color: var(--ink); font-weight: 600; }
     .hero h1 {
       margin: 0 auto 18px; max-width: 17ch;
-      font-size: clamp(2.5rem, 6.4vw, 4.35rem);
-      line-height: 1.06; letter-spacing: -0.025em; font-weight: 800;
+      font-size: clamp(2.5rem, 6.4vw, 4.3rem);
+      line-height: 1.04; letter-spacing: -0.035em; font-weight: 650;
     }
-    .hero h1 .grad {
-      background: linear-gradient(92deg, #5eead4 0%, var(--cyan) 55%, #67e8f9 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
+    .hero h1 .hl { color: var(--focus); }
     .hero-lede {
       margin: 0 auto; max-width: 62ch;
-      font-size: clamp(1.02rem, 1.6vw, 1.18rem); color: var(--ink-dim);
+      font-size: clamp(1.02rem, 1.6vw, 1.16rem); color: var(--ink-2);
     }
+    .hero-lede strong { color: var(--ink); font-weight: 600; }
     .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 30px 0 8px; }
     .button {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 13px 26px; border-radius: 999px;
-      font-weight: 600; font-size: 0.98rem; letter-spacing: 0.01em;
+      font-weight: 600; font-size: 0.96rem; letter-spacing: 0.01em;
       transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     }
-    .button:hover { text-decoration: none; transform: translateY(-2px); }
+    .button:hover { text-decoration: none; transform: translateY(-1px); }
     .button-primary {
-      color: #03110d;
-      background: linear-gradient(120deg, var(--mint), var(--cyan));
-      box-shadow: 0 8px 30px rgba(34, 211, 238, 0.25);
+      color: #fff;
+      background: var(--focus);
+      box-shadow: 0 1px 2px rgba(14, 26, 30, 0.08), 0 10px 24px -10px rgba(13, 125, 104, 0.55);
     }
-    .button-primary:hover { box-shadow: 0 12px 38px rgba(34, 211, 238, 0.38); }
-    .button-ghost { color: var(--ink); border: 1px solid var(--line); background: var(--glass); }
-    .button-ghost:hover { background: var(--glass-hi); }
+    .button-primary:hover { background: var(--focus-ink); box-shadow: 0 2px 4px rgba(14, 26, 30, 0.08), 0 14px 28px -10px rgba(13, 125, 104, 0.6); }
+    .button-ghost { color: var(--ink); border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+    .button-ghost:hover { background: var(--paper-2); }
     .hero-traits {
       display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
       margin: 26px auto 0; padding: 0; list-style: none; max-width: 760px;
     }
     .hero-traits li {
+      display: inline-flex; align-items: center; gap: 9px;
       padding: 7px 14px; border-radius: 999px;
-      border: 1px solid var(--line); background: rgba(10, 23, 34, 0.5);
-      font-size: 0.8rem; color: var(--ink-dim); font-family: var(--mono);
+      border: 1px solid var(--line); background: var(--card);
+      font-size: 0.78rem; color: var(--ink-2); font-family: var(--mono);
+    }
+    .hero-traits li::before {
+      content: ""; width: 6px; height: 6px; border-radius: 2px;
+      background: var(--focus-2); flex: none;
     }
 
-    /* Hero motif SVG */
-    .hero-motif { margin: clamp(26px, 4.5vw, 54px) auto 0; max-width: 1040px; }
-    .hero-motif svg { display: block; width: 100%; height: auto; }
-    .m-shard { fill: url(#shardGrad); stroke: rgba(94, 234, 212, 0.5); stroke-width: 1; }
-    .m-shard.dim { opacity: 0.4; }
-    .m-dot { fill: var(--mint); opacity: 0.55; }
-    .m-flow { fill: none; stroke: url(#flowGrad); stroke-width: 1.6; stroke-dasharray: 7 9; opacity: 0.55; }
-    .m-flow.bright { stroke-width: 2.2; opacity: 0.9; }
-    .m-ring { fill: none; stroke: rgba(45, 212, 191, 0.4); stroke-width: 1.2; stroke-dasharray: 4 10; transform-box: fill-box; transform-origin: center; }
-    .m-lens-panel { fill: rgba(13, 35, 43, 0.72); stroke: url(#panelGrad); stroke-width: 1.4; }
-    .m-lens-core { fill: rgba(45, 212, 191, 0.1); stroke: rgba(94, 234, 212, 0.7); stroke-width: 1.5; }
-    .m-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em; fill: var(--ink-faint); text-transform: uppercase; }
-    .m-stage { font-family: var(--mono); font-size: 11.5px; fill: #7fe7d8; }
-    .m-stage-pill { fill: rgba(20, 184, 166, 0.1); stroke: rgba(45, 212, 191, 0.35); }
-    .m-packet { fill: rgba(11, 28, 36, 0.92); stroke: rgba(94, 234, 212, 0.55); stroke-width: 1.4; }
-    .m-packet-title { font-family: var(--mono); font-size: 13px; font-weight: 600; fill: #d7fff7; }
-    .m-line { fill: rgba(163, 188, 190, 0.35); }
-    .m-cite { fill: rgba(45, 212, 191, 0.12); stroke: rgba(45, 212, 191, 0.45); }
-    .m-cite-text { font-family: var(--mono); font-size: 10.5px; fill: #8ef0e0; }
-    .m-check { fill: none; stroke: var(--mint); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    /* Hero motif: the pipeline, drawn. A query passes the lens; three gray
+       shards come into focus (teal), flow through, and exit as one cited
+       MemoryPacket. Color = selection, everything else stays dormant. */
+    .hero-motif { position: relative; margin: clamp(26px, 4.5vw, 54px) auto 0; max-width: 1040px; }
+    .hero-motif::before {
+      content: "";
+      position: absolute; inset: -6% 26% 4% 26%;
+      background: radial-gradient(closest-side, rgba(16, 179, 154, 0.10), transparent 72%);
+      pointer-events: none;
+    }
+    .hero-motif svg { position: relative; display: block; width: 100%; height: auto; }
+    .m-shard { fill: var(--swarm-2); stroke: var(--swarm); stroke-width: 1.25; }
+    .m-shard.sel { stroke-width: 1.4; }
+    .m-dot { fill: var(--swarm); }
+    .m-flow { fill: none; stroke: var(--focus-2); stroke-width: 1.5; stroke-dasharray: 6 9; opacity: 0.45; }
+    .m-flow.bright { stroke-width: 2; opacity: 0.8; }
+    .m-ring { fill: none; stroke: #d6dde0; stroke-width: 1.1; stroke-dasharray: 3 10; transform-box: fill-box; transform-origin: center; }
+    .m-lens-panel { fill: rgba(255, 255, 255, 0.78); stroke: rgba(16, 179, 154, 0.45); stroke-width: 1.3; }
+    .m-lens-panel.front { fill: rgba(255, 255, 255, 0.9); stroke: rgba(13, 125, 104, 0.6); }
+    .m-lens-core { fill: rgba(16, 179, 154, 0.08); stroke: rgba(13, 125, 104, 0.6); stroke-width: 1.4; }
+    .m-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; fill: var(--ink-3); text-transform: uppercase; }
+    .m-title { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.3em; fill: var(--ink); }
+    .m-stage { font-family: var(--mono); font-size: 11.5px; fill: var(--focus-ink); }
+    .m-stage-pill { fill: #f0faf7; stroke: var(--focus-line); }
+    .m-query-pill { fill: var(--focus-tint); stroke: var(--focus-line); }
+    .m-query-text { font-family: var(--mono); font-size: 11.5px; font-weight: 600; fill: var(--focus-ink); }
+    .m-qline { fill: none; stroke: var(--focus-2); stroke-width: 1.4; stroke-dasharray: 3 7; opacity: 0.6; }
+    .m-packet { fill: var(--card); stroke: #dfe5e7; stroke-width: 1.25; }
+    .m-packet-title { font-family: var(--mono); font-size: 13px; font-weight: 600; fill: var(--ink); }
+    .m-line { fill: #e8edee; }
+    .m-cite { fill: var(--focus-tint); stroke: var(--focus-line); }
+    .m-cite-text { font-family: var(--mono); font-size: 10.5px; fill: var(--focus-ink); }
+    .m-check { fill: none; stroke: var(--focus-2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     .m-glow { fill: url(#lensGlow); }
-    .m-particle { fill: #8ef0e0; opacity: 0; }
+    .m-particle { fill: var(--focus-2); opacity: 0; }
 
-    @keyframes m-drift { from { transform: translateY(-5px); } to { transform: translateY(5px); } }
+    @keyframes m-focus {
+      0%, 8% { fill: #eef1f2; stroke: #c2ccd1; }
+      20%, 78% { fill: #d9f2ea; stroke: #10b39a; }
+      92%, 100% { fill: #eef1f2; stroke: #c2ccd1; }
+    }
+    @keyframes m-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
     @keyframes m-dash { to { stroke-dashoffset: -160; } }
     @keyframes m-orbit { to { transform: rotate(360deg); } }
     @keyframes m-float { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
-    @keyframes m-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.95; } }
+    @keyframes m-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     @keyframes m-travel {
       0% { offset-distance: 0%; opacity: 0; }
-      12% { opacity: 0.95; }
-      82% { opacity: 0.95; }
+      12% { opacity: 0.9; }
+      82% { opacity: 0.9; }
       100% { offset-distance: 100%; opacity: 0; }
     }
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 179, 154, 0.35); }
+      60% { box-shadow: 0 0 0 6px rgba(16, 179, 154, 0); }
+    }
     @media (prefers-reduced-motion: no-preference) {
-      .m-shard, .m-dot { animation: m-drift 5.5s ease-in-out infinite alternate; }
+      .m-shard.sel { animation: m-focus 8s ease-in-out infinite; }
+      .m-dot { animation: m-twinkle 4.5s ease-in-out infinite; }
       .m-flow { animation: m-dash 6s linear infinite; }
-      .m-ring { animation: m-orbit 30s linear infinite; }
-      .m-ring.r2 { animation-duration: 44s; animation-direction: reverse; }
+      .m-qline { animation: m-dash 7s linear infinite; }
+      .m-ring { animation: m-orbit 46s linear infinite; }
+      .m-ring.r2 { animation-duration: 62s; animation-direction: reverse; }
       .m-packet-g { animation: m-float 7s ease-in-out infinite alternate; }
       .m-lens-core { animation: m-pulse 4.5s ease-in-out infinite; }
       .m-particle { offset-rotate: 0deg; animation: m-travel 5.2s linear infinite; }
+      .hero-status .dot { animation: dot-pulse 2.6s ease-out infinite; }
     }
     @supports not (offset-path: path("M0,0 L10,10")) { .m-particle { display: none; } }
 
-    /* Scroll reveal base (hidden only when JS is on) */
-    .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: var(--d, 0s); }
-    .js [data-reveal].in-view { opacity: 1; transform: none; }
+    /* Scroll reveal: memories come into focus — blur resolves to sharp.
+       Hidden only when JS is on; one-shot per element. */
+    .js [data-reveal] {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(6px);
+      transition: opacity 0.55s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.55s ease;
+      transition-delay: var(--d, 0s);
+    }
+    .js [data-reveal].in-view { opacity: 1; transform: none; filter: blur(0); }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -287,7 +337,9 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.001s !important;
       }
-      .js [data-reveal] { opacity: 1; transform: none; }
+      .js [data-reveal] { opacity: 1; transform: none; filter: none; }
+      .m-shard.sel { fill: #d9f2ea; stroke: #10b39a; } /* static: the selection stays visible */
+      .m-particle { display: none; }
     }
   </style>
 
@@ -467,7 +519,7 @@
           <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">PR&nbsp;#19</a> ·
           <strong>pending maintainer acceptance</strong></span>
       </p>
-      <h1 id="hero-title">Memory whose edge <span class="grad">grows as it scales</span>.</h1>
+      <h1 id="hero-title">Memory whose edge <span class="hl">grows as it scales</span>.</h1>
       <p class="hero-lede">
         Context Swarm Memory (CSM) is an open-source R&amp;D memory system for LLM agents:
         bounded read-only <strong>memory shards</strong>, cheap probes, cited recall, and a single
@@ -486,101 +538,97 @@
       </ul>
 
       <div class="hero-motif">
-        <svg viewBox="0 0 1160 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="motif-title motif-desc">
-          <title id="motif-title">The CSM pipeline motif</title>
-          <desc id="motif-desc">Scattered memory shards flow through the CSM memory lens — route, probe, recall, synthesize — and emerge as a single cited MemoryPacket.</desc>
+        <svg viewBox="0 0 1160 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="motif-title motif-desc">
+          <title id="motif-title">The CSM pipeline, drawn</title>
+          <desc id="motif-desc">A swarm of gray, dormant memory shards. As a query passes through the CSM memory lens — route, probe, recall, synthesize — three shards come into focus, turn teal, and emerge as a single cited MemoryPacket.</desc>
           <defs>
-            <linearGradient id="shardGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="rgba(45,212,191,0.30)"/>
-              <stop offset="1" stop-color="rgba(34,211,238,0.10)"/>
-            </linearGradient>
-            <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#14b8a6"/>
-              <stop offset="1" stop-color="#22d3ee"/>
-            </linearGradient>
-            <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="rgba(94,234,212,0.85)"/>
-              <stop offset="1" stop-color="rgba(34,211,238,0.25)"/>
-            </linearGradient>
             <radialGradient id="lensGlow" cx="0.5" cy="0.5" r="0.5">
-              <stop offset="0" stop-color="rgba(45,212,191,0.22)"/>
-              <stop offset="1" stop-color="rgba(45,212,191,0)"/>
+              <stop offset="0" stop-color="rgba(16,179,154,0.13)"/>
+              <stop offset="1" stop-color="rgba(16,179,154,0)"/>
             </radialGradient>
+            <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%">
+              <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0e1a1e" flood-opacity="0.10"/>
+            </filter>
           </defs>
 
-          <!-- left: scattered memory shards -->
+          <!-- the incoming query -->
           <g>
-            <rect class="m-shard" x="60" y="96" width="40" height="40" rx="9" transform="rotate(-9 80 116)" style="animation-delay:-0.4s"/>
-            <rect class="m-shard dim" x="150" y="56" width="26" height="26" rx="7" transform="rotate(12 163 69)" style="animation-delay:-1.6s"/>
-            <rect class="m-shard" x="120" y="170" width="32" height="32" rx="8" transform="rotate(7 136 186)" style="animation-delay:-2.4s"/>
-            <rect class="m-shard dim" x="52" y="232" width="22" height="22" rx="6" transform="rotate(-14 63 243)" style="animation-delay:-3.1s"/>
-            <rect class="m-shard" x="170" y="262" width="44" height="44" rx="10" transform="rotate(-6 192 284)" style="animation-delay:-1.1s"/>
-            <rect class="m-shard dim" x="96" y="330" width="28" height="28" rx="7" transform="rotate(10 110 344)" style="animation-delay:-4.2s"/>
-            <rect class="m-shard" x="210" y="120" width="24" height="24" rx="6" transform="rotate(16 222 132)" style="animation-delay:-2.8s"/>
-            <rect class="m-shard dim" x="236" y="208" width="30" height="30" rx="8" transform="rotate(-11 251 223)" style="animation-delay:-0.9s"/>
-            <rect class="m-shard" x="186" y="356" width="34" height="34" rx="8" transform="rotate(5 203 373)" style="animation-delay:-3.7s"/>
-            <rect class="m-shard dim" x="282" y="298" width="22" height="22" rx="6" transform="rotate(-15 293 309)" style="animation-delay:-1.9s"/>
-            <rect class="m-shard" x="296" y="92" width="28" height="28" rx="7" transform="rotate(8 310 106)" style="animation-delay:-4.6s"/>
-            <circle class="m-dot" cx="250" cy="62" r="3.5" style="animation-delay:-2.2s"/>
-            <circle class="m-dot" cx="84" cy="186" r="3" style="animation-delay:-0.7s"/>
-            <circle class="m-dot" cx="306" cy="232" r="3.5" style="animation-delay:-3.3s"/>
-            <circle class="m-dot" cx="140" cy="288" r="2.6" style="animation-delay:-1.4s"/>
-            <circle class="m-dot" cx="262" cy="386" r="3" style="animation-delay:-4.0s"/>
-            <text class="m-label" x="60" y="436">memory shards</text>
+            <rect class="m-query-pill" x="546" y="26" width="68" height="26" rx="13"/>
+            <text class="m-query-text" x="580" y="43.5" text-anchor="middle">query</text>
+            <path class="m-qline" d="M580 58 L580 130"/>
           </g>
 
-          <!-- converging flow paths -->
-          <path id="mp1" class="m-flow" d="M120 116 C 300 110, 380 170, 470 210"/>
-          <path id="mp2" class="m-flow" d="M180 200 C 320 200, 390 215, 468 232" style="animation-delay:-2s"/>
-          <path id="mp3" class="m-flow" d="M210 300 C 340 300, 400 268, 470 252" style="animation-delay:-3.5s"/>
-          <path id="mp4" class="m-flow" d="M210 376 C 360 374, 410 300, 472 272" style="animation-delay:-1.2s"/>
-          <circle class="m-particle" r="3.4" style="offset-path:path('M120 116 C 300 110, 380 170, 470 210')"/>
-          <circle class="m-particle" r="3" style="offset-path:path('M180 200 C 320 200, 390 215, 468 232');animation-delay:-1.8s"/>
-          <circle class="m-particle" r="3.4" style="offset-path:path('M210 300 C 340 300, 400 268, 470 252');animation-delay:-3.2s"/>
-          <circle class="m-particle" r="2.7" style="offset-path:path('M210 376 C 360 374, 410 300, 472 272');animation-delay:-4.4s"/>
+          <!-- left: the dormant swarm; three shards get selected -->
+          <g>
+            <rect class="m-shard sel" x="70" y="100" width="40" height="40" rx="9" transform="rotate(-9 90 120)"/>
+            <rect class="m-shard" x="152" y="62" width="26" height="26" rx="7" transform="rotate(12 165 75)"/>
+            <rect class="m-shard sel" x="126" y="176" width="32" height="32" rx="8" transform="rotate(7 142 192)" style="animation-delay:-2.6s"/>
+            <rect class="m-shard" x="58" y="238" width="22" height="22" rx="6" transform="rotate(-14 69 249)"/>
+            <rect class="m-shard sel" x="178" y="266" width="44" height="44" rx="10" transform="rotate(-6 200 288)" style="animation-delay:-5.2s"/>
+            <rect class="m-shard" x="100" y="338" width="28" height="28" rx="7" transform="rotate(10 114 352)"/>
+            <rect class="m-shard" x="216" y="122" width="24" height="24" rx="6" transform="rotate(16 228 134)"/>
+            <rect class="m-shard" x="246" y="210" width="30" height="30" rx="8" transform="rotate(-11 261 225)"/>
+            <rect class="m-shard" x="192" y="358" width="34" height="34" rx="8" transform="rotate(5 209 375)"/>
+            <rect class="m-shard" x="288" y="298" width="22" height="22" rx="6" transform="rotate(-15 299 309)"/>
+            <rect class="m-shard" x="300" y="94" width="28" height="28" rx="7" transform="rotate(8 314 108)"/>
+            <circle class="m-dot" cx="256" cy="64" r="3.5" style="animation-delay:-2.2s"/>
+            <circle class="m-dot" cx="88" cy="190" r="3" style="animation-delay:-0.7s"/>
+            <circle class="m-dot" cx="312" cy="234" r="3.5" style="animation-delay:-3.3s"/>
+            <circle class="m-dot" cx="146" cy="294" r="2.6" style="animation-delay:-1.4s"/>
+            <circle class="m-dot" cx="266" cy="388" r="3" style="animation-delay:-4.0s"/>
+            <text class="m-label" x="60" y="446">memory shards · read-only</text>
+          </g>
+
+          <!-- only the selected shards flow toward the lens -->
+          <path class="m-flow" d="M112 120 C 300 112, 384 168, 468 208"/>
+          <path class="m-flow" d="M160 192 C 318 198, 392 216, 466 230" style="animation-delay:-2s"/>
+          <path class="m-flow" d="M224 288 C 352 290, 404 262, 468 252" style="animation-delay:-3.5s"/>
+          <circle class="m-particle" r="3" style="offset-path:path('M112 120 C 300 112, 384 168, 468 208')"/>
+          <circle class="m-particle" r="2.7" style="offset-path:path('M160 192 C 318 198, 392 216, 466 230');animation-delay:-1.8s"/>
+          <circle class="m-particle" r="3.2" style="offset-path:path('M224 288 C 352 290, 404 262, 468 252');animation-delay:-3.2s"/>
 
           <!-- center: the CSM lens -->
           <g>
-            <circle class="m-glow" cx="580" cy="236" r="160"/>
-            <circle class="m-ring" cx="580" cy="236" r="128"/>
-            <circle class="m-ring r2" cx="580" cy="236" r="100"/>
-            <rect class="m-lens-panel" x="508" y="158" width="120" height="156" rx="16" transform="rotate(-7 568 236)"/>
-            <rect class="m-lens-panel" x="528" y="152" width="120" height="168" rx="16" transform="rotate(4 588 236)" opacity="0.85"/>
-            <rect class="m-lens-core" x="544" y="176" width="92" height="120" rx="13"/>
-            <text class="m-label" x="580" y="242" text-anchor="middle" style="letter-spacing:0.3em">CSM</text>
-            <text class="m-label" x="580" y="262" text-anchor="middle" style="font-size:10px">memory lens</text>
+            <circle class="m-glow" cx="580" cy="232" r="150"/>
+            <circle class="m-ring" cx="580" cy="232" r="118"/>
+            <circle class="m-ring r2" cx="580" cy="232" r="92"/>
+            <rect class="m-lens-panel" x="510" y="156" width="118" height="152" rx="16" transform="rotate(-7 569 232)"/>
+            <rect class="m-lens-panel front" x="530" y="150" width="118" height="164" rx="16" transform="rotate(4 589 232)"/>
+            <rect class="m-lens-core" x="546" y="174" width="90" height="118" rx="12"/>
+            <text class="m-title" x="584" y="238" text-anchor="middle">CSM</text>
+            <text class="m-label" x="582" y="258" text-anchor="middle" style="font-size:10px">memory lens</text>
             <g>
-              <rect class="m-stage-pill" x="440" y="356" width="64" height="24" rx="12"/>
-              <text class="m-stage" x="472" y="372" text-anchor="middle">route</text>
-              <rect class="m-stage-pill" x="512" y="356" width="64" height="24" rx="12"/>
-              <text class="m-stage" x="544" y="372" text-anchor="middle">probe</text>
-              <rect class="m-stage-pill" x="584" y="356" width="66" height="24" rx="12"/>
-              <text class="m-stage" x="617" y="372" text-anchor="middle">recall</text>
-              <rect class="m-stage-pill" x="658" y="356" width="98" height="24" rx="12"/>
-              <text class="m-stage" x="707" y="372" text-anchor="middle">synthesize</text>
+              <rect class="m-stage-pill" x="440" y="394" width="64" height="24" rx="12"/>
+              <text class="m-stage" x="472" y="410" text-anchor="middle">route</text>
+              <rect class="m-stage-pill" x="512" y="394" width="64" height="24" rx="12"/>
+              <text class="m-stage" x="544" y="410" text-anchor="middle">probe</text>
+              <rect class="m-stage-pill" x="584" y="394" width="66" height="24" rx="12"/>
+              <text class="m-stage" x="617" y="410" text-anchor="middle">recall</text>
+              <rect class="m-stage-pill" x="658" y="394" width="98" height="24" rx="12"/>
+              <text class="m-stage" x="707" y="410" text-anchor="middle">synthesize</text>
             </g>
           </g>
 
           <!-- exit flow -->
-          <path id="mp5" class="m-flow bright" d="M664 236 C 740 232, 770 218, 826 212"/>
-          <circle class="m-particle" r="4" style="offset-path:path('M664 236 C 740 232, 770 218, 826 212');animation-duration:3.2s"/>
+          <path class="m-flow bright" d="M668 232 C 745 228, 775 216, 822 210"/>
+          <circle class="m-particle" r="3.6" style="offset-path:path('M668 232 C 745 228, 775 216, 822 210');animation-duration:3.2s"/>
 
           <!-- right: the cited MemoryPacket -->
           <g class="m-packet-g">
-            <rect class="m-packet" x="830" y="118" width="296" height="206" rx="18"/>
-            <text class="m-packet-title" x="856" y="156">MemoryPacket</text>
-            <path class="m-check" d="M1078 142 l8 9 l15 -16"/>
-            <rect class="m-line" x="856" y="176" width="216" height="9" rx="4.5"/>
-            <rect class="m-line" x="856" y="196" width="244" height="9" rx="4.5"/>
-            <rect class="m-line" x="856" y="216" width="178" height="9" rx="4.5"/>
-            <rect class="m-cite" x="856" y="248" width="76" height="26" rx="13"/>
-            <text class="m-cite-text" x="894" y="265" text-anchor="middle">shard S07</text>
-            <rect class="m-cite" x="940" y="248" width="78" height="26" rx="13"/>
-            <text class="m-cite-text" x="979" y="265" text-anchor="middle">snap S003</text>
-            <rect class="m-cite" x="1026" y="248" width="74" height="26" rx="13"/>
-            <text class="m-cite-text" x="1063" y="265" text-anchor="middle">ev e1289</text>
-            <text class="m-label" x="856" y="302" style="font-size:10px;letter-spacing:0.16em">cited · conflict-flagged · discardable</text>
-            <text class="m-label" x="830" y="436">cited memory packet</text>
+            <rect class="m-packet" x="822" y="116" width="302" height="204" rx="18" filter="url(#cardShadow)"/>
+            <text class="m-packet-title" x="848" y="154">MemoryPacket</text>
+            <path class="m-check" d="M1072 140 l8 9 l15 -16"/>
+            <rect class="m-line" x="848" y="174" width="220" height="9" rx="4.5"/>
+            <rect class="m-line" x="848" y="194" width="248" height="9" rx="4.5"/>
+            <rect class="m-line" x="848" y="214" width="180" height="9" rx="4.5"/>
+            <rect class="m-cite" x="848" y="246" width="80" height="26" rx="13"/>
+            <text class="m-cite-text" x="888" y="263" text-anchor="middle">shard S07</text>
+            <rect class="m-cite" x="936" y="246" width="82" height="26" rx="13"/>
+            <text class="m-cite-text" x="977" y="263" text-anchor="middle">snap S003</text>
+            <rect class="m-cite" x="1026" y="246" width="76" height="26" rx="13"/>
+            <text class="m-cite-text" x="1064" y="263" text-anchor="middle">ev e1289</text>
+            <text class="m-label" x="848" y="300" style="font-size:10px;letter-spacing:0.15em">cited · conflict-flagged · discardable</text>
+            <text class="m-label" x="822" y="446">cited memory packet</text>
           </g>
         </svg>
       </div>
@@ -590,23 +638,23 @@
     <section class="section metrics" id="numbers" aria-labelledby="numbers-title">
       <div class="section-inner">
         <h2 id="numbers-title" class="sr-only">Headline metrics</h2>
-        <div class="metric-grid">
-          <div class="metric-card" data-reveal>
+        <div class="metric-grid" data-reveal>
+          <div class="metric-card">
             <strong class="metric-num"><span data-count="0.743110" data-decimals="6">0.743110</span></strong>
             <span class="metric-label">AMB BEAM 100K score</span>
             <span class="metric-sub">vs Hindsight 0.733658</span>
           </div>
-          <div class="metric-card" data-reveal style="--d:0.08s">
+          <div class="metric-card">
             <strong class="metric-num"><span data-count="337">337</span><em>/400</em></strong>
             <span class="metric-label">correct rows</span>
             <span class="metric-sub">+11 vs Hindsight’s 326</span>
           </div>
-          <div class="metric-card" data-reveal style="--d:0.16s">
+          <div class="metric-card">
             <strong class="metric-num"><span data-count="1.84" data-decimals="2">1.84</span><em>×</em></strong>
             <span class="metric-label">faster retrieval</span>
             <span class="metric-sub">3.47s vs 6.38s average</span>
           </div>
-          <div class="metric-card" data-reveal style="--d:0.24s">
+          <div class="metric-card">
             <strong class="metric-num"><span data-count="333">333</span><em>/333</em></strong>
             <span class="metric-label">tests passing</span>
             <span class="metric-sub">offline, no API keys</span>
@@ -622,7 +670,7 @@
     </section>
 
     <!-- ============ BEAM HEAD-TO-HEAD ============ -->
-    <section class="section" id="beam" aria-labelledby="beam-title">
+    <section class="section band" id="beam" aria-labelledby="beam-title">
       <div class="section-inner">
         <div class="section-head" data-reveal>
           <p class="kicker">North-star comparison</p>
@@ -634,23 +682,32 @@
           </p>
         </div>
 
-        <div class="duel-grid">
-          <div class="duel glass" data-reveal>
-            <h3>AMB score <span class="duel-tag win">+0.95 pts</span></h3>
-            <p class="duel-note">higher is better</p>
-            <div class="duel-row">
-              <span class="duel-label">CSM</span>
-              <span class="duel-track"><i class="duel-bar csm" style="--w:100%"></i></span>
-              <span class="duel-val">0.743110</span>
-            </div>
-            <div class="duel-row">
-              <span class="duel-label">Hindsight</span>
-              <span class="duel-track"><i class="duel-bar ref" style="--w:98.7%"></i></span>
-              <span class="duel-val">0.733658</span>
-            </div>
+        <div class="scoreboard card" data-reveal>
+          <div class="score-side csm">
+            <span class="score-team"><i class="score-key" aria-hidden="true"></i>CSM <em>this repo</em></span>
+            <strong class="score-num"><span data-count="0.743110" data-decimals="6">0.743110</span></strong>
+            <span class="score-rows">337 / 400 graded rows correct</span>
           </div>
+          <div class="score-mid" aria-hidden="true"><span>vs</span></div>
+          <div class="score-side ref">
+            <span class="score-team"><i class="score-key" aria-hidden="true"></i>Hindsight <em>accepted artifact</em></span>
+            <strong class="score-num">0.733658</strong>
+            <span class="score-rows">326 / 400 graded rows correct</span>
+          </div>
+          <div class="score-foot">
+            <span class="chip win">+0.95 pts</span>
+            <span class="chip win">+11 rows</span>
+            <span class="chip win">1.84× faster retrieval</span>
+            <span class="chip trade">+53% answer context — disclosed trade</span>
+            <p class="score-note">
+              Same answer &amp; judge models as the accepted Hindsight artifact · single-trial ·
+              submitted upstream as <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">PR&nbsp;#19</a>, pending acceptance.
+            </p>
+          </div>
+        </div>
 
-          <div class="duel glass" data-reveal style="--d:0.08s">
+        <div class="duel-grid">
+          <div class="duel card" data-reveal>
             <h3>Correct rows <span class="duel-tag win">+11</span></h3>
             <p class="duel-note">higher is better · 400 questions</p>
             <div class="duel-row">
@@ -665,7 +722,7 @@
             </div>
           </div>
 
-          <div class="duel glass" data-reveal style="--d:0.16s">
+          <div class="duel card" data-reveal style="--d:0.08s">
             <h3>Avg retrieve latency <span class="duel-tag win">1.84× faster</span></h3>
             <p class="duel-note">lower is better</p>
             <div class="duel-row">
@@ -680,7 +737,7 @@
             </div>
           </div>
 
-          <div class="duel glass" data-reveal style="--d:0.24s">
+          <div class="duel card" data-reveal style="--d:0.16s">
             <h3>Avg answer-visible context <span class="duel-tag trade">honest trade: +53%</span></h3>
             <p class="duel-note">lower is better — Hindsight is leaner here</p>
             <div class="duel-row">
@@ -696,7 +753,7 @@
           </div>
         </div>
 
-        <div class="table-wrap glass" data-reveal>
+        <div class="table-wrap card" data-reveal>
           <table>
             <caption>Per-category AMB score, official-runner rerun (2026-06-10) vs the accepted Hindsight artifact</caption>
             <thead>
@@ -779,28 +836,28 @@
         </ol>
 
         <div class="invariant-grid">
-          <article class="invariant glass" data-reveal>
+          <article class="invariant card" data-reveal>
             <h3>Read path: branch-and-discard</h3>
             <p>
               <code>ask()</code> never appends events, writes snapshots, or mutates the chronicle.
               Enforced in CI by SHA-256 file hashes (<code>tests/mutationSafety.test.ts</code>).
             </p>
           </article>
-          <article class="invariant glass" data-reveal style="--d:0.07s">
+          <article class="invariant card" data-reveal style="--d:0.07s">
             <h3>Write path: Committer-gated</h3>
             <p>
               Durable memory changes only through <code>appendEventAndSnapshot</code> or an explicit
               Committer decision. Snapshots are immutable and versioned; the storage layer refuses overwrites.
             </p>
           </article>
-          <article class="invariant glass" data-reveal style="--d:0.14s">
+          <article class="invariant card" data-reveal style="--d:0.14s">
             <h3>Indexing: zero LLM cost</h3>
             <p>
               Routing starts from keywords and tags, with a local MiniLM embedding recall floor —
               no LLM-generated index is ever built, so adding memory costs no API tokens.
             </p>
           </article>
-          <article class="invariant glass" data-reveal style="--d:0.21s">
+          <article class="invariant card" data-reveal style="--d:0.21s">
             <h3>Coverage chronicle, deterministic</h3>
             <p>
               Summary/ordering/temporal queries get a date-ordered, fully-cited timeline assembled without
@@ -819,7 +876,7 @@
     </section>
 
     <!-- ============ SCALING (GEMMA HEADLINE) ============ -->
-    <section class="section" id="scaling" aria-labelledby="scaling-title">
+    <section class="section band" id="scaling" aria-labelledby="scaling-title">
       <div class="section-inner">
         <div class="section-head" data-reveal>
           <p class="kicker">The headline thesis</p>
@@ -897,7 +954,7 @@
           </p>
         </div>
 
-        <div class="table-wrap glass" data-reveal>
+        <div class="table-wrap card" data-reveal>
           <table>
             <caption>Gemini 3.5 Flash, 30 queries, corpus scaled 100K → 2M (single-trial, kept separate from the Gemma headline)</caption>
             <thead>
@@ -938,7 +995,7 @@
     </section>
 
     <!-- ============ BABILONG ============ -->
-    <section class="section" id="babilong" aria-labelledby="babilong-title">
+    <section class="section band" id="babilong" aria-labelledby="babilong-title">
       <div class="section-inner">
         <div class="section-head" data-reveal>
           <p class="kicker">External diagnostic</p>
@@ -951,7 +1008,7 @@
           </p>
         </div>
 
-        <div class="table-wrap glass" data-reveal>
+        <div class="table-wrap card" data-reveal>
           <table>
             <caption>BABILong shared slice (accuracy %), CSM vs historical leaderboard systems</caption>
             <thead>
@@ -1026,7 +1083,7 @@
         </div>
 
         <div class="rd-grid">
-          <article class="rd-card glass" data-reveal>
+          <article class="rd-card card" data-reveal>
             <span class="rd-id">T1</span>
             <h3>Coverage chronicle — shipped, now default</h3>
             <p>
@@ -1035,7 +1092,7 @@
               on real BEAM 100K data it lifted event_ordering cov@24 from 0.475 to 0.659.
             </p>
           </article>
-          <article class="rd-card glass" data-reveal style="--d:0.07s">
+          <article class="rd-card card" data-reveal style="--d:0.07s">
             <span class="rd-id">T2</span>
             <h3>Hybrid router — proven, then shelved honestly</h3>
             <p>
@@ -1044,7 +1101,7 @@
               re-gate, exactly as measured.
             </p>
           </article>
-          <article class="rd-card glass" data-reveal style="--d:0.14s">
+          <article class="rd-card card" data-reveal style="--d:0.14s">
             <span class="rd-id">T3</span>
             <h3>BEAM-slice harness — the new gate</h3>
             <p>
@@ -1052,7 +1109,7 @@
               Gold facets stay strictly eval-side, enforced by an import-graph leakage-firewall test.
             </p>
           </article>
-          <article class="rd-card glass falsified" data-reveal style="--d:0.21s">
+          <article class="rd-card card falsified" data-reveal style="--d:0.21s">
             <span class="rd-id">T4</span>
             <h3>Gemini caching — hypothesis falsified</h3>
             <p>
@@ -1064,7 +1121,7 @@
         </div>
 
         <h3 class="sub-title" data-reveal>The latency rebuild, step by measured step</h3>
-        <div class="ladder glass" data-reveal aria-label="Average retrieval latency by pipeline stage">
+        <div class="ladder card" data-reveal aria-label="Average retrieval latency by pipeline stage">
           <div class="ladder-row">
             <span class="ladder-label">May architecture <em>(BEAM avg)</em></span>
             <span class="ladder-track"><i style="--w:100%" class="old"></i></span>
@@ -1092,7 +1149,7 @@
           </div>
         </div>
 
-        <div class="table-wrap glass" data-reveal>
+        <div class="table-wrap card" data-reveal>
           <table>
             <caption>Retrieval coverage on the two BEAM categories CSM lost (real BEAM 100K data, 80 queries, gold-facet proxy, bootstrap 95% CIs; gold is eval-side only)</caption>
             <thead>
@@ -1116,7 +1173,7 @@
     </section>
 
     <!-- ============ FAQ ============ -->
-    <section class="section" id="faq" aria-labelledby="faq-title">
+    <section class="section band" id="faq" aria-labelledby="faq-title">
       <div class="section-inner narrow">
         <div class="section-head" data-reveal>
           <p class="kicker">Direct answers</p>
@@ -1197,7 +1254,7 @@
               <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md">BENCHMARK_METHODOLOGY.md</a>
             </p>
           </div>
-          <pre class="terminal glass" data-reveal aria-label="Verification commands"><code><span class="t-comment"># offline — no API keys required</span>
+          <pre class="terminal" data-reveal aria-label="Verification commands"><code><span class="t-comment"># offline — no API keys required</span>
 <span class="t-prompt">$</span> npm install
 <span class="t-prompt">$</span> npm test                  <span class="t-comment"># 333 tests, MockProvider</span>
 <span class="t-prompt">$</span> npm run verify:published  <span class="t-comment"># re-hash + recompute claims</span>
