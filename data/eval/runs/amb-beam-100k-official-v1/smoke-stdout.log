@@ -1,0 +1,47 @@
+﻿uv : 2026-06-10 03:38:28,258 [WARNING] Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+At line:1 char:1162
++ ... b-t3-data'; uv run --no-sync omb run --dataset beam --split 100k --me ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-06-10 03:3...GOOGLE_API_KEY.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-06-10 03:38:29,071 [WARNING] Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+
+Dataset: beam  Split: 100k  Memory: csm  Run: csm-official-smoke  Mode: rag
+
+Loading queries...
+  1 queries loaded
+Loading documents...
+  6 documents loaded
+Ingesting 1 units into csm (unit-sequential)...
+2026-06-10 03:38:30,605 [INFO] [query:1_abstention_0] start — How did the user feedback influence the UI/UX 
+improvements I made before the pub
+2026-06-10 03:38:33,824 [INFO] AFC is enabled with max remote calls: 10.
+2026-06-10 03:38:41,120 [INFO] HTTP Request: POST 
+https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent "HTTP/1.1 200 OK"
+2026-06-10 03:38:41,133 [INFO] [query:1_abstention_0] answer done in 10.5s (retrieve=3218ms)
+2026-06-10 03:38:41,133 [INFO] AFC is enabled with max remote calls: 10.
+2026-06-10 03:38:42,005 [INFO] HTTP Request: POST 
+https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-06-10 03:38:42,006 [INFO] [1_abstention_0] rubric item score=1.0 for: Based on the provided chat, there is no 
+information related to how user feedback
+2026-06-10 03:38:42,006 [INFO] [1_abstention_0] abstention avg_score=1.000 (1 items)
+2026-06-10 03:38:42,006 [INFO] [query:1_abstention_0] done in 11.4s — correct=True score=1.0
+
+Saved → 
+C:\Users\user\OneDrive\Documents\GitHub\context-swarm-memory\data\eval\runs\am
+b-beam-100k-official-v1\amb-outputs-smoke\beam\csm-official-smoke\rag\100k.json
+  Evaluating ---------------------------------------- 100% 0:00:11
+
+Saved → 
+C:\Users\user\OneDrive\Documents\GitHub\context-swarm-memory\data\eval\runs\am
+b-beam-100k-official-v1\amb-outputs-smoke\beam\csm-official-smoke\rag\100k.json
+Results — beam/100k | csm 
+          | rag           
+┌───────────────┬────────┐
+│ Metric        │  Value │
+├───────────────┼────────┤
+│ Total queries │      1 │
+│ Correct       │      1 │
+│ Accuracy      │ 100.0% │
+└───────────────┴────────┘
