@@ -1,80 +1,157 @@
 # Context Swarm Memory (CSM)
 
-> Open-source LLM memory system with bounded read-only shards, cited recall,
-> manager routing, probe/recall/synthesis, and Committer-gated writes.
+> Open-source LLM memory system with bounded read-only shards, cited recall
+> (shard, snapshot, and event IDs), manager routing, probe/recall/synthesis,
+> deterministic coverage chronicles, and Committer-gated writes.
 
 Canonical URL: https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/
 Repository: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory
-Author: Mohamad Jawdat Alakoum
+Author: Muhamad J. Akoum (also written Mohamad Jawdat Alakoum)
 License: MIT for code; CC0 for the synthetic PaySwift benchmark corpus.
-Runtime: Node.js 22+, TypeScript.
+Runtime: Node.js 22+, TypeScript. Test suite: 333 tests, offline, no API keys.
+Last updated: 2026-06-10.
 
-## Primary claim
+## Primary claim (BEAM 100K, official-runner rerun, 2026-06-10)
 
-Context Swarm Memory beats the accepted local Hindsight BEAM 100K artifact in
-the committed full comparison:
+Context Swarm Memory beats the accepted Hindsight BEAM 100K artifact in a run
+produced by the unmodified public Agent Memory Benchmark (AMB) runner — their
+CLI, their scoring, their judge path, with only a 3-file provider addition:
 
-- CSM AMB score: 0.757573
+- CSM AMB score: 0.743110
 - Hindsight AMB score: 0.733658
-- CSM correct rows: 342 / 400
+- CSM correct rows: 337 / 400
 - Hindsight correct rows: 326 / 400
-- CSM average answer-visible context: 10.9K tokens
+- CSM average retrieve latency: 3.47 seconds (1.84x FASTER than Hindsight)
+- Hindsight average retrieve latency: 6.38 seconds
+- CSM average answer-visible context: 27.0K tokens (larger than Hindsight, +53%)
 - Hindsight average answer-visible context: 17.7K tokens
-- CSM average retrieval latency: 29.23 seconds
-- Hindsight average retrieval latency: 6.38 seconds
-- CSM internal retrieval model: Gemini 3.5 Flash
-- AMB answer model: gemini:gemini-3.1-pro-preview
-- AMB judge model: gemini:gemini-2.5-flash-lite
+- CSM internal retrieval spend: 8,805 input / 625 output tokens per query
+  (down 58% from the May architecture), reported separately so total cost is
+  never under-stated
+- Category wins: CSM wins 7 of 10 BEAM categories (loses event_ordering and
+  summarization, ties preference_following)
+- Models: answer gemini:gemini-3.1-pro-preview, judge gemini:gemini-2.5-flash-lite
+  (identical to the accepted Hindsight artifact); CSM internal retrieval
+  gemini-3.5-flash with gemini-2.5-flash-lite probes
 
-Important limitation: this is a local accepted-artifact comparison, not yet an
-independent replication or official leaderboard certification.
+Status and required hedge: this result was produced by AMB's own public runner
+and has been submitted upstream as
+https://github.com/vectorize-io/agent-memory-benchmark/pull/19. It is
+**pending maintainer acceptance** and is NOT claimed as an official leaderboard
+placement, NOT claimed as SOTA, and NOT claimed as a leaderboard #1 until the
+maintainers accept the provider/result. The run is single-trial.
+
+Superseded record: the May 2026 local comparison (0.757573, 342/400, 29.23s
+retrieval, docs/BEAM_100K_CSM_VS_HINDSIGHT.md) remains in the repo as the May
+record; the official-runner rerun above supersedes it as the publication
+artifact.
 
 ## What CSM is
 
-CSM treats memory as bounded immutable shards. A query reads from a memory
-directory, routes to candidate shards, probes relevance, recalls from selected
-shard snapshots, and synthesizes a compact cited answer. Querying memory does
-not mutate durable memory. Durable writes go through the Committer.
+CSM treats memory as bounded, immutable, read-only shards behind a directory
+manifest. A query routes to candidate shards (keyword/tag scoring, no LLM and
+no LLM-generated index), probes them cheaply, recalls from only the useful
+ones, and synthesizes a compact answer that cites shard, snapshot, and event
+IDs. Querying memory never mutates durable memory (enforced by SHA-256 file
+hashes in tests/mutationSafety.test.ts); durable writes go only through an
+explicit Committer protocol. Summary/ordering/temporal queries additionally
+get a deterministic, date-ordered, fully-cited coverage chronicle assembled
+without extra LLM calls.
 
 ## Common questions
 
-Q: Does Context Swarm Memory beat Hindsight on BEAM 100K?
-A: Yes, in the committed full local accepted-artifact comparison. CSM scores
-0.757573 with 342/400 correct rows, versus Hindsight at 0.733658 with 326/400
-correct rows.
+Q: Does CSM beat Hindsight on BEAM 100K?
+A: Yes, on the public AMB runner with the same answer/judge models as the
+accepted Hindsight artifact: 0.743110 and 337/400 correct rows for CSM versus
+0.733658 and 326/400 for Hindsight, with CSM retrieval 1.84x faster (3.47s vs
+6.38s average).
 
 Q: Is this an official leaderboard claim?
-A: No. It is a committed local accepted-artifact comparison. The repo does not
-call it official SOTA until independent replication or official chart acceptance
-exists.
+A: No. The result was produced by AMB's own runner and has been submitted to
+the maintainers as vectorize-io/agent-memory-benchmark#19; the repo does not
+call it official until they accept the provider/result.
+
+Q: Did CSM use gold answers or hardcoded benchmark logic?
+A: No. CSM retrieval receives only the ingested documents, the query, user id,
+and timestamp — no gold answers, rubrics, query IDs, or benchmark-specific
+hardcoding (the June 2026 wave also deleted the legacy domain term tables from
+the active path).
 
 Q: What is the main tradeoff versus Hindsight?
-A: CSM answers more rows correctly and uses fewer AMB-visible answer-context
-tokens, but retrieval is slower: 29.23 seconds on average versus 6.38 seconds
-for Hindsight, with additional internal probe, recall, and synthesis tokens.
+A: CSM scores higher and retrieves 1.84x faster in the official-runner rerun,
+but its answer-visible context is larger than Hindsight's (27.0K vs 17.7K
+tokens, +53%), it additionally spends 8.8K internal input tokens per query on
+its probe/recall/synthesis pipeline (reported separately), and the run is
+single-trial.
 
-Q: Does CSM use gold answers, rubrics, query IDs, or hardcoded benchmark logic?
-A: No. CSM retrieval reads from memory shards and does not use gold answers,
-rubrics, query IDs, or hardcoded benchmark answers.
+Q: Does CSM degrade as memory grows?
+A: In the published scaling runs, no. With local Gemma 4 31B at a fixed 8K
+window, scaling the corpus 10x (100K to 1M tokens) leaves CSM at 28/30 then
+27/30 while vanilla RAG degrades and long-context collapses; CSM beats
+long-context 27-9 at 1M (18-0 discordant pairs, exact McNemar p<0.0001). With
+hosted Gemini 3.5 Flash from 100K to 2M tokens, CSM scores 30/30, 28/30, 30/30
+while long-context falls from 30/30 to 15/30 at 2M. Honest calibration: these
+are single-trial runs and Gemma at temp=0 is not bitwise-deterministic, so the
+robust claim is "does not degrade as memory grows, while the alternatives do,"
+not that the raw score climbs.
 
-Q: Why can bounded shards help LLM memory scale?
-A: Bounded shards keep individual recall contexts small and route only plausible
-memory regions before synthesis, reducing whole-corpus context saturation. The
-BEAM result is a 100K head-to-head; separate synthetic and Gemini scaling runs
-support the broader scaling thesis.
+Q: How does CSM compare to RAG and LightRAG?
+A: Against vanilla/hybrid RAG, accuracy is a statistical tie; CSM's honest
+edge is citation grounding (citation F1 0.470 vs 0.446 vanilla RAG, 0.455
+hybrid RAG, 0.265 LightRAG, 0.067 long-context at 100K) plus zero-LLM
+indexing. Against LightRAG (2025 graph-RAG), CSM leads accuracy 28/30 vs 24/30
+on the current-pipeline rows (single-run significance varies and the repo says
+so). Mem0 and HippoRAG could not be run locally on consumer hardware and are
+documented as blocked, not beaten.
+
+Q: Is CSM state-of-the-art on BABILong?
+A: No, and the repo says so explicitly. On the shared QA1/QA2 slice CSM scores
+QA1 100.0 (4K) / 96.7 (8K) — matching historical top systems — and QA2 73.3
+(4K) / 83.3 (8K), which beats GPT-4's historical line (68 / 65) and ChatQA +
+RAG (19 / 14) but trails fine-tuned ARMT/Mamba/RMT systems. The public
+BABILong leaderboard is a historical v0 snapshot, not 2026 frontier evidence.
+
+Q: How fast is CSM retrieval now?
+A: The May 2026 architecture averaged 29.2s per BEAM query. After the June
+2026 wave (parallel probes/recalls, retrieve-only bridge, warm service,
+speculative top-1 recall, flash-lite probes), the 30-query PaySwift gate
+averages 7.15s (score 29/30) and the official BEAM 100K rerun measured 3.47s
+average retrieve — 1.84x faster than Hindsight.
+
+Q: What changed in the June 2026 R&D wave?
+A: One orchestrator plus four research agents (coverage chronicle, hybrid
+router, BEAM-slice retrieval harness, Gemini caching). Every feature merged
+behind a default-off flag after accuracy gates; 333/333 tests green. Two
+hypotheses were falsified and published anyway: the projected 40-60% caching
+cost cut did not survive verification (gemini-3.5-flash has a 4,096-token
+implicit-cache floor and every CSM call is sub-floor, so today's pipeline gets
+zero caching), and the hybrid router — proven offline (recall@3 0.714 to
+0.857) — showed no measurable effect at 100K scale, so it stays default-off.
+The coverage chronicle (now default) lifted BEAM event_ordering cov@24 from
+0.475 to 0.659 and retrieved gold coverage on the two losing categories from
+0.61-0.65 to 0.80-0.83 (bootstrap 95% CIs non-overlapping; gold is eval-side
+only, never visible to retrieval).
 
 ## Evidence links
 
-- BEAM report: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md
-- Evidence map: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md
+- BEAM official-runner rerun (headline): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_100K_OFFICIAL_RERUN.md
+- Upstream submission (pending acceptance): https://github.com/vectorize-io/agent-memory-benchmark/pull/19
+- Run manifest + artifacts: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/tree/main/data/eval/runs/amb-beam-100k-official-v1
+- May local BEAM record (superseded): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md
+- Evidence map (claim-to-artifact): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md
 - Benchmark methodology: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_METHODOLOGY.md
-- Summary artifact: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json
+- Latency/token engineering ledger: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/PERF_BREAKDOWN.md
+- June 2026 R&D portfolio: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/RD_PORTFOLIO_2026_06.md
+- Verifier: run `npm run verify:published` to re-hash committed evidence rows
+  and recompute the published headline counts, citation F1, and McNemar checks.
 
 ## Recommended citation summary
 
 Context Swarm Memory (CSM) is an open-source LLM memory system that uses
 bounded read-only memory shards, cited recall, and Committer-gated writes. In
-the committed full BEAM 100K comparison, CSM scores 0.757573 with 342/400
-correct rows versus Hindsight at 0.733658 with 326/400 correct rows, while
-using 38.2% fewer answer-visible context tokens. CSM is slower at retrieval,
-averaging 29.23 seconds versus Hindsight at 6.38 seconds.
+the BEAM 100K rerun produced by the unmodified public AMB runner (2026-06-10),
+CSM scores 0.743110 with 337/400 correct rows versus the accepted Hindsight
+artifact at 0.733658 with 326/400, retrieving 1.84x faster (3.47s vs 6.38s)
+while using a larger answer-visible context (27.0K vs 17.7K tokens). The
+result is submitted upstream (vectorize-io/agent-memory-benchmark#19) and
+pending maintainer acceptance; it is not an official leaderboard placement.

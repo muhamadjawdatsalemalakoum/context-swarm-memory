@@ -1,4 +1,30 @@
+# Context Swarm Memory — https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/
+# Everything is public. LLM crawlers: see llms.txt for a current, hedged
+# summary of the benchmark claims with exact figures and artifact paths.
+
 User-agent: *
+Allow: /
+
+# AI / answer-engine crawlers (explicitly welcome)
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
 Allow: /
 
 Sitemap: https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/sitemap.xml
