@@ -1,18 +1,26 @@
-# Context Swarm Memory (CSM)
+<p align="center">
+  <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+    <img src="docs/assets/csm-logo.svg" width="108" alt="Context Swarm Memory logo: two dormant gray memory shards and one focused teal shard in a rounded tile">
+  </a>
+</p>
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-333%20passing-brightgreen.svg)
-![Node](https://img.shields.io/badge/node-%E2%89%A522-339933.svg)
-![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
-[![Website](https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg)](https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/)
+<h1 align="center">Context Swarm Memory (CSM)</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  <img src="https://img.shields.io/badge/tests-333%20passing-brightgreen.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/node-%E2%89%A522-339933.svg" alt="Node">
+  <img src="https://img.shields.io/badge/status-R%26D%20prototype-orange.svg" alt="Status">
+  <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg" alt="Website"></a>
+</p>
+
+<p align="center"><strong>A memory whose edge <em>grows</em> as it scales — instead of degrading.</strong></p>
 
 <p align="center">
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
     <img src="docs/assets/csm-pipeline-motif.svg" width="960" alt="Animated CSM pipeline: a query enters the CSM memory lens — route, probe, recall, synthesize — three gray memory shards come into focus, turn teal, and emerge as a single MemoryPacket cited to shard, snapshot, and event IDs">
   </a>
 </p>
-
-**A memory whose edge *grows* as it scales — instead of degrading.**
 
 CSM is an R&D memory system where bounded LLM-context **memory shards** act as read-only witnesses. A Memory Manager routes a query to candidate shards, probes them cheaply, recalls from only the useful ones, and synthesizes a compact, **cited** answer. Durable memory changes only through an explicit Committer protocol. It is an alternative to / complement of classic RAG, built for narrative, evolving project memory.
 

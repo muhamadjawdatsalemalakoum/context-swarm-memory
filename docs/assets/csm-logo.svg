@@ -1,0 +1,11 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Context Swarm Memory logo">
+  <title>Context Swarm Memory</title>
+  <desc>Two dormant gray memory shards and one focused teal shard in a rounded white tile — the CSM "color = focus" mark.</desc>
+  <!-- 512px master of the site brand mark (.brand-mark in docs/index.html):
+       36px tile scaled x14.22 — gray shard (7,7,9px), its lighter echo at
+       (19,19,9px), and the focused teal shard (20,7,10px) rotated 8deg. -->
+  <rect x="8" y="8" width="496" height="496" rx="138" fill="#ffffff" stroke="#e3e9ea" stroke-width="16"/>
+  <rect x="100" y="100" width="128" height="128" rx="42" fill="#c2ccd1"/>
+  <rect x="270" y="270" width="128" height="128" rx="42" fill="#e9eef0"/>
+  <rect x="284" y="100" width="142" height="142" rx="44" fill="#10b39a" transform="rotate(8 355 171)"/>
+</svg>
