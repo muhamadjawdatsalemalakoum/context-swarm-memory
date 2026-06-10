@@ -1,7 +1,7 @@
 # Context Swarm Memory (CSM)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-333%20passing-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A522-339933.svg)
 ![Status](https://img.shields.io/badge/status-R%26D%20prototype-orange.svg)
 [![Website](https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg)](https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/)
@@ -40,7 +40,7 @@ Same 30-query benchmark, same 100K-token corpus, same local Gemma 4 31B answerin
 
 - **vs LightRAG (2025 graph-RAG): CSM wins** — citation F1 0.505 vs 0.265, accuracy ≥27/30 vs 24/30 (p=0.031). Mem0 and HippoRAG could not be made to run locally on consumer hardware — documented as **blocked, not beaten** ([`SOTA_COMPARISON.md`](SOTA_COMPARISON.md)).
 - **vs vanilla / hybrid RAG: accuracy is a statistical tie** (overlapping CIs; the lead flips run-to-run within nondeterministic noise). CSM's honest edge is *citation quality* + **zero-LLM indexing**, not an accuracy gap — we don't dress a near-tie as a rout.
-- **The cost is latency:** CSM is ~3.5× slower than RAG per query (the probe → recall → synth → answer chain). Fine for offline project memory; the open problem for interactive use.
+- **The cost is latency:** CSM runs a probe → recall → synth → answer chain instead of one retrieval call. On the local serial Ollama stack used for this table it is ~3.5× slower than RAG per query. On hosted providers this gap collapsed in the June 2026 wave (parallel probes/recalls, speculative top-1 recall, retrieve-only bridge): average retrieval went from 29.2 s to ~7 s on the 30-query gate — see [`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md).
 
 Full numbers, per-query breakdown, significance, and methodology: [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) · [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md).
 
@@ -59,11 +59,17 @@ Flash-only diagnostics.
 | Hindsight | 0.733658 | 326/400 | 17.7K tokens | 6.38s |
 
 CSM is +2.39 score points and +16 correct rows versus the accepted Hindsight
-artifact while using 38.2% fewer answer-visible context tokens. The tradeoff is
-real: CSM retrieval is 4.58x slower and spends an additional 23.6K internal
-tokens per query across shard probe/recall/synthesis. Full method, category
-deltas, token accounting, no-gold audit, and artifact hashes:
+artifact while using 38.2% fewer answer-visible context tokens. The tradeoff
+was real at run time: CSM retrieval was 4.58x slower and spent an additional
+23.6K internal tokens per query across shard probe/recall/synthesis. Full
+method, category deltas, token accounting, no-gold audit, and artifact hashes:
 [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
+
+> May 2026 numbers of record. The pipeline behind the 29.23 s / 23.6K-token
+> figures has since been rebuilt (see the coverage section below and
+> [`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md)); this table is refreshed
+> only by the official AMB rerun
+> ([`docs/AMB_OFFICIALIZATION_STATUS.md`](docs/AMB_OFFICIALIZATION_STATUS.md)).
 
 ### BEAM 100K Q&A
 
@@ -78,6 +84,24 @@ replication or official chart acceptance exists.
 **Did CSM use gold answers or hardcoded benchmark logic?** No. The BEAM report
 includes the no-gold audit: CSM retrieval does not use gold answers, rubrics,
 query IDs, or hardcoded benchmark answers.
+
+## Retrieval coverage on the two BEAM categories CSM lost
+
+The 2026-06 coverage/chronicle mode (now default) directly targets BEAM's
+summarization and event_ordering, measured on real BEAM 100k data (80 queries,
+gold-facet coverage proxy with bootstrap 95% CIs; gold is eval-side only,
+never visible to retrieval):
+
+| Returned-to-harness coverage | legacy pipeline | coverage mode + chronicle bridge |
+|---|---:|---:|
+| event_ordering cov@24 | 0.475 | **0.659** (CIs non-overlapping) |
+| event_ordering cov@32 | 0.615 | **0.715** |
+| retrieved gold coverage (both categories) | 0.61–0.65 | **0.80–0.83** (CIs non-overlapping) |
+
+Average retrieval on these heaviest query classes runs ~12–13 s (it was
+29.2 s under the May architecture). Engineering ledger and gate evidence:
+[`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md) ·
+[`docs/RD_PORTFOLIO_2026_06.md`](docs/RD_PORTFOLIO_2026_06.md).
 
 ## BABILong external status
 
@@ -131,7 +155,8 @@ flowchart TD
 
 - **The read path is branch-and-discard.** `ask()` never mutates durable memory — it only appends a query-run log. Enforced by `tests/mutationSafety.test.ts` with SHA-256 file hashes.
 - **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
-- **Indexing is LLM-free.** Routing starts with a keyword/tag scorer, starved packets use a local `all-MiniLM-L6-v2` embedding recall floor, and retrieved shards get shard-local semantic expansion so sibling evidence can recover before filler swamps recall. No LLM-generated index is built; embedding vectors are disk-cached.
+- **Indexing is LLM-free.** Routing starts with a keyword/tag scorer (an opt-in hybrid router adds content-derived descriptors + local-embedding centroids — still no LLM at index time), starved packets use a local `all-MiniLM-L6-v2` embedding recall floor, and retrieved shards get shard-local semantic expansion so sibling evidence can recover before filler swamps recall. No LLM-generated index is built; embedding vectors are disk-cached.
+- **Coverage queries get a chronicle, deterministically.** Summary/ordering/temporal/aggregation-shaped queries (lexical intent classifier, no domain tables) widen the recall digest and attach a date-ordered, fully-cited `timeline` to the MemoryPacket, assembled without any extra LLM calls. Date arithmetic is computed, never delegated to the model.
 
 ## Training direction
 
@@ -174,7 +199,7 @@ The trust model is simple: invariants are tested in code, benchmark scoring is p
 
 | Check | What it proves | Runs Gemma? |
 |---|---|---|
-| `npm test` | 218 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, scoring, cache contracts, sidecar proxy wiring, baseline accounting, and AMB temporal evidence shaping | No |
+| `npm test` | 333 Vitest tests covering storage immutability, Committer-only writes, mutation safety, provider parsing, router/probe/recall behavior, coverage/chronicle assembly, hybrid-router descriptors, Gemini cache observability, the BEAM-slice harness (incl. an import-graph gold-leakage firewall), scoring, cache contracts, sidecar proxy wiring, baseline accounting, and AMB evidence shaping | No |
 | `npm run lint` | Full TypeScript type-check across `src/` | No |
 | `npm run build` | The CLI and library code compile from source | No |
 | `npm run bench:smoke` | Fresh-clone benchmark plumbing works against the real synthetic corpus with deterministic `MockProvider` | No |
@@ -233,7 +258,7 @@ BABILong CSM ablation, also Gemini 3.5 Flash:
 
 ```bash
 npm install
-npm test                       # 218 tests, no API keys (deterministic MockProvider)
+npm test                       # 333 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -253,7 +278,7 @@ The default provider is a deterministic MockProvider (no network). To run the re
 ## Limitations
 
 - **Single-trial + measured nondeterminism.** The public bundle includes single-trial Gemma and Gemini 3.5 Flash evidence. CSM is ~27–30/30 across runs (temp=0 is not bitwise-deterministic across processes); `npm run bench:confirm` + `npm run bench:trials` are wired for a 3-trial confirmation, but those rows are not yet part of the public evidence bundle.
-- **Latency.** CSM's pipeline is ~3.5× slower than RAG per query.
+- **Latency.** CSM's pipeline is multi-call by design. On the local serial Ollama stack it is ~3.5× slower than RAG per query; on hosted providers the June 2026 parallelization cut average retrieval ~4× (29.2 s → ~7 s on the 30q gate), which narrows but does not erase the gap to single-call retrieval.
 - **Scope.** The README headline numbers are Gemma 4 31B Q4_K_M on one RTX 4090; Gemini 3.5 Flash rows are cross-model confirmation evidence and are labeled separately.
 
 ## Documentation

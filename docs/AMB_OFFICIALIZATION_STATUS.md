@@ -74,12 +74,15 @@ AMB = <https://github.com/vectorize-io/agent-memory-benchmark>, default branch
   Blob (`BLOB_READ_WRITE_TOKEN` — maintainers only), and regenerates
   `results-manifest.json`. So the official-publication lever is on their side;
   our deliverable is the provider + a reproducible result JSON.
-- **Dependencies**: `uvloop` is **gone** from HEAD `pyproject.toml` — the old
-  Windows blocker that pushed the May run to macOS appears resolved. Heavy
-  deps remain (cognee, sentence-transformers/torch, hindsight-all, mem0ai), so
-  `uv sync` is a multi-GB install. `cli.py` loads `.env` from the AMB repo
-  root via python-dotenv with `override=True` and requires `GEMINI_API_KEY`
-  (or `GOOGLE_API_KEY`).
+- **Dependencies**: `uvloop` is gone from HEAD `pyproject.toml` **but returns
+  transitively** (`hindsight-all → hindsight-api → uvloop`) and still refuses
+  to build on Windows (verified 2026-06-10). Workaround that keeps the lock
+  intact and does not touch the csm provider path:
+  `uv sync --no-install-package uvloop` (uvloop only matters for running
+  Hindsight's own server). Heavy deps remain (cognee,
+  sentence-transformers/torch, hindsight-all, mem0ai), so sync is a multi-GB
+  install. `cli.py` loads `.env` from the AMB repo root via python-dotenv
+  with `override=True` and requires `GEMINI_API_KEY` (or `GOOGLE_API_KEY`).
 - **Unverified at HEAD** (check at resume): whether the
   `OMB_ANSWER_LLM`/`OMB_ANSWER_MODEL`/`OMB_JUDGE_LLM`/`OMB_JUDGE_MODEL` env
   overrides used by the May 2026 Mac run still exist in `llm/__init__.py` and
