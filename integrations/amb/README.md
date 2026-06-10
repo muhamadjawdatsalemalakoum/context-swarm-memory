@@ -1,4 +1,4 @@
-# Agent Memory Benchmark Bridge
+﻿# Agent Memory Benchmark Bridge
 
 > **Status 2026-06-09:** the officialization effort is paused while CSM core
 > R&D (warm service, token cost, summarization/ordering) lands. Everything
@@ -63,7 +63,7 @@ git clone --filter=blob:none --sparse https://github.com/vectorize-io/agent-memo
 cd E:\benchmarks\agent-memory-benchmark
 git sparse-checkout set src pyproject.toml README.md data/beam/100k
 
-cd "C:\Users\user\OneDrive\Documents\Coding Projects\Context Swarm Memory"
+cd "C:\path\to\context-swarm-memory"
 npm run amb:patch -- --amb-dir E:\benchmarks\agent-memory-benchmark
 ```
 
@@ -72,7 +72,7 @@ npm run amb:patch -- --amb-dir E:\benchmarks\agent-memory-benchmark
 From the AMB checkout:
 
 ```powershell
-$env:CSM_REPO_DIR="C:\Users\user\OneDrive\Documents\Coding Projects\Context Swarm Memory"
+$env:CSM_REPO_DIR="C:\path\to\context-swarm-memory"
 $env:CSM_PROVIDER="gemini"
 $env:CSM_MODEL="gemini-3.5-flash"
 $env:CSM_AMB_MODEL="gemini-3.5-flash"
