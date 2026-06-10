@@ -17,7 +17,7 @@ June 2026 CSM architecture.
   `llm/gemini.py` is NOT patched.) The run executed from this branch content;
   the branch commits were re-authored for attribution before publication with
   identical trees.
-- CSM repo SHA: `7a7e8a0` (context-swarm-memory, main).
+- CSM repo SHA: `599dfc0` (context-swarm-memory, main).
 - Checkout: `E:\benchmarks\amb-t3-data` (sparse: `data/beam` + `src`).
 
 ## Environment recipe (Windows)
@@ -51,7 +51,7 @@ CSM_AMB_REASONING_RETURN_K=32, CSM_AMB_NEIGHBOR_WINDOW=1,
 CSM_PROBE_MODEL=gemini-2.5-flash-lite, CSM_PARALLEL_PROBES=1,
 CSM_REPO_DIR=<context-swarm-memory checkout>,
 CSM_AMB_TELEMETRY_JSONL=<this dir>/csm-token-telemetry.jsonl.
-Defaults in effect at CSM `7a7e8a0`: coverage/chronicle mode ON,
+Defaults in effect at CSM `599dfc0`: coverage/chronicle mode ON,
 hybrid router OFF, eager tier-2 recalls OFF, retrieve-only bridge.
 GEMINI_API_KEY supplied via process env; never written to any artifact.
 

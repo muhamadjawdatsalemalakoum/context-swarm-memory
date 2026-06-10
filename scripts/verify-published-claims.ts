@@ -129,7 +129,7 @@ const HASHES: Record<string, string> = {
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json":
     "45d2f8a36b624c2f4a54a1026181d37a8072d7fe5341b2b7947fba54262db645",
   // Repinned 2026-06-10 when hashing moved to LF-normalized bytes (this CSV
-  // was originally hashed with CRLF rows; git content unchanged since 882473f).
+  // was originally hashed with CRLF rows; git content unchanged since 9ed3ba0).
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight-category-deltas.csv":
     "f3fd2fed94720a1c2d3d2b4d1a69cdc94342dc5aeb13f7a322e37119d45faa03",
   "data/eval/external/babilong-leaderboard-v0_results.csv":

@@ -102,7 +102,7 @@ AMB = <https://github.com/vectorize-io/agent-memory-benchmark>, default branch
   was started and intentionally killed at pivot time; nothing remains on E:.
 - CSM repo `.env` is present with `CSM_PROVIDER`, `GEMINI_API_KEY`,
   `CSM_GEMINI_MODEL`, `CSM_GEMINI_THINKING` (names verified, values never
-  logged). The csm CLI auto-loads it since commit `f5fb91c`.
+  logged). The csm CLI auto-loads it since commit `040bca8`.
 
 ## Resume runbook
 
