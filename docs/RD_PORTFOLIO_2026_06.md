@@ -1,6 +1,6 @@
 # CSM R&D Portfolio — Plan of Record (2026-06-10)
 
-Produced by a full-repo planning pass (grounded at `a679ecf`, 224/224 tests
+Produced by a full-repo planning pass (grounded at `493b004`, 224/224 tests
 green; the latency-sprint gate ledger in `docs/PERF_BREAKDOWN.md` landed in
 parallel and is reflected in the addendum at the bottom). Wave-1 briefs below
 are binding for the assigned R&D agents.
@@ -403,7 +403,7 @@ gates; JSON/JSONL only, no DB/vector-store dependency (T2's index stays
 flat-file/in-memory per the `data/eval/embeddings/` precedent); LLM-input
 changes need accuracy gates, schedule-only changes need token-identity proof.
 
-## Addendum — state at dispatch (HEAD `67fb858`)
+## Addendum — state at dispatch (HEAD `19e3ac1`)
 
 Landed after the planner's grounding commit and binding on all briefs:
 

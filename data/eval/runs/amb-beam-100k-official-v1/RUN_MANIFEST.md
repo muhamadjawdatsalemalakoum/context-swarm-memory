@@ -9,12 +9,15 @@ June 2026 CSM architecture.
 
 - AMB repo: https://github.com/vectorize-io/agent-memory-benchmark
 - AMB base SHA: `45fa380523afab9b1acd667a03de51c5ea63f4d2` (HEAD of main)
-- Provider branch: `csm-provider`, commit `a898420` — exactly 2 files:
-  `src/memory_bench/memory/csm.py` (new) + registry line in
-  `src/memory_bench/memory/__init__.py`. **No changes to AMB scoring, answer
-  prompt, judge prompt, gold data, or any harness source.** (Unlike the May
-  2026 local run, AMB's `llm/gemini.py` is NOT patched.)
-- CSM repo SHA: `1a5a236` (context-swarm-memory, main).
+- Provider branch: `csm-provider` — commits `632b6c4` (provider
+  `src/memory_bench/memory/csm.py` + registry line in
+  `src/memory_bench/memory/__init__.py`) and `cf0d47a` (README requirements
+  blurb). **No changes to AMB scoring, answer prompt, judge prompt, gold
+  data, or any harness source.** (Unlike the May 2026 local run, AMB's
+  `llm/gemini.py` is NOT patched.) The run executed from this branch content;
+  the branch commits were re-authored for attribution before publication with
+  identical trees.
+- CSM repo SHA: `7a7e8a0` (context-swarm-memory, main).
 - Checkout: `E:\benchmarks\amb-t3-data` (sparse: `data/beam` + `src`).
 
 ## Environment recipe (Windows)
@@ -48,7 +51,7 @@ CSM_AMB_REASONING_RETURN_K=32, CSM_AMB_NEIGHBOR_WINDOW=1,
 CSM_PROBE_MODEL=gemini-2.5-flash-lite, CSM_PARALLEL_PROBES=1,
 CSM_REPO_DIR=<context-swarm-memory checkout>,
 CSM_AMB_TELEMETRY_JSONL=<this dir>/csm-token-telemetry.jsonl.
-Defaults in effect at CSM `1a5a236`: coverage/chronicle mode ON,
+Defaults in effect at CSM `7a7e8a0`: coverage/chronicle mode ON,
 hybrid router OFF, eager tier-2 recalls OFF, retrieve-only bridge.
 GEMINI_API_KEY supplied via process env; never written to any artifact.
 

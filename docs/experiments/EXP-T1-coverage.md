@@ -2,8 +2,8 @@
 
 Status: prototype complete on branch `rd/t1-coverage` (offline-validated);
 live experiment WRITTEN, NOT RUN. Brief: `docs/RD_PORTFOLIO_2026_06.md`
-("Brief T1"). Grounding HEAD at dispatch: `67fb858` (branch cut from
-`0b11754`).
+("Brief T1"). Grounding HEAD at dispatch: `19e3ac1` (branch cut from
+`71f3abd`).
 
 Mission recap: CSM loses to Hindsight on exactly two BEAM categories —
 summarization (0.7086 vs 0.7929) and event_ordering (0.7375 vs 0.8047) — and
@@ -257,7 +257,7 @@ smoothing of returned ids), `preferUserTurns` + `eventRole` + `turnLabel`
 protocol-facet shim (`abstentionRisk`, `userCentric`) and the thin capsule
 renderer.
 
-**Deletable post-merge (line numbers at `0b11754`; ≈640 of 1,224 lines):**
+**Deletable post-merge (line numbers at `71f3abd`; ≈640 of 1,224 lines):**
 
 | Lines | Symbol | Replaced by (core) |
 |---|---|---|
@@ -299,8 +299,8 @@ renderer.
 
 | Commit | Content |
 |---|---|
-| `0821754` (mainline-intended) | `src/core/coverage.ts` (classifier, assembler, temporal arithmetic, budgets, packet helpers); additive `types.ts` (`MemoryPacketTimelineEntry`, `MemoryPacket.timeline?`, `QueryIntent`); additive `schemas.ts` (`memoryPacketSchema.timeline` optional, `coverageRecallResultSchema`); additive `prompts.ts` (`coverageRecallPrompt`, design-only); tests `coverageIntent` / `coverageAssembler` / `coveragePayswift` |
-| `f239bef` (MERGE-WINDOW demo) | `ask.ts` wiring (intent + budget swap + one `attachCoverage` call); `coverage.ts` `attachCoverage` helper; `src/eval/baselines/csm.ts` (timeline tier in retrieval order, TIMELINE context-header block, meta fields); tests `coverageAskWiring` / `coverageReadOnly` |
+| `f7e9452` (mainline-intended) | `src/core/coverage.ts` (classifier, assembler, temporal arithmetic, budgets, packet helpers); additive `types.ts` (`MemoryPacketTimelineEntry`, `MemoryPacket.timeline?`, `QueryIntent`); additive `schemas.ts` (`memoryPacketSchema.timeline` optional, `coverageRecallResultSchema`); additive `prompts.ts` (`coverageRecallPrompt`, design-only); tests `coverageIntent` / `coverageAssembler` / `coveragePayswift` |
+| `fab984a` (MERGE-WINDOW demo) | `ask.ts` wiring (intent + budget swap + one `attachCoverage` call); `coverage.ts` `attachCoverage` helper; `src/eval/baselines/csm.ts` (timeline tier in retrieval order, TIMELINE context-header block, meta fields); tests `coverageAskWiring` / `coverageReadOnly` |
 
 Flag surface (all default-off / no-op): `CSM_COVERAGE`,
 `CSM_COVERAGE_RECALL_TOKENS`, `CSM_COVERAGE_MAX_ENTRIES`,
@@ -437,13 +437,13 @@ bridge migration (step 2) does not proceed.
 1. `src/core/coverage.ts`, `src/core/types.ts`, `src/core/schemas.ts`,
    `src/core/prompts.ts`, the five `tests/coverage*.test.ts` files, this
    doc — land as-is from `rd/t1-coverage` (mainline-intended commit
-   `0821754` + the helper from `f239bef`).
+   `f7e9452` + the helper from `fab984a`).
 2. `src/core/ask.ts` — orchestrator applies the three-part diff from
-   `f239bef` (imports + intent/budget resolution; three
+   `fab984a` (imports + intent/budget resolution; three
    `recallTokensPerShard` call sites; one `attachCoverage` block). ~40
    lines, all dead without `CSM_COVERAGE`.
 3. `src/eval/baselines/csm.ts` — orchestrator applies the three-part diff
-   from `f239bef` (timeline tier in `baseRetrievalOrder`; TIMELINE block in
+   from `fab984a` (timeline tier in `baseRetrievalOrder`; TIMELINE block in
    `formatPacketHeader`; two meta fields).
 4. `src/providers/GeminiProvider.ts` (T4's file) — add the
    `"CoverageRecallResult"` entry to `CSM_JSON_SCHEMAS` ONLY when the LLM
@@ -462,7 +462,7 @@ coverage,coverage-bridge}-v1): coverage mode lifted RETRIEVED gold-facet
 coverage +0.179 (event_ordering 0.654->0.833) and +0.182 (summarization
 0.614->0.796), both with non-overlapping 95% CIs, against an oracle ceiling
 of 0.961/0.926. Returned-to-AMB coverage stayed flat until the bridge
-consumed the chronicle (commit 66543c7): then event_ordering cov@24 rose
+consumed the chronicle (commit 0bb9d97): then event_ordering cov@24 rose
 0.475->0.659 (non-overlapping CIs) and cov@32 0.615->0.715. Summarization
 returned@24 stayed ~flat (k=24 cut of a ~70-event retrieval), but the
 capsule pseudo-doc now carries up to 40 cited timeline lines that cov@k does

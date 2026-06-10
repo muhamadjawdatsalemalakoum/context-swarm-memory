@@ -50,7 +50,7 @@ Everything is recorded in
 [`../data/eval/runs/amb-beam-100k-official-v1/RUN_MANIFEST.md`](../data/eval/runs/amb-beam-100k-official-v1/RUN_MANIFEST.md):
 AMB base `45fa38052` + a 3-file provider branch (provider, registry line,
 README requirements — zero changes to AMB scoring/prompts/judge/gold), CSM
-commit `1a5a236` (pre-attribution-rewrite id; content identical post-rewrite),
+commit `7a7e8a0`,
 answer `gemini:gemini-3.1-pro-preview` and judge `gemini:gemini-2.5-flash-lite`
 (identical to the accepted Hindsight artifact), CSM internal retrieval
 `gemini-3.5-flash` + `gemini-2.5-flash-lite` probes, coverage mode on, exact
