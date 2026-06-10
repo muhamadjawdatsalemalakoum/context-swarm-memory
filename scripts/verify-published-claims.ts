@@ -6,7 +6,7 @@
  * results.jsonl. It does not call an LLM and does not need a GPU.
  */
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { mcNemar, type McqScore } from "../src/eval/scorer.js";
@@ -126,6 +126,11 @@ const HASHES: Record<string, string> = {
     "89781ba7e8d64492f655f3bdb871a97bc04a5212ceb5fc5aa6e89e52b49a0fcf",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/summary.json":
     "0c63d204440759c267f0e7d9fb3f6a8f91e671b35ca7845867b4e16300e8b749",
+  // Official AMB-runner BEAM 100K rerun (2026-06-10) — committed evidence.
+  "data/eval/runs/amb-beam-100k-official-v1/RUN_MANIFEST.md":
+    "2df6713d86922aedc928efd94c406864f26bba2bc595ef81a94448ea400dd063",
+  "data/eval/runs/amb-beam-100k-official-v1/csm-token-telemetry.jsonl":
+    "c60d1c5b92a28b8b095a9dbab2ccbc5a3c966f1907c4eca28f8181f115aec013",
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json":
     "45d2f8a36b624c2f4a54a1026181d37a8072d7fe5341b2b7947fba54262db645",
   // Repinned 2026-06-10 when hashing moved to LF-normalized bytes (this CSV
@@ -506,9 +511,11 @@ function assertMcNemar(
   expectedAOnly: number,
   expectedBOnly: number,
   expectedP: number,
+  aFilters: Parameters<typeof loadRows>[2] = {},
+  bFilters: Parameters<typeof loadRows>[2] = {},
 ): void {
-  const a = new Map(loadRows(aRun, aSystem).map((row) => [row.queryId, row]));
-  const b = new Map(loadRows(bRun, bSystem).map((row) => [row.queryId, row]));
+  const a = new Map(loadRows(aRun, aSystem, aFilters).map((row) => [row.queryId, row]));
+  const b = new Map(loadRows(bRun, bSystem, bFilters).map((row) => [row.queryId, row]));
   const queryIds = [...a.keys()].filter((q) => b.has(q)).sort();
   const result = mcNemar(
     queryIds.map((q) => score(a.get(q)!)),
@@ -564,7 +571,138 @@ function assertBeamComparison(): void {
     23_551.125,
     "BEAM CSM internal total token average",
   );
-  console.log("PASS BEAM CSM vs Hindsight summary: 342/400 vs 326/400");
+  console.log(
+    "PASS BEAM May local comparison artifact (superseded by the official rerun): 342/400 vs 326/400",
+  );
+}
+
+interface OfficialTelemetryRow {
+  bridge_mode: string;
+  csm_internal_input_tokens: number;
+  csm_internal_output_tokens: number;
+  query_sha256: string;
+}
+
+interface OfficialBeamRow {
+  context_tokens: number;
+  correct: boolean;
+  retrieve_time_ms: number;
+  score: number;
+}
+
+interface OfficialBeamOutput {
+  answer_llm: string;
+  correct: number;
+  judge_llm: string;
+  memory_provider: string;
+  oracle: boolean;
+  results: OfficialBeamRow[];
+  total_queries: number;
+}
+
+const OFFICIAL_BEAM_OUTPUT_PATH =
+  "data/eval/runs/amb-beam-100k-official-v1/amb-outputs/beam/csm-official-rerun-100k/rag/100k.json";
+const OFFICIAL_BEAM_OUTPUT_SHA256 =
+  "ba3882587b8e23be1c7e49d7f70cc664d0d7ba7bc9ce42640bfd06667e4a78be";
+
+/**
+ * Verify the 2026-06-10 official-runner BEAM 100K rerun — the run behind the
+ * published 0.743110 / 337-400 / 3.47s / 27.0K headline.
+ *
+ * The telemetry sidecar is committed and always checked. The raw AMB-runner
+ * output (51 MB) is gitignored — its gz copy ships with upstream PR #19 — so
+ * it is verified end-to-end whenever it exists in the working tree and
+ * reported as an explicit SKIP otherwise.
+ */
+function assertOfficialBeamRerun(): void {
+  const telemetry = readFileSync(
+    join(
+      process.cwd(),
+      "data/eval/runs/amb-beam-100k-official-v1/csm-token-telemetry.jsonl",
+    ),
+    "utf8",
+  )
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as OfficialTelemetryRow);
+  assertEqual(telemetry.length, 400, "official rerun telemetry row count");
+  assertEqual(
+    new Set(telemetry.map((row) => row.query_sha256)).size,
+    400,
+    "official rerun telemetry unique query hashes",
+  );
+  assertEqual(
+    telemetry.every((row) => row.bridge_mode === "retrieve-only"),
+    true,
+    "official rerun bridge mode",
+  );
+  assertEqual(
+    Number(mean(telemetry.map((row) => row.csm_internal_input_tokens)).toFixed(1)),
+    8804.9,
+    "official rerun mean CSM-internal input tokens",
+  );
+  assertEqual(
+    Number(mean(telemetry.map((row) => row.csm_internal_output_tokens)).toFixed(1)),
+    624.7,
+    "official rerun mean CSM-internal output tokens",
+  );
+  console.log(
+    "PASS BEAM official rerun telemetry: 400 queries, avg CSM-internal 8,805 in / 625 out tokens (reported separately)",
+  );
+
+  const outputPath = join(process.cwd(), OFFICIAL_BEAM_OUTPUT_PATH);
+  if (!existsSync(outputPath)) {
+    console.log(
+      "SKIP BEAM official rerun raw output (not in working tree; LF-sha256 " +
+        `${OFFICIAL_BEAM_OUTPUT_SHA256.slice(0, 12)}…, ` +
+        "see docs/AMB_BEAM_100K_OFFICIAL_RERUN.md)",
+    );
+    return;
+  }
+  assertEqual(
+    sha256(OFFICIAL_BEAM_OUTPUT_PATH),
+    OFFICIAL_BEAM_OUTPUT_SHA256,
+    `${OFFICIAL_BEAM_OUTPUT_PATH} sha256`,
+  );
+  const output = JSON.parse(readFileSync(outputPath, "utf8")) as OfficialBeamOutput;
+  assertEqual(output.memory_provider, "csm", "official rerun provider");
+  assertEqual(output.oracle, false, "official rerun oracle flag");
+  assertEqual(
+    output.answer_llm,
+    "gemini:gemini-3.1-pro-preview",
+    "official rerun answer model",
+  );
+  assertEqual(
+    output.judge_llm,
+    "gemini:gemini-2.5-flash-lite",
+    "official rerun judge model",
+  );
+  assertEqual(output.total_queries, 400, "official rerun total_queries");
+  assertEqual(output.results.length, 400, "official rerun row count");
+  assertEqual(
+    output.results.filter((row) => row.correct).length,
+    337,
+    "official rerun recomputed correct count",
+  );
+  assertEqual(output.correct, 337, "official rerun correct field");
+  assertNear(
+    mean(output.results.map((row) => row.score)),
+    0.743110,
+    "official rerun recomputed mean score",
+  );
+  assertEqual(
+    Number(mean(output.results.map((row) => row.retrieve_time_ms)).toFixed(1)),
+    3467.3,
+    "official rerun recomputed mean retrieve ms",
+  );
+  assertEqual(
+    Number(mean(output.results.map((row) => row.context_tokens)).toFixed(1)),
+    27026.2,
+    "official rerun recomputed mean answer-context tokens",
+  );
+  console.log(
+    "PASS BEAM official rerun (unmodified AMB runner): CSM 337/400, score 0.743110, avg retrieve 3.47s, avg answer context 27.0K",
+  );
 }
 
 function main(): void {
@@ -577,8 +715,10 @@ function main(): void {
     assertMetrics(expected);
   }
 
+  // Archival pairings from the May (v0.2) rows — kept as the earlier-run
+  // record the README's calibration language refers to.
   assertMcNemar(
-    "CSM vs LightRAG @100K",
+    "CSM (v0.2 archival) vs LightRAG @100K",
     "v020-30q-embedfloor",
     "csm",
     "lightrag-30q",
@@ -588,7 +728,7 @@ function main(): void {
     0.0313,
   );
   assertMcNemar(
-    "CSM vs long-context @1M",
+    "CSM (v0.2 archival) vs long-context @1M",
     "scaling-1m",
     "csm",
     "scaling-1m",
@@ -597,7 +737,35 @@ function main(): void {
     0,
     0.0,
   );
+
+  // Current-pipeline pairings (2026-06-10 wave rerun) — these back the
+  // README/site headline claims "27-9 (18-0 discordant, p<0.0001)" and
+  // "vs LightRAG 6-2, p=0.289".
+  assertMcNemar(
+    "CSM (June wave) vs long-context @1M",
+    "gemma-scaling-csm-v2-wave1",
+    "csm",
+    "scaling-1m",
+    "longctx",
+    18,
+    0,
+    0.0,
+    { corpusSize: 1_000_000 },
+  );
+  assertMcNemar(
+    "CSM (June wave) vs LightRAG @100K",
+    "gemma-scaling-csm-v2-wave1",
+    "csm",
+    "lightrag-30q",
+    "lightrag",
+    6,
+    2,
+    0.2891,
+    { corpusSize: 100_000 },
+  );
+
   assertBeamComparison();
+  assertOfficialBeamRerun();
 }
 
 main();
