@@ -52,6 +52,8 @@ their judge path, a 3-file provider addition and nothing else). This is the
 repo's north-star memory comparison: not old RAG controls, not smoke rows,
 and not model-mismatched Flash-only diagnostics.
 
+<p align="center"><img src="docs/assets/beam-100k-csm-vs-hindsight.svg" width="760" alt="BEAM 100K via the public AMB runner: CSM scores 0.743 (337 of 400) versus Hindsight 0.734 (326 of 400), with CSM average retrieval 3.47 seconds versus Hindsight 6.38 seconds"></p>
+
 | BEAM 100K system | AMB score | Correct | Avg answer context | Avg retrieve latency |
 |---|---:|---:|---:|---:|
 | CSM (official-runner rerun) | **0.743110** | **337/400** | 27.0K tokens | **3.47s** |

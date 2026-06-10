@@ -1,5 +1,21 @@
 # CSM vs 2025 SOTA memory systems — head-to-head
 
+> **⚠️ Current rows (2026-06-10, post-R&D-wave pipeline; supersede the May
+> figures below for any citation of "current" numbers).** The CSM rows were
+> re-measured on the current default pipeline
+> (`data/eval/runs/gemma-scaling-csm-v2-wave1`, coverage/chronicle mode on):
+> **CSM 28/30, citation F1 0.470, citation P 0.703** at 100K/8K. Comparator
+> rows are unchanged (their pipelines were untouched by the wave): LightRAG
+> 24/30 / 0.265, vanilla RAG 29/30 / 0.446, hybrid 28/30 / 0.455. Recomputed
+> paired McNemar on the current rows: **CSM vs LightRAG 6–2 discordant,
+> p=0.289** — the accuracy lead is consistent across every run pair
+> (28–30/30 vs 24/30), but the May run's p=0.031 came from its 30/30 high-end
+> row and is **not** reproduced as single-run significance; we report the
+> lead without the significance claim. CSM vs long-context @1M on current
+> rows: 18–0, p<0.0001 (still decisive). Everything below this banner is the
+> May 2026 record with its original correction trail. Canonical current
+> numbers: README + `docs/EVIDENCE.md` (verifier-pinned).
+
 **Goal of this document:** report the v0.2 CSM head-to-head against the SOTA
 memory systems that were wired for Phase gamma — not just the 2023-vintage RAG
 baselines — on the same 30-query PaySwift benchmark, same local Gemma 4 31B

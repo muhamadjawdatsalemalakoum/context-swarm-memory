@@ -401,7 +401,7 @@ const citation = [
   { system: "CSM", f1: citationF1("gemma-scaling-csm-v2-wave1", "csm"), kind: "csm" },
   { system: "hybrid RAG", f1: citationF1("v020-30q-embedfloor", "hybrid"), kind: "hybrid" },
   { system: "vanilla RAG", f1: citationF1("v020-30q-embedfloor", "rag"), kind: "rag" },
-  { system: "LightRAG (SOTA)", f1: citationF1("lightrag-30q", "lightrag"), kind: "lightrag" },
+  { system: "LightRAG (2025)", f1: citationF1("lightrag-30q", "lightrag"), kind: "lightrag" },
   { system: "long-context", f1: citationF1("scaling-rq1", "longctx"), kind: "longctx" },
 ];
 
@@ -830,10 +830,84 @@ async function render(spec: TopLevelSpec, file: string): Promise<void> {
   console.log(`wrote ${join(OUT, file)} (${svg.length} bytes)`);
 }
 
+// --- BEAM 100K official-runner rerun vs the published Hindsight artifact. --
+//   Source values: docs/AMB_BEAM_100K_OFFICIAL_RERUN.md (run of 2026-06-10,
+//   unmodified AMB runner; manifest under data/eval/runs/amb-beam-100k-official-v1/).
+const beamOfficial = [
+  { system: "CSM (official-runner rerun)", metric: "AMB score", value: 0.743110, label: "0.743 — 337/400" },
+  { system: "Hindsight (accepted artifact)", metric: "AMB score", value: 0.733658, label: "0.734 — 326/400" },
+  { system: "CSM (official-runner rerun)", metric: "Avg retrieval (s, lower better)", value: 3.467, label: "3.47 s" },
+  { system: "Hindsight (accepted artifact)", metric: "Avg retrieval (s, lower better)", value: 6.379, label: "6.38 s" },
+];
+
+function beamPanel(metric: string, xTitle: string, xMax: number): object {
+  return {
+    width: 270,
+    height: 110,
+    title: { text: metric, fontSize: 12, color: "#374151", anchor: "start" },
+    transform: [{ filter: `datum.metric === '${metric}'` }],
+    layer: [
+      {
+        mark: { type: "bar", cornerRadiusEnd: 3 },
+        encoding: {
+          y: { field: "system", type: "nominal", title: null, sort: null },
+          x: {
+            field: "value",
+            type: "quantitative",
+            title: xTitle,
+            scale: { domain: [0, xMax] },
+          },
+          color: {
+            field: "system",
+            legend: null,
+            scale: {
+              domain: [
+                "CSM (official-runner rerun)",
+                "Hindsight (accepted artifact)",
+              ],
+              range: ["#0E7C66", "#94a3b8"],
+            },
+          },
+        },
+      },
+      {
+        mark: { type: "text", align: "left", dx: 4, fontSize: 11, fontWeight: "bold" },
+        encoding: {
+          y: { field: "system", type: "nominal", sort: null },
+          x: { field: "value", type: "quantitative" },
+          text: { field: "label" },
+          color: { value: "#374151" },
+        },
+      },
+    ],
+  };
+}
+
+const beamOfficialSpec: TopLevelSpec = {
+  $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+  background: "white",
+  padding: 8,
+  title: {
+    text: "BEAM 100K — public AMB runner (2026-06-10)",
+    subtitle:
+      "Same dataset, answer model, judge, and scoring as the published Hindsight row · submitted upstream, pending acceptance",
+    fontSize: 15,
+    subtitleFontSize: 11,
+    subtitleColor: "#6b7280",
+    anchor: "start",
+  },
+  data: { values: beamOfficial },
+  hconcat: [
+    beamPanel("AMB score", "score (higher better)", 0.85),
+    beamPanel("Avg retrieval (s, lower better)", "seconds", 7.5),
+  ],
+} as TopLevelSpec;
+
 async function main(): Promise<void> {
   await mkdir(OUT, { recursive: true });
   await render(scalingSpec, "scaling.svg");
   await render(citationSpec, "citation-f1.svg");
+  await render(beamOfficialSpec, "beam-100k-csm-vs-hindsight.svg");
   await render(geminiAccuracySpec, "gemini-accuracy-scaling.svg");
   await render(geminiCitationSpec, "gemini-citation-grounding.svg");
   await render(babilongAblationSpec, "gemini-babilong-ablation.svg");

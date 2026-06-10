@@ -1,5 +1,15 @@
 # 30-query bench results — `v020-30q-t1` (baseline) + `v020-30q-embedfloor` (production)
 
+> **⚠️ Superseded for current numbers (2026-06-10).** The CSM rows showcased
+> in the README now come from the post-R&D-wave pipeline
+> (`data/eval/runs/gemma-scaling-csm-v2-wave1`): **28/30 at 100K and 27/30 at
+> 1M (8K window), citation F1 0.470/0.465** — inside the ~27–30/30 variance
+> band this page documents. The LightRAG McNemar p=0.031 below came from the
+> May 30/30 row; on the current rows it is 6–2, p=0.289 (lead consistent,
+> single-run significance not — reported honestly in the README). This page
+> remains the May 2026 run record and methodology reference; baseline-system
+> rows here are still the rows of record (their pipelines were untouched).
+
 > **⚠️ Citation re-score correction (2026-05-21, commit `bc03189`).** A
 > citation-id parsing bug kept bracket wrappers ("CITATIONS: [e0002]") so cited
 > ids failed exact-match against bare ground-truth ids, **under-counting citation
