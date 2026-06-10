@@ -473,7 +473,7 @@ async function cmdProvider(rest: string[]): Promise<number> {
   const sub = rest[0];
   if (sub === "info") {
     const resolved = selectProviderName();
-    const stage = resolveStageModels();
+    const stage = resolveStageModels({}, process.env, resolved);
     console.log(`provider          : ${resolved}`);
     const baseUrl =
       resolved === "gemini"

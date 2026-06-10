@@ -147,8 +147,22 @@ export interface StageModels {
 export function resolveStageModels(
   overrides: StageModels = {},
   env: NodeJS.ProcessEnv = process.env,
+  providerName?: string,
 ): StageModels {
-  const fallback = env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL || env.CSM_MODEL;
+  // Provider-scoped fallback. Since the CLI auto-loads the gitignored .env,
+  // a Gemini setup (CSM_GEMINI_MODEL=gemini-3.5-flash) must not leak model
+  // ids into runs on another provider — an Ollama benchmark was 404ing on
+  // "gemini-3.5-flash" exactly this way. When the active provider is known,
+  // only ITS model var participates; CSM_MODEL stays the generic fallback.
+  const providerDefault =
+    providerName === "gemini"
+      ? env.CSM_GEMINI_MODEL
+      : providerName === "openai" ||
+          providerName === "ollama" ||
+          providerName === "llama-server"
+        ? env.CSM_OPENAI_MODEL
+        : env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
+  const fallback = providerDefault || env.CSM_MODEL;
   return {
     probe: overrides.probe ?? env.CSM_PROBE_MODEL ?? fallback,
     recall: overrides.recall ?? env.CSM_RECALL_MODEL ?? fallback,

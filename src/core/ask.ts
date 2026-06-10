@@ -70,7 +70,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     parallelProbes = true,
   } = opts;
 
-  const stageModels = resolveStageModels(opts.models);
+  const stageModels = resolveStageModels(opts.models, process.env, provider.name);
   const runId = newRunId();
   const startedAt = nowIso();
   const t0 = Date.now();
