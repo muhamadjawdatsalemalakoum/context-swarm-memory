@@ -1,0 +1,173 @@
+<svg viewBox="0 0 1160 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="motif-title motif-desc">
+  <title id="motif-title">The CSM pipeline, drawn</title>
+  <desc id="motif-desc">A swarm of gray, dormant memory shards. As a query passes through the CSM memory lens — route, probe, recall, synthesize — three shards come into focus, turn teal, and emerge as a single cited MemoryPacket.</desc>
+  <style>
+    /* Self-contained port of the site's hero motif (docs/index.html).
+       Colors are inlined literals from the "color = focus" system: dormant
+       memory is gray, whatever the pipeline selects turns teal. Local font
+       stack only — SVGs embedded via img cannot load webfonts. */
+    text { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace; }
+    .m-shard { fill: #eef1f2; stroke: #c2ccd1; stroke-width: 1.25; }
+    .m-shard.sel { stroke-width: 1.4; }
+    .m-dot { fill: #c2ccd1; }
+    .m-flow { fill: none; stroke: #10b39a; stroke-width: 1.5; stroke-dasharray: 6 9; opacity: 0.45; }
+    .m-flow.bright { stroke-width: 2; opacity: 0.8; }
+    .m-ring { fill: none; stroke: #d6dde0; stroke-width: 1.1; stroke-dasharray: 3 10; transform-box: fill-box; transform-origin: center; }
+    .m-lens-panel { fill: rgba(255, 255, 255, 0.78); stroke: rgba(16, 179, 154, 0.45); stroke-width: 1.3; }
+    .m-lens-panel.back { fill: rgba(255, 255, 255, 0.62); stroke: #cdd6da; }
+    .m-lens-panel.front { fill: rgba(255, 255, 255, 0.92); stroke: rgba(13, 125, 104, 0.6); }
+    .m-lens-core { fill: rgba(16, 179, 154, 0.08); stroke: rgba(13, 125, 104, 0.6); stroke-width: 1.4; }
+    .m-label { font-size: 11px; letter-spacing: 0.2em; fill: #8b989d; text-transform: uppercase; }
+    .m-title { font-size: 13px; font-weight: 600; letter-spacing: 0.3em; fill: #0e1a1e; }
+    .m-stage { font-size: 11.5px; fill: #0a6453; }
+    .m-stage-pill { fill: #f0faf7; stroke: #bfe3d8; }
+    .m-query-pill { fill: #e9f6f2; stroke: #bfe3d8; }
+    .m-query-text { font-size: 11.5px; font-weight: 600; fill: #0a6453; }
+    .m-qline { fill: none; stroke: #10b39a; stroke-width: 1.4; stroke-dasharray: 3 7; opacity: 0.6; }
+    .m-packet { fill: #ffffff; stroke: #dfe5e7; stroke-width: 1.25; }
+    .m-packet-title { font-size: 13px; font-weight: 600; fill: #0e1a1e; }
+    .m-line { fill: #e8edee; }
+    .m-cite { fill: #e9f6f2; stroke: #bfe3d8; }
+    .m-cite-text { font-size: 10.5px; fill: #0a6453; }
+    .m-check { fill: none; stroke: #10b39a; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .m-glow { fill: url(#lensGlow); }
+    .m-particle { fill: #10b39a; opacity: 0; }
+
+    @keyframes m-focus {
+      0%, 8% { fill: #eef1f2; stroke: #c2ccd1; }
+      20%, 78% { fill: #d9f2ea; stroke: #10b39a; }
+      92%, 100% { fill: #eef1f2; stroke: #c2ccd1; }
+    }
+    @keyframes m-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+    @keyframes m-dash { to { stroke-dashoffset: -160; } }
+    @keyframes m-orbit { to { transform: rotate(360deg); } }
+    @keyframes m-float { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
+    @keyframes m-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes m-travel {
+      0% { offset-distance: 0%; opacity: 0; }
+      12% { opacity: 0.9; }
+      82% { opacity: 0.9; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .m-shard.sel { animation: m-focus 8s ease-in-out infinite; }
+      .m-dot { animation: m-twinkle 4.5s ease-in-out infinite; }
+      .m-flow { animation: m-dash 6s linear infinite; }
+      .m-qline { animation: m-dash 7s linear infinite; }
+      .m-ring { animation: m-orbit 46s linear infinite; }
+      .m-ring.r2 { animation-duration: 62s; animation-direction: reverse; }
+      .m-packet-g { animation: m-float 7s ease-in-out infinite alternate; }
+      .m-lens-core { animation: m-pulse 4.5s ease-in-out infinite; }
+      .m-particle { offset-rotate: 0deg; animation: m-travel 5.2s linear infinite; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .m-shard.sel { fill: #d9f2ea; stroke: #10b39a; } /* static: the selection stays visible */
+      .m-particle { display: none; }
+    }
+    @supports not (offset-path: path("M0,0 L10,10")) { .m-particle { display: none; } }
+  </style>
+  <defs>
+    <radialGradient id="lensGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="rgba(16,179,154,0.13)"/>
+      <stop offset="1" stop-color="rgba(16,179,154,0)"/>
+    </radialGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0e1a1e" flood-opacity="0.10"/>
+    </filter>
+    <pattern id="dotGrid" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.2" cy="1.2" r="1.1" fill="rgba(14,26,30,0.07)"/>
+    </pattern>
+    <radialGradient id="dotFade" cx="0.5" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <mask id="dotMask">
+      <rect width="1160" height="480" fill="url(#dotFade)"/>
+    </mask>
+  </defs>
+
+  <!-- white card background (opaque so the figure reads on GitHub dark mode) -->
+  <rect width="1160" height="480" rx="18" fill="#ffffff"/>
+  <rect width="1160" height="480" rx="18" fill="url(#dotGrid)" mask="url(#dotMask)"/>
+
+  <!-- the incoming query -->
+  <g>
+    <rect class="m-query-pill" x="546" y="26" width="68" height="26" rx="13"/>
+    <text class="m-query-text" x="580" y="43.5" text-anchor="middle">query</text>
+    <path class="m-qline" d="M580 58 L580 130"/>
+  </g>
+
+  <!-- left: the dormant swarm; three shards get selected -->
+  <g>
+    <rect class="m-shard sel" x="70" y="100" width="40" height="40" rx="9" transform="rotate(-9 90 120)"/>
+    <rect class="m-shard" x="152" y="62" width="26" height="26" rx="7" transform="rotate(12 165 75)"/>
+    <rect class="m-shard sel" x="126" y="176" width="32" height="32" rx="8" transform="rotate(7 142 192)" style="animation-delay:-2.6s"/>
+    <rect class="m-shard" x="58" y="238" width="22" height="22" rx="6" transform="rotate(-14 69 249)"/>
+    <rect class="m-shard sel" x="178" y="266" width="44" height="44" rx="10" transform="rotate(-6 200 288)" style="animation-delay:-5.2s"/>
+    <rect class="m-shard" x="100" y="338" width="28" height="28" rx="7" transform="rotate(10 114 352)"/>
+    <rect class="m-shard" x="216" y="122" width="24" height="24" rx="6" transform="rotate(16 228 134)"/>
+    <rect class="m-shard" x="246" y="210" width="30" height="30" rx="8" transform="rotate(-11 261 225)"/>
+    <rect class="m-shard" x="192" y="358" width="34" height="34" rx="8" transform="rotate(5 209 375)"/>
+    <rect class="m-shard" x="288" y="298" width="22" height="22" rx="6" transform="rotate(-15 299 309)"/>
+    <rect class="m-shard" x="300" y="94" width="28" height="28" rx="7" transform="rotate(8 314 108)"/>
+    <circle class="m-dot" cx="256" cy="64" r="3.5" style="animation-delay:-2.2s"/>
+    <circle class="m-dot" cx="88" cy="190" r="3" style="animation-delay:-0.7s"/>
+    <circle class="m-dot" cx="312" cy="234" r="3.5" style="animation-delay:-3.3s"/>
+    <circle class="m-dot" cx="146" cy="294" r="2.6" style="animation-delay:-1.4s"/>
+    <circle class="m-dot" cx="266" cy="388" r="3" style="animation-delay:-4.0s"/>
+    <text class="m-label" x="60" y="446">memory shards · read-only</text>
+  </g>
+
+  <!-- only the selected shards flow toward the lens -->
+  <path class="m-flow" d="M112 120 C 300 112, 384 168, 468 208"/>
+  <path class="m-flow" d="M160 192 C 318 198, 392 216, 466 230" style="animation-delay:-2s"/>
+  <path class="m-flow" d="M224 288 C 352 290, 404 262, 468 252" style="animation-delay:-3.5s"/>
+  <circle class="m-particle" r="3" style="offset-path:path('M112 120 C 300 112, 384 168, 468 208')"/>
+  <circle class="m-particle" r="2.7" style="offset-path:path('M160 192 C 318 198, 392 216, 466 230');animation-delay:-1.8s"/>
+  <circle class="m-particle" r="3.2" style="offset-path:path('M224 288 C 352 290, 404 262, 468 252');animation-delay:-3.2s"/>
+
+  <!-- center: the CSM lens -->
+  <g>
+    <circle class="m-glow" cx="580" cy="232" r="150"/>
+    <circle class="m-ring" cx="580" cy="232" r="118"/>
+    <circle class="m-ring r2" cx="580" cy="232" r="92"/>
+    <rect class="m-lens-panel back" x="502" y="147" width="136" height="162" rx="16" transform="rotate(-9 570 228)"/>
+    <rect class="m-lens-panel back" x="522" y="153" width="136" height="162" rx="16" transform="rotate(7 590 234)"/>
+    <rect class="m-lens-panel front" x="510" y="148" width="140" height="168" rx="16"/>
+    <rect class="m-lens-core" x="522" y="160" width="116" height="144" rx="12"/>
+    <text class="m-title" x="580" y="226" text-anchor="middle">CSM</text>
+    <text class="m-label" x="580" y="248" text-anchor="middle" style="font-size:10px;letter-spacing:0.16em">memory lens</text>
+    <g>
+      <rect class="m-stage-pill" x="440" y="394" width="64" height="24" rx="12"/>
+      <text class="m-stage" x="472" y="410" text-anchor="middle">route</text>
+      <rect class="m-stage-pill" x="512" y="394" width="64" height="24" rx="12"/>
+      <text class="m-stage" x="544" y="410" text-anchor="middle">probe</text>
+      <rect class="m-stage-pill" x="584" y="394" width="66" height="24" rx="12"/>
+      <text class="m-stage" x="617" y="410" text-anchor="middle">recall</text>
+      <rect class="m-stage-pill" x="658" y="394" width="98" height="24" rx="12"/>
+      <text class="m-stage" x="707" y="410" text-anchor="middle">synthesize</text>
+    </g>
+  </g>
+
+  <!-- exit flow -->
+  <path class="m-flow bright" d="M672 232 C 748 228, 778 216, 818 210"/>
+  <circle class="m-particle" r="3.6" style="offset-path:path('M672 232 C 748 228, 778 216, 818 210');animation-duration:3.2s"/>
+
+  <!-- right: the cited MemoryPacket -->
+  <g class="m-packet-g">
+    <rect class="m-packet" x="818" y="116" width="318" height="204" rx="18" filter="url(#cardShadow)"/>
+    <text class="m-packet-title" x="844" y="154">MemoryPacket</text>
+    <path class="m-check" d="M1084 140 l8 9 l15 -16"/>
+    <rect class="m-line" x="844" y="174" width="226" height="9" rx="4.5"/>
+    <rect class="m-line" x="844" y="194" width="254" height="9" rx="4.5"/>
+    <rect class="m-line" x="844" y="214" width="184" height="9" rx="4.5"/>
+    <rect class="m-cite" x="844" y="246" width="80" height="26" rx="13"/>
+    <text class="m-cite-text" x="884" y="263" text-anchor="middle">shard S07</text>
+    <rect class="m-cite" x="932" y="246" width="82" height="26" rx="13"/>
+    <text class="m-cite-text" x="973" y="263" text-anchor="middle">snap S003</text>
+    <rect class="m-cite" x="1022" y="246" width="76" height="26" rx="13"/>
+    <text class="m-cite-text" x="1060" y="263" text-anchor="middle">ev e1289</text>
+    <text class="m-label" x="844" y="300" style="font-size:9.5px;letter-spacing:0.1em">cited · conflict-flagged · discardable</text>
+    <text class="m-label" x="818" y="446">cited memory packet</text>
+  </g>
+</svg>

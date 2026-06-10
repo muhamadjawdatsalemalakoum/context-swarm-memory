@@ -7,7 +7,9 @@
 [![Website](https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg)](https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/)
 
 <p align="center">
-  <img src="docs/assets/context-swarm-memory-cover.png" width="960" alt="Context Swarm Memory cover showing memory shards passing through a CSM memory lens into a cited memory packet">
+  <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
+    <img src="docs/assets/csm-pipeline-motif.svg" width="960" alt="Animated CSM pipeline: a query enters the CSM memory lens — route, probe, recall, synthesize — three gray memory shards come into focus, turn teal, and emerge as a single MemoryPacket cited to shard, snapshot, and event IDs">
+  </a>
 </p>
 
 **A memory whose edge *grows* as it scales — instead of degrading.**
