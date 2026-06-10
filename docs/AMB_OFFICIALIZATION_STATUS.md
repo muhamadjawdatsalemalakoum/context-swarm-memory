@@ -1,6 +1,6 @@
 # AMB Officialization: Status and Resume Runbook
 
-Status: **paused by decision on 2026-06-09**, in favor of a CSM core R&D phase
+Status: **COMPLETE 2026-06-10** — the official-runner rerun is done (0.743110, 337/400, retrieval 1.84x faster than Hindsight; docs/AMB_BEAM_100K_OFFICIAL_RERUN.md) and submitted as [vectorize-io/agent-memory-benchmark#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19), pending maintainer acceptance. The notes below are the historical runbook that got us here.
 (latency first: warm-service architecture, then token cost, then the
 summarization/event-ordering score gaps). The full official BEAM 100K run is
 deliberately deferred so that the one run we submit certifies the *improved*
