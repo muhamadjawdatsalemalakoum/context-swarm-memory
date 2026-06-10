@@ -117,18 +117,21 @@ chart below is kept only to show the old published bar on avg(QA1-QA5).
 
 On the exact slice CSM has run so far - QA1/QA2 at 4K and 8K - the honest result
 is: **CSM is promising, but not BABILong SOTA, and not 2026 SOTA evidence.** It
-ties the historical top systems on QA1, but QA2 still trails ARMT/Mamba/RMT and
-GPT-4. It does beat the historical ChatQA + RAG line on QA2, which is useful
-evidence that the shard-memory route is not just a toy RAG wrapper.
+matches the historical top systems on QA1 (100 / 96.7), and after the June
+2026 chronicle work its QA2 now beats GPT-4's historical line (73.3 / 83.3 vs
+68 / 65) and ChatQA + RAG by a wide margin — while still trailing the
+fine-tuned ARMT/Mamba/RMT systems. Useful evidence that the shard-memory route
+is not just a toy RAG wrapper, with a clear remaining gap to fine-tuned
+recurrence.
 
 <p align="center"><img src="docs/assets/babilong-shared-sota-slice.svg" width="820" alt="BABILong shared QA1 and QA2 slice comparing CSM against ARMT, Mamba, RMT, GPT-4, and ChatQA plus RAG at 4K and 8K"></p>
 
 | BABILong shared slice | CSM | ARMT fine-tune | Mamba fine-tune | RMT fine-tune | GPT-4 | ChatQA + RAG |
 |---|---:|---:|---:|---:|---:|---:|
 | QA1 / 4K | 100.0 | 100.0 | 100.0 | 100.0 | 95.0 | 58.0 |
-| QA1 / 8K | 100.0 | 100.0 | 100.0 | 100.0 | 93.0 | 58.0 |
-| QA2 / 4K | 60.0 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
-| QA2 / 8K | 53.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
+| QA1 / 8K | 96.7 | 100.0 | 100.0 | 100.0 | 93.0 | 58.0 |
+| QA2 / 4K | 73.3 | 100.0 | 98.0 | 98.0 | 68.0 | 19.0 |
+| QA2 / 8K | 83.3 | 100.0 | 98.0 | 97.0 | 65.0 | 14.0 |
 
 The next scientific milestone is therefore concrete: promote the new
 **Agent Memory Benchmark / BEAM** result into a public replication/submission
@@ -251,11 +254,11 @@ frontier-model rows on the same benchmark, not the historical BABILong v0 board.
 
 BABILong CSM ablation, also Gemini 3.5 Flash:
 
-- **Runs:** `babilong-csm-gemini35-4k8k-t1t2-30q-v1/` and `babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/`
+- **Runs:** `babilong-csm-gemini35-4k8k-t1t2-30q-v1/` (no bridge), `...-v2-entitybridge/`, and `...-v3-wave1/` (2026-06-10 pipeline)
 - **Benchmark:** BABILong public subset, tasks 1-2, lengths 4K and 8K, 30 rows per cell
-- **Result:** CSM is 30/30 on task1 at both lengths; the entity bridge moves task2 from 3/30 to 18/30 at 4K and from 0/30 to 16/30 at 8K.
+- **Result:** task1 stays at 30/30 and 29/30; task2 went 3/30 → 18/30 → **22/30** at 4K and 0/30 → 16/30 → **25/30** at 8K (entity bridge, then the coverage chronicle + date-stamped digests).
 
-<p align="center"><img src="docs/assets/gemini-babilong-ablation.svg" width="680" alt="Gemini 3.5 Flash plus CSM on BABILong: entity bridge keeps task1 at 100 percent and improves task2 from 10 percent to 60 percent at 4K and 0 percent to 53 percent at 8K"></p>
+<p align="center"><img src="docs/assets/gemini-babilong-ablation.svg" width="680" alt="Gemini 3.5 Flash plus CSM on BABILong: the entity bridge and then the June 2026 chronicle pipeline lift task2 from 10 to 73 percent at 4K and from 0 to 83 percent at 8K while task1 stays at or near 100 percent"></p>
 
 ## Quickstart
 

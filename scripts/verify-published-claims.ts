@@ -114,6 +114,12 @@ const HASHES: Record<string, string> = {
     "635d43d08eb6409295462a2d10c51f1240e32497ccdf0b2e2e4a7b459de3d89e",
   "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge/report.md":
     "42ea7ef23e87643c9b76167fc83887116b9582b23b9ae00ff8cbc830f8efa55a",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/config.json":
+    "076513df4ec8384e2e0205fb197189e2f54cb47d59919d915323417ce85a603a",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/results.jsonl":
+    "89781ba7e8d64492f655f3bdb871a97bc04a5212ceb5fc5aa6e89e52b49a0fcf",
+  "data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/summary.json":
+    "0c63d204440759c267f0e7d9fb3f6a8f91e671b35ca7845867b4e16300e8b749",
   "data/eval/runs/sota-combined/amb-beam-100k-csm-vs-hindsight.json":
     "45d2f8a36b624c2f4a54a1026181d37a8072d7fe5341b2b7947fba54262db645",
   // Repinned 2026-06-10 when hashing moved to LF-normalized bytes (this CSV
@@ -346,6 +352,43 @@ const EXPECTED: ExpectedMetric[] = [
     n: 30,
     correct: 16,
     f1: 0.005,
+  },
+  // 2026-06-10 post-wave pipeline (coverage chronicle + date-stamped digests).
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1",
+    system: "csm",
+    task: 1,
+    length: "4K",
+    n: 30,
+    correct: 30,
+    f1: 0.265,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1",
+    system: "csm",
+    task: 1,
+    length: "8K",
+    n: 30,
+    correct: 29,
+    f1: 0.225,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1",
+    system: "csm",
+    task: 2,
+    length: "4K",
+    n: 30,
+    correct: 22,
+    f1: 0.013,
+  },
+  {
+    runId: "babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1",
+    system: "csm",
+    task: 2,
+    length: "8K",
+    n: 30,
+    correct: 25,
+    f1: 0.004,
   },
 ];
 

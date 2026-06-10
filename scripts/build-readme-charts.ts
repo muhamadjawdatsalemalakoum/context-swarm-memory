@@ -200,6 +200,11 @@ const babilongAblation = [
     "babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge",
     "entity bridge",
   ),
+  // 2026-06-10 post-wave defaults (coverage chronicle + date-stamped digests).
+  ...babilongCells(
+    "babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1",
+    "current pipeline",
+  ),
 ];
 
 function parseSimpleCsv(path: string): LeaderboardRow[] {
@@ -265,7 +270,8 @@ const officialBabilongAvg = officialAvgModels.flatMap((model) => {
 });
 
 function csmBabilongAcc(task: string, length: string): number {
-  const summary = readSummary("babilong-csm-gemini35-4k8k-t1t2-30q-v2-entitybridge");
+  // Shared-slice CSM values come from the latest pipeline (2026-06-10).
+  const summary = readSummary("babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1");
   const cell = summary.cells.find((c) => c.task === task && c.length === length);
   if (!cell) {
     throw new Error(`Missing CSM BABILong cell: ${task}/${length}`);
