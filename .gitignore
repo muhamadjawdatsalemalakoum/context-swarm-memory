@@ -118,3 +118,7 @@ data/eval/corpus-synthetic/queries-stub.json
 !data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/config.json
 !data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/results.jsonl
 !data/eval/runs/babilong-csm-gemini35-4k8k-t1t2-30q-v3-wave1/summary.json
+!data/eval/runs/gemma-scaling-csm-v2-wave1/
+!data/eval/runs/gemma-scaling-csm-v2-wave1/config.json
+!data/eval/runs/gemma-scaling-csm-v2-wave1/results.jsonl
+!data/eval/runs/gemma-scaling-csm-v2-wave1/summary.json

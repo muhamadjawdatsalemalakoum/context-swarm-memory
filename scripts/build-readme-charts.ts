@@ -319,8 +319,10 @@ const babilongSharedSota = [
 // --- RQ1 scaling: accuracy (%) vs corpus size (8K window). ----------------
 //   csm/rag/longctx from runs `scaling-rq1` (100K) + `scaling-1m` (1M).
 const scaling = [
-  { system: "CSM", corpus: "100K", acc: accuracyPct("scaling-rq1", "csm", 100000), order: 1 },
-  { system: "CSM", corpus: "1M", acc: accuracyPct("scaling-1m", "csm", 1000000), order: 2 },
+  // CSM rows re-measured 2026-06-10 on the post-wave defaults; baseline rows
+  // unchanged (the wave did not touch their pipelines).
+  { system: "CSM", corpus: "100K", acc: accuracyPct("gemma-scaling-csm-v2-wave1", "csm", 100000), order: 1 },
+  { system: "CSM", corpus: "1M", acc: accuracyPct("gemma-scaling-csm-v2-wave1", "csm", 1000000), order: 2 },
   { system: "vanilla RAG", corpus: "100K", acc: accuracyPct("scaling-rq1", "rag", 100000), order: 1 },
   { system: "vanilla RAG", corpus: "1M", acc: accuracyPct("scaling-1m", "rag", 1000000), order: 2 },
   { system: "long-context", corpus: "100K", acc: accuracyPct("scaling-rq1", "longctx", 100000), order: 1 },
@@ -395,7 +397,8 @@ const scalingSpec: TopLevelSpec = {
 //   committed headline values (README/SOTA_COMPARISON): csm/rag/hybrid @ v020,
 //   lightrag @ lightrag-30q, longctx @ scaling-rq1 (honest representative pack).
 const citation = [
-  { system: "CSM", f1: citationF1("v020-30q-embedfloor", "csm"), kind: "csm" },
+  // CSM bar re-measured 2026-06-10 (post-wave defaults).
+  { system: "CSM", f1: citationF1("gemma-scaling-csm-v2-wave1", "csm"), kind: "csm" },
   { system: "hybrid RAG", f1: citationF1("v020-30q-embedfloor", "hybrid"), kind: "hybrid" },
   { system: "vanilla RAG", f1: citationF1("v020-30q-embedfloor", "rag"), kind: "rag" },
   { system: "LightRAG (SOTA)", f1: citationF1("lightrag-30q", "lightrag"), kind: "lightrag" },

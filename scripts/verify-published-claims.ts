@@ -92,6 +92,12 @@ const HASHES: Record<string, string> = {
     "7c468a0446f19810d79e20395560be24ee9e6b6fc7c29807dc3768d0b184c785",
   "data/eval/runs/gemini35-160k-30q-v1/report.md":
     "134115a5cab0737e18ff72172283c06d5ff92743355c822129a0352e1d66da1c",
+  "data/eval/runs/gemma-scaling-csm-v2-wave1/config.json":
+    "a6f58aa4af86422836007476497248c505553602e4f17a11fd559dadced675f9",
+  "data/eval/runs/gemma-scaling-csm-v2-wave1/results.jsonl":
+    "0121deb0182c78d7abd8beef1b1e54db5f9b57d4c0248e2fd8c3acc3f21f0ce5",
+  "data/eval/runs/gemma-scaling-csm-v2-wave1/summary.json":
+    "2693f76a07aab49f5d78121179b9092c72a1e80018a2f5a6f7cd9eb937ad3f2e",
   "data/eval/runs/gemini35-160k-30q-v2-wave1/config.json":
     "3e7b3a2037d10f70bea1f72a275820a131ded1901ff6c0daf9469ff2b09700be",
   "data/eval/runs/gemini35-160k-30q-v2-wave1/results.jsonl":
@@ -169,6 +175,26 @@ const EXPECTED: ExpectedMetric[] = [
     n: 30,
     correct: 28,
     f1: 0.515,
+  },
+  // 2026-06-10 Gemma re-measurement on the post-wave defaults (README
+  // headline CSM rows; baselines remain from scaling-rq1/scaling-1m/v020).
+  {
+    runId: "gemma-scaling-csm-v2-wave1",
+    system: "csm",
+    corpusSize: 100_000,
+    modelContext: 8_000,
+    n: 30,
+    correct: 28,
+    f1: 0.47,
+  },
+  {
+    runId: "gemma-scaling-csm-v2-wave1",
+    system: "csm",
+    corpusSize: 1_000_000,
+    modelContext: 8_000,
+    n: 30,
+    correct: 27,
+    f1: 0.465,
   },
   // 2026-06-10 re-measurement of the CSM rows on the post-wave defaults
   // (coverage mode on, parallel pipeline). README showcases these; the v1

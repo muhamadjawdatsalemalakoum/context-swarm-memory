@@ -26,6 +26,7 @@ ad-hoc experiments remain ignored.
 | Claim area | Run/artifact | What it contains |
 |---|---|---|
 | CSM, vanilla RAG, hybrid RAG at 100K | `data/eval/runs/v020-30q-embedfloor/` | Per-query rows, config, summary, report for the 30-query 100K run |
+| CSM Gemma rows on the 2026-06 pipeline (README headline/citation CSM values) | `data/eval/runs/gemma-scaling-csm-v2-wave1/` | 30q at 100K and 1M, 8K window, gemma4:31b + e4b probes: 28/30 and 27/30, citation F1 0.470/0.465; baselines remain from the runs above |
 | LightRAG head-to-head | `data/eval/runs/lightrag-30q/` | Per-query rows, config, summary for the 30-query LightRAG run |
 | Scaling at 100K | `data/eval/runs/scaling-rq1/` | Representative-slice long-context, CSM, and vanilla RAG rows at 100K |
 | Scaling at 1M | `data/eval/runs/scaling-1m/` | Representative-slice long-context, CSM, and vanilla RAG rows at 1M |

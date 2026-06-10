@@ -1,0 +1,21 @@
+{
+  "corpusDir": "data/eval/corpus-synthetic",
+  "corpusSizes": [
+    100000,
+    1000000
+  ],
+  "earlyStopThreshold": 0.5,
+  "maxOutputTokens": 4096,
+  "model": "gemma4:31b",
+  "modelContexts": [
+    8000
+  ],
+  "outputDir": "data\\eval\\runs\\gemma-scaling-csm-v2-wave1",
+  "reserveScaffoldingTokens": 512,
+  "runId": "gemma-scaling-csm-v2-wave1",
+  "seed": 42,
+  "systemNames": [
+    "csm"
+  ],
+  "trials": 1
+}

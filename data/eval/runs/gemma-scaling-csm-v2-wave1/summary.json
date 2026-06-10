@@ -1,0 +1,44 @@
+{
+  "cells": [
+    {
+      "accuracy": 0.9333333333333333,
+      "accuracyCi95": [
+        0.8333333333333334,
+        1
+      ],
+      "corpusSize": 100000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.46989399489399486,
+      "meanCitationPrecision": 0.711111111111111,
+      "meanCitationRecall": 0.4497649572649573,
+      "meanInputTokens": 17778.966666666667,
+      "meanLatencyMs": 272403.23333333334,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "csm"
+    },
+    {
+      "accuracy": 0.9,
+      "accuracyCi95": [
+        0.7666666666666667,
+        1
+      ],
+      "corpusSize": 1000000,
+      "earlyStopped": false,
+      "meanCitationF1": 0.4651481656744815,
+      "meanCitationPrecision": 0.7044444444444445,
+      "meanCitationRecall": 0.43907509157509167,
+      "meanInputTokens": 20499.266666666666,
+      "meanLatencyMs": 305050.1666666667,
+      "modelContext": 8000,
+      "n": 30,
+      "system": "csm"
+    }
+  ],
+  "earlyStops": [],
+  "generatedAt": "2026-06-10T05:08:13.620Z",
+  "runId": "gemma-scaling-csm-v2-wave1",
+  "systemNames": [
+    "csm"
+  ]
+}
