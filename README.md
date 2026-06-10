@@ -68,9 +68,11 @@ table, artifact hashes, and the no-gold audit:
 [`docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`](docs/AMB_BEAM_100K_OFFICIAL_RERUN.md)
 · May local record: [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
 
-> Submitted to the AMB maintainers (provider + result produced by their
-> runner, per their guidance); **pending their acceptance — not claimed as an
-> official leaderboard placement until they accept it.**
+> Submitted upstream as
+> [vectorize-io/agent-memory-benchmark#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19)
+> (provider + result produced by their runner, per their guidance);
+> **pending their acceptance — not claimed as an official leaderboard
+> placement until they accept it.**
 
 ### BEAM 100K Q&A
 
