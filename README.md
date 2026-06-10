@@ -46,44 +46,47 @@ Full numbers, per-query breakdown, significance, and methodology: [`SOTA_COMPARI
 
 ## AMB / BEAM head-to-head
 
-The first full Agent Memory Benchmark / BEAM 100K run is complete against the
-accepted local Hindsight row. This is the repo's current north-star memory
-comparison: not old RAG controls, not smoke rows, and not model-mismatched
-Flash-only diagnostics.
-
-<p align="center"><img src="docs/assets/beam-100k-csm-vs-hindsight.svg" width="760" alt="BEAM 100K comparison: CSM scores 75.8 percent against Hindsight at 73.4 percent, with 342 versus 326 correct rows, lower answer-visible context, and higher retrieval latency"></p>
+The full Agent Memory Benchmark / BEAM 100K comparison now comes from the
+**unmodified public AMB runner** (2026-06-10 rerun: their CLI, their scoring,
+their judge path, a 3-file provider addition and nothing else). This is the
+repo's north-star memory comparison: not old RAG controls, not smoke rows,
+and not model-mismatched Flash-only diagnostics.
 
 | BEAM 100K system | AMB score | Correct | Avg answer context | Avg retrieve latency |
 |---|---:|---:|---:|---:|
-| CSM | 0.757573 | 342/400 | 10.9K tokens | 29.23s |
-| Hindsight | 0.733658 | 326/400 | 17.7K tokens | 6.38s |
+| CSM (official-runner rerun) | **0.743110** | **337/400** | 27.0K tokens | **3.47s** |
+| Hindsight (accepted artifact) | 0.733658 | 326/400 | 17.7K tokens | 6.38s |
 
-CSM is +2.39 score points and +16 correct rows versus the accepted Hindsight
-artifact while using 38.2% fewer answer-visible context tokens. The tradeoff
-was real at run time: CSM retrieval was 4.58x slower and spent an additional
-23.6K internal tokens per query across shard probe/recall/synthesis. Full
-method, category deltas, token accounting, no-gold audit, and artifact hashes:
-[`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
+CSM is +0.95 score points and +11 correct rows versus the published Hindsight
+row, wins 7 of 10 question categories, and — after the June 2026 rebuild —
+retrieves **1.84x faster than Hindsight** (the May architecture was 4.58x
+slower). Disclosed trades: CSM's answer-visible context is now larger than
+Hindsight's, and CSM additionally spends 8.8K internal input tokens per query
+on its probe/recall/synthesis pipeline (down 58% from May), reported
+separately so total cost is never under-stated. Full method, per-category
+table, artifact hashes, and the no-gold audit:
+[`docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`](docs/AMB_BEAM_100K_OFFICIAL_RERUN.md)
+· May local record: [`docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
 
-> May 2026 numbers of record. The pipeline behind the 29.23 s / 23.6K-token
-> figures has since been rebuilt (see the coverage section below and
-> [`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md)); this table is refreshed
-> only by the official AMB rerun
-> ([`docs/AMB_OFFICIALIZATION_STATUS.md`](docs/AMB_OFFICIALIZATION_STATUS.md)).
+> Submitted to the AMB maintainers (provider + result produced by their
+> runner, per their guidance); **pending their acceptance — not claimed as an
+> official leaderboard placement until they accept it.**
 
 ### BEAM 100K Q&A
 
-**Does CSM beat Hindsight on BEAM 100K?** Yes, in the committed full local
-accepted-artifact comparison: 0.757573 and 342/400 correct rows for CSM versus
-0.733658 and 326/400 for Hindsight.
+**Does CSM beat Hindsight on BEAM 100K?** Yes, on the public AMB runner with
+the same answer/judge models as the accepted Hindsight artifact: 0.743110 and
+337/400 correct rows for CSM versus 0.733658 and 326/400 for Hindsight, with
+CSM retrieval 1.84x faster.
 
-**Is this an official leaderboard claim?** No. The result is public and
-artifact-backed, but the repo does not call it official SOTA until independent
-replication or official chart acceptance exists.
+**Is this an official leaderboard claim?** No. The result was produced by
+AMB's own runner and has been submitted to the maintainers; the repo does not
+call it official until they accept the provider/result.
 
-**Did CSM use gold answers or hardcoded benchmark logic?** No. The BEAM report
-includes the no-gold audit: CSM retrieval does not use gold answers, rubrics,
-query IDs, or hardcoded benchmark answers.
+**Did CSM use gold answers or hardcoded benchmark logic?** No. CSM retrieval
+receives only the ingested documents, the query, user id, and timestamp — no
+gold answers, rubrics, query IDs, or benchmark-specific hardcoding (the June
+wave also deleted the legacy domain term tables from the active path).
 
 ## Retrieval coverage on the two BEAM categories CSM lost
 

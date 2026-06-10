@@ -106,3 +106,11 @@ data/eval/corpus-synthetic/queries-stub.json
 !data/eval/runs/gemini35-160k-30q-v2-wave1/config.json
 !data/eval/runs/gemini35-160k-30q-v2-wave1/results.jsonl
 !data/eval/runs/gemini35-160k-30q-v2-wave1/summary.json
+!data/eval/runs/amb-beam-100k-official-v1/
+!data/eval/runs/amb-beam-100k-official-v1/RUN_MANIFEST.md
+!data/eval/runs/amb-beam-100k-official-v1/omb-providers.txt
+!data/eval/runs/amb-beam-100k-official-v1/omb-splits-beam.txt
+!data/eval/runs/amb-beam-100k-official-v1/smoke-stdout.log
+!data/eval/runs/amb-beam-100k-official-v1/smoke-telemetry.jsonl
+!data/eval/runs/amb-beam-100k-official-v1/full-run-stdout.log
+!data/eval/runs/amb-beam-100k-official-v1/csm-token-telemetry.jsonl

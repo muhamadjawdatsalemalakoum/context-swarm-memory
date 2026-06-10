@@ -1,6 +1,11 @@
 # BEAM 100K: CSM vs Hindsight
 
 Status: completed local Agent Memory Benchmark run, 2026-05-27.
+**Superseded as the publication artifact by the official-runner rerun of
+2026-06-10** ([`AMB_BEAM_100K_OFFICIAL_RERUN.md`](AMB_BEAM_100K_OFFICIAL_RERUN.md)):
+unmodified AMB harness, warm-service provider, post-wave CSM defaults —
+0.743110 / 337 of 400, retrieval 1.84x faster than Hindsight. This page
+remains the May record (per-query bridge, patched AMB Gemini timeouts).
 
 This is the first full, paired CSM-vs-Hindsight BEAM 100K comparison in this
 repo. It is a scientific reporting artifact, not yet an externally accepted
