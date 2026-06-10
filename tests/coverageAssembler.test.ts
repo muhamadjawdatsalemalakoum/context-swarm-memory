@@ -320,10 +320,12 @@ describe("coverage budgets & flags", () => {
   const ordering = classifyQueryIntent("Which came first, the leak or the storm?");
   const point = classifyQueryIntent("What database did we pick?");
 
-  it("coverage mode defaults off and parses truthy values", () => {
-    expect(resolveCoverageMode(undefined)).toBe(false);
-    expect(resolveCoverageMode("")).toBe(false);
+  it("coverage mode defaults ON (gated 2026-06-10) and parses falsy opt-outs", () => {
+    expect(resolveCoverageMode(undefined)).toBe(true);
+    expect(resolveCoverageMode("")).toBe(true);
     expect(resolveCoverageMode("0")).toBe(false);
+    expect(resolveCoverageMode("false")).toBe(false);
+    expect(resolveCoverageMode("no")).toBe(false);
     expect(resolveCoverageMode("1")).toBe(true);
     expect(resolveCoverageMode("true")).toBe(true);
     expect(resolveCoverageMode("yes")).toBe(true);

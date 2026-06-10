@@ -451,3 +451,31 @@ bridge migration (step 2) does not proceed.
    deterministic path.
 5. `scripts/amb-csm-retrieve.ts` — migration steps 2–3 (see §1 Q5), gated
    on Arm 3.
+
+---
+
+## Live gate results (orchestrator, 2026-06-10)
+
+**BEAM-slice 100k** (80 summarization+event_ordering queries, live
+gemini-3.5-flash, flash-lite probes; legs beam-slice-100k-live-{hybridoff,
+coverage,coverage-bridge}-v1): coverage mode lifted RETRIEVED gold-facet
+coverage +0.179 (event_ordering 0.654->0.833) and +0.182 (summarization
+0.614->0.796), both with non-overlapping 95% CIs, against an oracle ceiling
+of 0.961/0.926. Returned-to-AMB coverage stayed flat until the bridge
+consumed the chronicle (commit 66543c7): then event_ordering cov@24 rose
+0.475->0.659 (non-overlapping CIs) and cov@32 0.615->0.715. Summarization
+returned@24 stayed ~flat (k=24 cut of a ~70-event retrieval), but the
+capsule pseudo-doc now carries up to 40 cited timeline lines that cov@k does
+not count - end-to-end judged effect to be measured at the official rerun.
+Cost: event_ordering +13% input tokens, summarization +56% (coverage-shaped
+slice; ~+10-15% expected over a full BEAM run). Latency flat (~12-13 s).
+
+**PaySwift 30q** (rd-coverage-30q-v1 vs rd-probelite-30q-v1): single trial
+showed 28/30 vs 29/30 with q01/q03 flips and a q04 fix. The protocol's
+3-trial arm resolved it: q01/q03 pass 3/3 in BOTH arms (variance); q04 is
+0/3 without coverage and 3/3 with - a real, reproducible win. Pipeline input
++2.8%, latency flat. Intent classifier fired on 21/30 queries.
+
+**Verdict: CSM_COVERAGE defaults ON** (=0 opt-out, byte-identical legacy
+path). The legacy bridge heuristics now run only for point queries; the
+~640-line deletion pass happens after the official-run parity check.

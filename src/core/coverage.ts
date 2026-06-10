@@ -1153,13 +1153,18 @@ export const DEFAULT_COVERAGE_RECALL_TOKENS = 3200;
 /** Default soft token cap for the packet timeline (~24 lines × ~45 tokens). */
 export const DEFAULT_TIMELINE_TOKENS = 1400;
 
-/** Coverage mode flag — default OFF so every existing path stays
- *  byte-identical (LLM-input changes are gated; see
- *  docs/experiments/EXP-T1-coverage.md). */
+/** Coverage mode flag — default ON since 2026-06-10 (`CSM_COVERAGE=0`
+ *  restores the pre-coverage pipeline byte-identically). Gates passed (see
+ *  docs/experiments/EXP-T1-coverage.md §results): PaySwift q04 0/3→3/3 with
+ *  the apparent q01/q03 flips shown to be single-trial variance (3/3 in both
+ *  arms), +2.8% pipeline input tokens, latency flat; BEAM-slice retrieved
+ *  gold coverage +0.179/+0.182 (event_ordering/summarization, CIs
+ *  non-overlapping) and returned cov@24 +0.184 on event_ordering once the
+ *  bridge consumed the chronicle. */
 export function resolveCoverageMode(raw = process.env.CSM_COVERAGE): boolean {
-  if (raw === undefined || raw.trim().length === 0) return false;
+  if (raw === undefined || raw.trim().length === 0) return true;
   const v = raw.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
+  return !(v === "0" || v === "false" || v === "no");
 }
 
 /** Intent-conditional recall digest budget. Point lookups keep `base`

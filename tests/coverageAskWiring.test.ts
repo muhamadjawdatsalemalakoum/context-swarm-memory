@@ -185,6 +185,9 @@ afterEach(() => {
 
 describe("ask() coverage wiring", () => {
   it("flag OFF: no timeline, recall digest truncated at the default budget", async () => {
+    // Coverage defaults ON since 2026-06-10 — the off-path now requires an
+    // explicit opt-out, which is exactly what this test pins.
+    process.env.CSM_COVERAGE = "0";
     const provider = new ScriptedProvider({ recallSupports: [["e_001"]] });
     const result = await ask({
       provider,
