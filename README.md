@@ -146,6 +146,14 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
   (though it pays an undisclosed ingest-time distillation cost).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
+## What's next
+
+CSM is a multi-stage LLM pipeline whose internal recall/synthesis models are a
+tunable lever. The BEAM ladder pins the answer and judge models to Hindsight's
+for an apples-to-apples comparison, so the next R&D focus is a stronger
+*internal* model set — aimed squarely at the multi-hop categories where CSM
+trails. A roadmap, not a result.
+
 ## Quickstart
 
 ```bash
