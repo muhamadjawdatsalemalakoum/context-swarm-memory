@@ -130,12 +130,14 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
   maintainers accept the provider/result.
 - **Multi-call by design — costs latency and internal tokens.** CSM runs
   probe → recall → synthesize rather than one retrieval call. The June 2026
-  rebuild cut average BEAM retrieval ~8× (29.2s → 3.47s at 100K) but it remains
-  heavier than single-call retrieval, and trends heavier at the deepest tiers
-  (non-monotonic: 4.5/7.5/5.6/11.9s, peaking at 10M). It also spends ~3–10K
-  internal input tokens/query on top of the answer context — counted in the
-  all-in ~36–38K above, on models ~10× cheaper. Hindsight's single-call design
-  carries less of this tax (though it pays an undisclosed ingest-time distillation cost).
+  rebuild cut average BEAM retrieval ~8× (29.2s → 3.47s at 100K on the PR&nbsp;#19
+  official-runner rerun); the frozen-ladder run measured 4.5/7.5/5.6/11.9s across
+  100K→10M (non-monotonic, peaking at 10M) — so the 100K tier is ~4.5s on the
+  ladder run vs 3.47s on the rerun, two separate single-trial runs. Either way it
+  remains heavier than single-call retrieval. It also spends ~3–10K internal input
+  tokens/query on top of the answer context — counted in the all-in ~36–38K above,
+  on models ~10× cheaper. Hindsight's single-call design carries less of this tax
+  (though it pays an undisclosed ingest-time distillation cost).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
 ## Quickstart

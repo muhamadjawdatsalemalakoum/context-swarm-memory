@@ -146,9 +146,11 @@ BABILong leaderboard is a historical v0 snapshot, not 2026 frontier evidence.
 Q: How fast is CSM retrieval now?
 A: The May 2026 architecture averaged 29.2s per BEAM query. After the June 2026
 wave (parallel probes/recalls, retrieve-only bridge, warm service, speculative
-top-1 recall, flash-lite probes), the official BEAM 100K rerun measured 3.47s
-average retrieve — 1.84x faster than Hindsight (full ladder 4.5/7.5/5.6/11.9s,
-non-monotonic, peaking at 10M).
+top-1 recall, flash-lite probes), the PR #19 official-runner rerun measured 3.47s
+average retrieve at 100K — 1.84x faster than Hindsight. The separate frozen-ladder
+run measured 4.5/7.5/5.6/11.9s across 100K/500K/1M/10M (non-monotonic, peaking at
+10M) — so the 100K tier is ~4.5s on the ladder run vs 3.47s on the rerun, two
+single-trial runs, not one inconsistent measurement.
 
 Q: What changed in the June 2026 R&D wave?
 A: One orchestrator plus four research agents (coverage chronicle, hybrid

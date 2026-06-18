@@ -122,7 +122,7 @@ so it is excluded from the head-to-head.
 ## Honest limitations
 
 - **Single-trial** per tier. Gemini at temperature 0 is not bitwise
-  deterministic; the 100K tier reproduced at 0.7367 here vs 0.7431 in the
+  deterministic; the 100K tier reproduced at 0.7367 here vs 0.743110 in the
   earlier official rerun — single-run variance of ~±0.01 is expected.
 - **No "CSM wins / edge grows" claim on BEAM.** CSM's *absolute* accuracy
   declines with scale and trails Hindsight above 100K. The favorable read —
