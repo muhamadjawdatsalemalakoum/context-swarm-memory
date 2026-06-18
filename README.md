@@ -46,7 +46,13 @@ path; a 3-file CSM provider and nothing else). Answer model
 accepted Hindsight artifact. Frozen CSM pipeline, single-trial, 2,000 graded
 queries.
 
+<p align="center"><img src="docs/assets/beam-token-cost.svg" width="760" alt="Input tokens per query (log scale), BEAM 100K to 10M. A brute-force full-context line climbs ~100x from ~100K to ~11.7M tokens and crosses the ~1-2M model context window; CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K) and Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K)."></p>
+
+<p align="center"><em>The headline, drawn: as the haystack grows 100×, full-context input explodes past the model's context window while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat — retrieval cost does not scale with the corpus.</em></p>
+
 <p align="center"><img src="docs/assets/beam-ladder.svg" width="760" alt="CSM vs Hindsight on BEAM 100K to 10M: CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K but stays flat from 1M to 10M while Hindsight drops, narrowing the gap."></p>
+
+<p align="center"><em>Accuracy, the honest other half: CSM trails Hindsight above 100K, then holds flat from 1M→10M while Hindsight drops — the gap more than halves (+0.17 → +0.08).</em></p>
 
 | BEAM tier | CSM score | Hindsight score | CSM answer-ctx | Hindsight answer-ctx | CSM all-in input¹ |
 |---|---:|---:|---:|---:|---:|

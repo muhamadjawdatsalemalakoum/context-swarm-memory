@@ -1,0 +1,90 @@
+<svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tc-title tc-desc">
+  <title id="tc-title">Input tokens per query as the BEAM haystack grows 100×, CSM vs Hindsight vs full-context</title>
+  <desc id="tc-desc">Log-scale token chart from the 100K to the 10M BEAM tier. A brute-force full-context system must feed the whole corpus, climbing roughly 100x from ~100K to ~10M tokens and crossing the frontier model context window (~1-2M) above the 1M tier. CSM's all-in input stays flat near 36K tokens (35.8, 36.2, 38.1, 35.9K) and Hindsight stays flat and leaner near 22K (17.7, 20.5, 23.9, 27.3K). The proof that retrieval cost does not scale with the haystack.</desc>
+  <style>
+    text { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "DejaVu Sans Mono", monospace; }
+    .ttl  { font-size: 17px; font-weight: 600; fill: #0e1a1e; }
+    .sub  { font-size: 11.5px; fill: #4b5b61; }
+    .ax   { font-size: 11px; fill: #8b989d; }
+    .xl   { font-size: 12.5px; font-weight: 600; fill: #0e1a1e; }
+    .cap  { font-size: 10.5px; fill: #8b989d; }
+    .grid { stroke: #eef1f2; stroke-width: 1; }
+    .axis { stroke: #c2ccd1; stroke-width: 1.2; }
+    .bf   { fill: none; stroke: #c0563b; stroke-width: 2.8; stroke-linejoin: round; stroke-linecap: round; }
+    .bfdot{ fill: #c0563b; stroke: #fff; stroke-width: 2; }
+    .bfv  { font-size: 11px; font-weight: 600; fill: #a8472f; }
+    .csm  { fill: none; stroke: #0d7d68; stroke-width: 2.8; stroke-linejoin: round; stroke-linecap: round; }
+    .csmdot { fill: #10b39a; stroke: #fff; stroke-width: 2; }
+    .csmv { font-size: 11px; font-weight: 600; fill: #0a6453; }
+    .hind { fill: none; stroke: #9aa6ac; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 6 5; }
+    .hinddot { fill: #9aa6ac; stroke: #fff; stroke-width: 2; }
+    .hindv{ font-size: 11px; font-weight: 600; fill: #6b7a80; }
+    .ceil { stroke: #c2603f; stroke-width: 1.3; stroke-dasharray: 3 4; opacity: 0.6; }
+    .ceilt{ font-size: 10px; fill: #a8472f; }
+    .leg  { font-size: 12px; font-weight: 600; }
+    .legs { font-size: 10.5px; font-weight: 400; fill: #6b7a80; }
+  </style>
+
+  <rect width="760" height="470" rx="16" fill="#ffffff"/>
+
+  <text class="ttl" x="40" y="40">The haystack grows 100×. The cost stays flat.</text>
+  <text class="sub" x="40" y="60">Input tokens to the answer model per query, BEAM 100K → 10M (log scale). Lower is cheaper.</text>
+
+  <!-- gridlines + y labels (log decades) -->
+  <line class="grid" x1="95" y1="90"  x2="700" y2="90"/>
+  <line class="grid" x1="95" y1="170" x2="700" y2="170"/>
+  <line class="grid" x1="95" y1="250" x2="700" y2="250"/>
+  <line class="axis" x1="95" y1="330" x2="700" y2="330"/>
+  <text class="ax" x="86" y="94"  text-anchor="end">10M</text>
+  <text class="ax" x="86" y="174" text-anchor="end">1M</text>
+  <text class="ax" x="86" y="254" text-anchor="end">100K</text>
+  <text class="ax" x="86" y="334" text-anchor="end">10K</text>
+
+  <!-- frontier context window ceiling (~1-2M) -->
+  <line class="ceil" x1="95" y1="156" x2="700" y2="156"/>
+  <text class="ceilt" x="700" y="150" text-anchor="end">model context window ≈1–2M</text>
+
+  <!-- legend (upper-left empty zone) -->
+  <line x1="120" y1="104" x2="152" y2="104" class="bf"/><circle cx="136" cy="104" r="4.5" class="bfdot"/>
+  <text class="leg" x="160" y="108" fill="#a8472f">Full-context (the haystack you'd feed)</text>
+  <line x1="120" y1="126" x2="152" y2="126" class="csm"/><circle cx="136" cy="126" r="4.5" class="csmdot"/>
+  <text class="leg" x="160" y="130" fill="#0a6453">CSM all-in <tspan class="legs">— ~36–38K, flat</tspan></text>
+  <line x1="120" y1="148" x2="152" y2="148" class="hind"/><circle cx="136" cy="148" r="4.5" class="hinddot"/>
+  <text class="leg" x="160" y="152" fill="#6b7a80">Hindsight <tspan class="legs">— ~18–27K, flat &amp; leaner</tspan></text>
+
+  <!-- full-context (corpus scale): 100K, 500K, 1M, 10M -->
+  <path class="bf" d="M140 250 L313 194 L487 170 L660 90"/>
+  <circle class="bfdot" cx="140" cy="250" r="5"/>
+  <circle class="bfdot" cx="313" cy="194" r="5"/>
+  <circle class="bfdot" cx="487" cy="170" r="5"/>
+  <circle class="bfdot" cx="660" cy="90"  r="5.5"/>
+  <text class="bfv" x="660" y="80" text-anchor="end">~11.7M / unit</text>
+  <text class="bfv" x="150" y="244" style="font-weight:400;fill:#a8472f">grows ~100×</text>
+
+  <!-- Hindsight (flat, leaner) -->
+  <path class="hind" d="M140 310 L313 305 L487 300 L660 295"/>
+  <circle class="hinddot" cx="140" cy="310" r="4.5"/>
+  <circle class="hinddot" cx="313" cy="305" r="4.5"/>
+  <circle class="hinddot" cx="487" cy="300" r="4.5"/>
+  <circle class="hinddot" cx="660" cy="295" r="4.5"/>
+  <text class="hindv" x="672" y="299" text-anchor="start">27K</text>
+
+  <!-- CSM all-in (flat) -->
+  <path class="csm" d="M140 286 L313 285 L487 284 L660 286"/>
+  <circle class="csmdot" cx="140" cy="286" r="5"/>
+  <circle class="csmdot" cx="313" cy="285" r="5"/>
+  <circle class="csmdot" cx="487" cy="284" r="5"/>
+  <circle class="csmdot" cx="660" cy="286" r="5"/>
+  <text class="csmv" x="672" y="278" text-anchor="start">36K</text>
+
+  <!-- x labels -->
+  <text class="xl" x="140" y="352" text-anchor="middle">100K</text>
+  <text class="xl" x="313" y="352" text-anchor="middle">500K</text>
+  <text class="xl" x="487" y="352" text-anchor="middle">1M</text>
+  <text class="xl" x="660" y="352" text-anchor="middle">10M</text>
+  <text class="ax" x="395" y="378" text-anchor="middle">BEAM tier — corpus / haystack scale (grows 100×)</text>
+
+  <text class="cap" x="40" y="410">Full-context line = the corpus a brute-force system must feed the answer model; actual per-unit BEAM documents run even larger</text>
+  <text class="cap" x="40" y="426">(~154K at the 100K tier to ~11.7M at 10M). CSM all-in = answer-visible + internal pipeline (35.8/36.2/38.1/35.9K); Hindsight = its</text>
+  <text class="cap" x="40" y="442">answer-model context (17.7/20.5/23.9/27.3K), no internal cost disclosed. Single-trial · unmodified AMB runner · same answer/judge models.</text>
+</svg>

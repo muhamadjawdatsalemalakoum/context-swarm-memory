@@ -56,6 +56,14 @@ of tokens (or simply not fit). The internal pipeline is actually *lowest* at 10M
 (one giant shard means one probe + one recall) and runs on models ~10× cheaper
 than the answer model, so it is ~25% of the token count but ~7% of dollars.
 
+![Input tokens per query on a log scale across the BEAM ladder. A brute-force full-context line climbs ~100x from ~100K to ~11.7M tokens and crosses the ~1-2M model context window above the 1M tier, while CSM all-in (~36-38K) and Hindsight (~18-27K, leaner) stay flat.](assets/beam-token-cost.svg)
+
+*Flat vs exploding: the corpus a brute-force full-context system must feed grows
+~100× (and stops fitting in the model's context window above ~1–2M), while CSM's
+all-in cost and Hindsight's both stay flat. Bounded retrieval cost is the point —
+CSM is fully accounted at ~36–38K; Hindsight is leaner but discloses no internal
+cost.*
+
 **2. Accuracy declines with scale, but the decline flattens and is
 category-specific.** Overall 0.737 → 0.659 → 0.569 → 0.562 — monotonic, but
 1M ≈ 10M (the drop levels off rather than cliffing). The decline is not
