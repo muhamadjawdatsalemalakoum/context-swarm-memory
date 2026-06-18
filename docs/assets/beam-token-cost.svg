@@ -59,7 +59,7 @@
   <circle class="bfdot" cx="487" cy="170" r="5"/>
   <circle class="bfdot" cx="660" cy="90"  r="5.5"/>
   <text class="bfv" x="660" y="80" text-anchor="end">~11.7M / unit</text>
-  <text class="bfv" x="150" y="244" style="font-weight:400;fill:#a8472f">grows ~100×</text>
+  <text class="bfv" x="205" y="272" text-anchor="middle" style="font-weight:400;fill:#a8472f">grows ~100×</text>
 
   <!-- Hindsight (flat, leaner) -->
   <path class="hind" d="M140 310 L313 305 L487 300 L660 295"/>
@@ -84,7 +84,7 @@
   <text class="xl" x="660" y="352" text-anchor="middle">10M</text>
   <text class="ax" x="395" y="378" text-anchor="middle">BEAM tier — corpus / haystack scale (grows 100×)</text>
 
-  <text class="cap" x="40" y="410">Full-context line = the corpus a brute-force system must feed the answer model; actual per-unit BEAM documents run even larger</text>
-  <text class="cap" x="40" y="426">(~154K at the 100K tier to ~11.7M at 10M). CSM all-in = answer-visible + internal pipeline (35.8/36.2/38.1/35.9K); Hindsight = its</text>
-  <text class="cap" x="40" y="442">answer-model context (17.7/20.5/23.9/27.3K), no internal cost disclosed. Single-trial · unmodified AMB runner · same answer/judge models.</text>
+  <text class="cap" x="40" y="412">Full-context = the corpus a brute-force system must feed. Per-unit BEAM docs ~154K → ~11.7M.</text>
+  <text class="cap" x="40" y="428">CSM all-in = answer-visible + internal pipeline (35.8/36.2/38.1/35.9K). Hindsight = answer-ctx</text>
+  <text class="cap" x="40" y="444">only (17.7/20.5/23.9/27.3K), no internal disclosed. Single-trial · unmodified AMB runner.</text>
 </svg>
