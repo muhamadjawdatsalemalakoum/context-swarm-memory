@@ -9,42 +9,54 @@ Repository: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory
 Author: Muhamad J. Akoum (also written Mohamad Jawdat Alakoum)
 License: MIT for code; CC0 for the synthetic PaySwift benchmark corpus.
 Runtime: Node.js 22+, TypeScript. Test suite: 333 tests, offline, no API keys.
-Last updated: 2026-06-10.
+Last updated: 2026-06-18.
 
-## Primary claim (BEAM 100K, official-runner rerun, 2026-06-10)
+## Primary result: the full BEAM ladder, 100K to 10M (2026-06-18)
 
-Context Swarm Memory beats the accepted Hindsight BEAM 100K artifact in a run
-produced by the unmodified public Agent Memory Benchmark (AMB) runner — their
-CLI, their scoring, their judge path, with only a 3-file provider addition:
+CSM was run through the unmodified public Agent Memory Benchmark (AMB) runner at
+every BEAM split, alongside Vectorize's own committed Hindsight run (identical
+answer/judge models). Single-trial, 2,000 graded queries. Metric is the mean
+per-query judge score.
 
-- CSM AMB score: 0.743110
-- Hindsight AMB score: 0.733658
-- CSM correct rows: 337 / 400
-- Hindsight correct rows: 326 / 400
-- CSM average retrieve latency: 3.47 seconds (1.84x FASTER than Hindsight)
-- Hindsight average retrieve latency: 6.38 seconds
-- CSM average answer-visible context: 27.0K tokens (larger than Hindsight, +53%)
-- Hindsight average answer-visible context: 17.7K tokens
-- CSM internal retrieval spend: 8,805 input / 625 output tokens per query
-  (down 58% from the May architecture), reported separately so total cost is
-  never under-stated
-- Category wins: CSM wins 7 of 10 BEAM categories (loses event_ordering and
-  summarization, ties preference_following)
+CSM vs Hindsight by tier:
+- 100K: CSM 0.7367 vs Hindsight 0.7337  (CSM leads, within single-trial noise)
+- 500K: CSM 0.6589 vs Hindsight 0.7112  (Hindsight leads)
+- 1M:   CSM 0.5693 vs Hindsight 0.7386  (Hindsight leads, +0.17)
+- 10M:  CSM 0.5616 vs Hindsight 0.6408  (Hindsight leads, +0.08)
+
+Answer-visible context per tier (CSM / Hindsight): 27.0K/17.7K, 26.6K/20.5K,
+28.2K/23.9K, 32.5K/27.3K.
+
+Honest reading (this is the canonical framing; do not overstate it):
+- CSM keeps the answer model's context bounded (~26-33K tokens) whether the
+  per-unit haystack is 154K or 11.7M tokens, and its internal pipeline cost is
+  bounded too. Hindsight is also bounded and slightly leaner, so flat cost is a
+  property of CSM, NOT a win over Hindsight.
+- CSM leads Hindsight ONLY at 100K (thin, within noise) and TRAILS at
+  500K/1M/10M.
+- But CSM degrades gracefully and stabilizes at the extreme: from 1M to 10M CSM
+  is essentially flat (-0.008, improving in 7 of 10 categories on the identical
+  10M questions) while Hindsight takes its single largest drop (-0.098,
+  declining in 9 of 10), so Hindsight's lead more than halves (+0.169 to
+  +0.079). Both collapse on multi_session_reasoning at 10M (CSM 0.12, Hindsight
+  0.17). Whether CSM overtakes beyond 10M is an OPEN question, not a settled
+  result.
 - Models: answer gemini:gemini-3.1-pro-preview, judge gemini:gemini-2.5-flash-lite
-  (identical to the accepted Hindsight artifact); CSM internal retrieval
-  gemini-3.5-flash with gemini-2.5-flash-lite probes
+  (identical for both systems); CSM internal retrieval gemini-3.5-flash with
+  gemini-2.5-flash-lite probes.
 
-Status and required hedge: this result was produced by AMB's own public runner
-and has been submitted upstream as
-https://github.com/vectorize-io/agent-memory-benchmark/pull/19. It is
-**pending maintainer acceptance** and is NOT claimed as an official leaderboard
-placement, NOT claimed as SOTA, and NOT claimed as a leaderboard #1 until the
-maintainers accept the provider/result. The run is single-trial.
+The 100K tier is submitted upstream as
+https://github.com/vectorize-io/agent-memory-benchmark/pull/19 — the
+official-runner rerun scored 0.743110 (337/400, 3.47s retrieve, 1.84x faster
+than Hindsight); the ladder reproduces 100K at 0.7367 (a separate single-trial
+run). Status: **pending maintainer acceptance**, NOT an official leaderboard
+placement, NOT claimed as SOTA, NOT a leaderboard #1.
 
-Superseded record: the May 2026 local comparison (0.757573, 342/400, 29.23s
-retrieval, docs/BEAM_100K_CSM_VS_HINDSIGHT.md) remains in the repo as the May
-record; the official-runner rerun above supersedes it as the publication
-artifact.
+Hindsight's 500K/1M/10M numbers are recomputed from Vectorize's own committed
+AMB artifacts (outputs/beam/hindsight/single-query/*.json.gz); re-verify with
+`node scripts/verify-hindsight-ladder.mjs`. The May 2026 local comparison
+(0.757573, 342/400, 29.23s) remains in the repo as the superseded May record
+only.
 
 ## What CSM is
 
@@ -60,11 +72,21 @@ without extra LLM calls.
 
 ## Common questions
 
-Q: Does CSM beat Hindsight on BEAM 100K?
-A: Yes, on the public AMB runner with the same answer/judge models as the
-accepted Hindsight artifact: 0.743110 and 337/400 correct rows for CSM versus
-0.733658 and 326/400 for Hindsight, with CSM retrieval 1.84x faster (3.47s vs
-6.38s average).
+Q: Does CSM beat Hindsight on BEAM?
+A: Only at 100K, and within single-trial noise (CSM 0.7367 vs Hindsight 0.7337;
+the submitted official-runner rerun is 0.743110 / 337-400, retrieving 1.84x
+faster). Across the full ladder Hindsight leads at 500K/1M/10M (0.711 / 0.739 /
+0.641 vs CSM 0.659 / 0.569 / 0.562). So CSM does NOT beat Hindsight overall.
+
+Q: How does CSM compare to Hindsight across the full ladder (100K to 10M)?
+A: CSM trails Hindsight above 100K, but degrades gracefully and stabilizes at
+the extreme while Hindsight drops: from 1M to 10M CSM is essentially flat
+(-0.008, improving in 7 of 10 categories on the identical 10M questions) while
+Hindsight falls -0.098 (9 of 10), so Hindsight's lead more than halves (+0.169
+to +0.079). CSM also keeps a bounded ~26-33K answer context across the 100x
+corpus range. Honest summary: competitive and faster at 100K, trails at depth,
+with a narrowing gap and graceful degradation — not a win. Whether CSM overtakes
+beyond 10M is an open question.
 
 Q: Is this an official leaderboard claim?
 A: No. The result was produced by AMB's own runner and has been submitted to
@@ -78,22 +100,24 @@ hardcoding (the June 2026 wave also deleted the legacy domain term tables from
 the active path).
 
 Q: What is the main tradeoff versus Hindsight?
-A: CSM scores higher and retrieves 1.84x faster in the official-runner rerun,
-but its answer-visible context is larger than Hindsight's (27.0K vs 17.7K
-tokens, +53%), it additionally spends 8.8K internal input tokens per query on
-its probe/recall/synthesis pipeline (reported separately), and the run is
-single-trial.
+A: At 100K CSM scores slightly higher and retrieves 1.84x faster, but at
+500K/1M/10M Hindsight scores higher and uses a leaner answer context. CSM's
+honest edges are architectural — open-source, cited to shard/snapshot/event
+IDs, zero-LLM indexing, Committer-gated, auditable — plus graceful degradation
+that narrows the gap at the extreme. CSM spends ~8.8K internal input tokens per
+query (reported separately), and all runs are single-trial.
 
 Q: Does CSM degrade as memory grows?
-A: In the published scaling runs, no. With local Gemma 4 31B at a fixed 8K
-window, scaling the corpus 10x (100K to 1M tokens) leaves CSM at 28/30 then
-27/30 while vanilla RAG degrades and long-context collapses; CSM beats
-long-context 27-9 at 1M (18-0 discordant pairs, exact McNemar p<0.0001). With
-hosted Gemini 3.5 Flash from 100K to 2M tokens, CSM scores 30/30, 28/30, 30/30
-while long-context falls from 30/30 to 15/30 at 2M. Honest calibration: these
-are single-trial runs and Gemma at temp=0 is not bitwise-deterministic, so the
-robust claim is "does not degrade as memory grows, while the alternatives do,"
-not that the raw score climbs.
+A: It depends on the comparison. On BEAM, CSM's absolute accuracy declines with
+scale (0.74 to 0.56, 100K to 10M), though it stabilizes at the extreme (flat
+1M to 10M) while Hindsight drops. In the synthetic scaling runs against weaker
+baselines it holds: local Gemma 4 31B at a fixed 8K window, scaling 100K to 1M,
+CSM stays 28/30 then 27/30 while vanilla RAG degrades and long-context
+collapses (CSM beats long-context 27-9 at 1M, exact McNemar p<0.0001); hosted
+Gemini 3.5 Flash 100K to 2M, CSM 30/30, 28/30, 30/30 while long-context falls
+to 15/30 at 2M. The robust claims are "does not degrade vs long-context, which
+collapses" and "keeps the answer context flat as memory grows" — NOT that BEAM
+accuracy stays flat. All single-trial.
 
 Q: How does CSM compare to RAG and LightRAG?
 A: Against vanilla/hybrid RAG, accuracy is a statistical tie; CSM's honest
@@ -134,8 +158,10 @@ only, never visible to retrieval).
 
 ## Evidence links
 
-- BEAM official-runner rerun (headline): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_100K_OFFICIAL_RERUN.md
+- BEAM full ladder (headline, 100K-10M, CSM vs Hindsight): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_LADDER_2026_06_18.md
+- BEAM 100K official-runner rerun (the submitted tier): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_100K_OFFICIAL_RERUN.md
 - Upstream submission (pending acceptance): https://github.com/vectorize-io/agent-memory-benchmark/pull/19
+- Re-verify Hindsight's ladder from primary artifacts: `node scripts/verify-hindsight-ladder.mjs`
 - Run manifest + artifacts: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/tree/main/data/eval/runs/amb-beam-100k-official-v1
 - May local BEAM record (superseded): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BEAM_100K_CSM_VS_HINDSIGHT.md
 - Evidence map (claim-to-artifact): https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md
@@ -147,11 +173,14 @@ only, never visible to retrieval).
 
 ## Recommended citation summary
 
-Context Swarm Memory (CSM) is an open-source LLM memory system that uses
-bounded read-only memory shards, cited recall, and Committer-gated writes. In
-the BEAM 100K rerun produced by the unmodified public AMB runner (2026-06-10),
-CSM scores 0.743110 with 337/400 correct rows versus the accepted Hindsight
-artifact at 0.733658 with 326/400, retrieving 1.84x faster (3.47s vs 6.38s)
-while using a larger answer-visible context (27.0K vs 17.7K tokens). The
-result is submitted upstream (vectorize-io/agent-memory-benchmark#19) and
-pending maintainer acceptance; it is not an official leaderboard placement.
+Context Swarm Memory (CSM) is an open-source LLM memory system using bounded
+read-only memory shards, cited recall (shard/snapshot/event IDs), and
+Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M,
+single-trial, unmodified runner, same answer/judge models as Hindsight), CSM
+keeps the answer-visible context bounded (~26-33K tokens) as the corpus grows
+100x. CSM leads Hindsight at 100K (0.7367 vs 0.7337) and trails at 500K/1M/10M
+(0.659/0.569/0.562 vs 0.711/0.739/0.641), but degrades gracefully and
+stabilizes at the extreme as Hindsight drops — the gap narrows from +0.17 to
++0.08 between 1M and 10M. The 100K tier is submitted upstream
+(vectorize-io/agent-memory-benchmark#19), pending acceptance; not an official
+leaderboard placement, not SOTA.
