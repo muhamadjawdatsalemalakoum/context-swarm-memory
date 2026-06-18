@@ -138,18 +138,6 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
   carries less of this tax (though it pays an undisclosed ingest-time distillation cost).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
-## Further evidence (synthetic + diagnostic, kept separate from BEAM)
-
-Supporting studies on a synthetic CC0 corpus (PaySwift: 22,363 events, ~9M
-tokens, 30 MCQs). These predate the BEAM ladder and use weaker baselines; they
-are kept as context, not as the headline:
-
-- **Holds vs collapsing long-context.** Scaling the corpus 100K→2M, CSM stays ~28–30/30 while brute-force long-context drops to 15/30 at 2M and embedding-RAG degrades. CSM beats long-context with non-overlapping significance; vs vanilla/hybrid RAG accuracy is a statistical tie. ([`SOTA_COMPARISON.md`](SOTA_COMPARISON.md), [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md))
-- **Citation grounding leads.** Citation F1 0.470 vs LightRAG (2025 graph-RAG) 0.265 at 100K, at zero LLM-indexing cost.
-- **BABILong (diagnostic, not SOTA).** On the shared QA1/QA2 4K/8K slice CSM matches the historical top on QA1 and beats GPT-4's historical line on QA2, while trailing fine-tuned ARMT/Mamba/RMT. The public board is a historical v0 snapshot. ([`docs/BABILONG_RESULTS.md`](docs/BABILONG_RESULTS.md))
-
-Claim-to-artifact map and hashes: [`docs/EVIDENCE.md`](docs/EVIDENCE.md).
-
 ## Quickstart
 
 ```bash

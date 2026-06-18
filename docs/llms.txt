@@ -122,39 +122,33 @@ shard/snapshot/event IDs, zero-LLM indexing, Committer-gated, auditable — plus
 graceful degradation that narrows the gap at the extreme. All single-trial.
 
 Q: Does CSM degrade as memory grows?
-A: It depends on the comparison. On BEAM, CSM's absolute accuracy declines with
-scale (0.74 to 0.56, 100K to 10M), though it stabilizes at the extreme (flat
-1M to 10M) while Hindsight drops. In the synthetic scaling runs against weaker
-baselines it holds: local Gemma 4 31B at a fixed 8K window, scaling 100K to 1M,
-CSM stays 28/30 then 27/30 while vanilla RAG degrades and long-context
-collapses (CSM beats long-context 27-9 at 1M, exact McNemar p<0.0001); hosted
-Gemini 3.5 Flash 100K to 2M, CSM 30/30, 28/30, 30/30 while long-context falls
-to 15/30 at 2M. The robust claims are "does not degrade vs long-context, which
-collapses" and "keeps the answer context flat as memory grows" — NOT that BEAM
-accuracy stays flat. All single-trial.
+A: On BEAM (the headline benchmark) CSM's absolute accuracy declines with scale
+(0.74 to 0.56, 100K to 10M) but stabilizes at the extreme (flat 1M to 10M while
+Hindsight drops), and its TOTAL cost stays flat (~36-38K all-in input
+tokens/query). The durable claims are "keeps total cost flat as memory grows"
+and "degrades gracefully at the extreme" — NOT that BEAM accuracy stays flat.
+Older synthetic-corpus scaling studies (CSM vs long-context / RAG) are kept in
+the deep docs, not used as headline evidence.
 
 Q: How does CSM compare to RAG and LightRAG?
-A: Against vanilla/hybrid RAG, accuracy is a statistical tie; CSM's honest
-edge is citation grounding (citation F1 0.470 vs 0.446 vanilla RAG, 0.455
-hybrid RAG, 0.265 LightRAG, 0.067 long-context at 100K) plus zero-LLM
-indexing. Against LightRAG (2025 graph-RAG), CSM leads accuracy 28/30 vs 24/30
-on the current-pipeline rows (single-run significance varies and the repo says
-so). Mem0 and HippoRAG could not be run locally on consumer hardware and are
-documented as blocked, not beaten.
+A: CSM's differentiator versus classic RAG is citation grounding (answers cited
+to shard/snapshot/event IDs) and zero-LLM indexing, not raw accuracy.
+Quantitative comparisons against vanilla/hybrid RAG, LightRAG, and long-context
+on a synthetic corpus live in the deep docs (SOTA_COMPARISON.md, EVIDENCE.md),
+kept separate from the BEAM headline. Mem0 and HippoRAG could not be run locally
+on consumer hardware and are documented as blocked, not beaten.
 
 Q: Is CSM state-of-the-art on BABILong?
-A: No, and the repo says so explicitly. On the shared QA1/QA2 slice CSM scores
-QA1 100.0 (4K) / 96.7 (8K) — matching historical top systems — and QA2 73.3
-(4K) / 83.3 (8K), which beats GPT-4's historical line (68 / 65) and ChatQA +
-RAG (19 / 14) but trails fine-tuned ARMT/Mamba/RMT systems. The public
+A: No, and the repo says so explicitly. BABILong is kept only as a diagnostic in
+the deep docs (BABILONG_RESULTS.md), not used as a headline claim; the public
 BABILong leaderboard is a historical v0 snapshot, not 2026 frontier evidence.
 
 Q: How fast is CSM retrieval now?
-A: The May 2026 architecture averaged 29.2s per BEAM query. After the June
-2026 wave (parallel probes/recalls, retrieve-only bridge, warm service,
-speculative top-1 recall, flash-lite probes), the 30-query PaySwift gate
-averages 7.15s (score 29/30) and the official BEAM 100K rerun measured 3.47s
-average retrieve — 1.84x faster than Hindsight.
+A: The May 2026 architecture averaged 29.2s per BEAM query. After the June 2026
+wave (parallel probes/recalls, retrieve-only bridge, warm service, speculative
+top-1 recall, flash-lite probes), the official BEAM 100K rerun measured 3.47s
+average retrieve — 1.84x faster than Hindsight (full ladder 4.5/7.5/5.6/11.9s,
+non-monotonic, peaking at 10M).
 
 Q: What changed in the June 2026 R&D wave?
 A: One orchestrator plus four research agents (coverage chronicle, hybrid

@@ -361,7 +361,7 @@
         "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#webpage",
         "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
         "name": "Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory",
-        "description": "Homepage and evidence summary for Context Swarm Memory: the full AMB BEAM scaling ladder (100K to 10M, single-trial) showing total retrieval cost held flat (~36-38K input tokens per query) as memory grows, the Hindsight head-to-head at the shared 100K tier (submitted upstream, pending acceptance), and supporting synthetic and diagnostic studies.",
+        "description": "Homepage and evidence summary for Context Swarm Memory: the full AMB BEAM scaling ladder (100K to 10M, single-trial) showing total retrieval cost held flat (~36-38K input tokens per query) as memory grows, and the Hindsight head-to-head at the shared 100K tier (submitted upstream, pending acceptance).",
         "isPartOf": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website" },
         "primaryImageOfPage": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image" },
         "mainEntity": [
@@ -417,16 +417,6 @@
         "author": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
       },
       {
-        "@type": "Dataset",
-        "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#payswift-corpus",
-        "name": "PaySwift synthetic project-memory corpus",
-        "description": "Synthetic project-memory benchmark corpus of 22,363 events (about 9 million tokens) with 30 multiple-choice queries (40 options each) and gold citation event IDs, used for the CSM scaling and citation-grounding studies.",
-        "url": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/tree/main/data/eval/corpus-synthetic",
-        "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-        "isAccessibleForFree": true,
-        "creator": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
-      },
-      {
         "@type": "FAQPage",
         "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#faq",
         "mainEntity": [
@@ -469,14 +459,6 @@
               "@type": "Answer",
               "text": "At 100K CSM scores higher and retrieves 1.84x faster, but it spends more tokens. CSM's all-in cost is ~35.8K input tokens/query: a 27.0K answer packet (vs Hindsight's 17.7K, +53%) plus 8,805 input / 625 output tokens on its internal probe/recall/synthesize pipeline. Hindsight reports only its answer context (no internal figure) and distills memory at ingest, so its all-in total is unstated. CSM's internal tokens run on models ~10x cheaper, so they are ~25% of the token count but ~7% of the dollars. Above 100K Hindsight also scores higher. All single-trial."
             }
-          },
-          {
-            "@type": "Question",
-            "name": "Is CSM state-of-the-art on BABILong?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No. On the shared QA1/QA2 slice at 4K and 8K, CSM matches the historical top systems on QA1 (100.0 / 96.7) and its QA2 result (73.3 / 83.3) beats GPT-4's historical line and ChatQA + RAG by a wide margin, while still trailing the fine-tuned ARMT/Mamba/RMT systems. The repo explicitly does not claim BABILong SOTA, and notes the public BABILong leaderboard is a historical v0 snapshot, not fresh 2026 frontier-model evidence."
-            }
           }
         ]
       }
@@ -497,10 +479,8 @@
       <span class="sr-only">Toggle navigation</span>
     </button>
     <nav class="site-nav" id="site-nav" data-nav aria-label="Primary">
-      <a href="#beam">BEAM 100K</a>
+      <a href="#beam">BEAM ladder</a>
       <a href="#how">How it works</a>
-      <a href="#scaling">Scaling</a>
-      <a href="#babilong">BABILong</a>
       <a href="#rd">R&amp;D log</a>
       <a href="#faq">FAQ</a>
       <a class="nav-cta" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">GitHub</a>
@@ -905,201 +885,6 @@
       </div>
     </section>
 
-    <!-- ============ SCALING (GEMMA HEADLINE) ============ -->
-    <section class="section band" id="scaling" aria-labelledby="scaling-title">
-      <div class="section-inner">
-        <div class="section-head" data-reveal>
-          <p class="kicker">Further evidence · synthetic</p>
-          <h2 id="scaling-title">On a synthetic corpus, CSM holds while long-context collapses.</h2>
-          <p class="section-lede">
-            Separate from BEAM, and against weaker baselines: on the synthetic PaySwift corpus (Gemma 4 31B,
-            fixed 8K window), scaling 100K → 1M leaves CSM roughly flat (28/30 → 27/30) while brute-force
-            long-context collapses and embedding-RAG degrades — CSM beats long-context 27–9 (exact McNemar
-            p&lt;0.0001), at zero LLM-indexing cost. This is the scoped <em>“doesn’t degrade vs long-context”</em>
-            result — context for the BEAM ladder above, not the headline.
-          </p>
-        </div>
-
-        <div class="chart-grid">
-          <figure class="paper-card" data-reveal>
-            <img src="assets/scaling.svg" width="580" height="416" loading="lazy" decoding="async"
-                 alt="Accuracy as memory scales 10x: CSM holds (93 to 90 percent), vanilla RAG degrades (97 to 83 percent), long-context stays collapsed (37 to 30 percent)">
-            <figcaption>Synthetic scaling run (PaySwift, 8K window): CSM holds while baselines degrade.</figcaption>
-          </figure>
-          <figure class="paper-card" data-reveal style="--d:0.08s">
-            <img src="assets/citation-f1.svg" width="694" height="376" loading="lazy" decoding="async"
-                 alt="Citation F1 by system at 100K: CSM 0.470, hybrid RAG 0.455, vanilla RAG 0.446, LightRAG 0.265, long-context 0.067">
-            <figcaption>Citation grounding at 100K: CSM 0.470 vs LightRAG 0.265 and long-context 0.067.</figcaption>
-          </figure>
-        </div>
-
-        <div class="fact-row" data-reveal>
-          <div class="fact">
-            <strong>28/30 → 27/30</strong>
-            <span>CSM accuracy, 100K → 1M (current-pipeline rows)</span>
-          </div>
-          <div class="fact">
-            <strong>27–9</strong>
-            <span>vs long-context at 1M · McNemar p&lt;0.0001</span>
-          </div>
-          <div class="fact">
-            <strong>0.470 vs 0.265</strong>
-            <span>citation F1 vs LightRAG (accuracy 28/30 vs 24/30)</span>
-          </div>
-          <div class="fact">
-            <strong>22,363 events</strong>
-            <span>~9M-token CC0 PaySwift corpus, 30 MCQs × 40 options</span>
-          </div>
-        </div>
-
-        <div class="callout" data-reveal>
-          <h3>Honest calibration</h3>
-          <p>
-            Single-trial; Gemma at temp=0 is not bitwise-deterministic across processes, so CSM’s absolute
-            accuracy is ~27–30/30 across runs. The robust claim is <strong>“does not degrade as memory grows,
-            while the alternatives do”</strong> — not that the raw score climbs. Against vanilla/hybrid RAG,
-            accuracy is a statistical tie; CSM’s honest edge is citation quality plus zero-LLM indexing.
-            Mem0 and HippoRAG are documented as <em>blocked locally, not beaten</em>.
-          </p>
-        </div>
-
-        <p class="evidence-row" data-reveal>
-          <span>Evidence</span>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/SOTA_COMPARISON.md">SOTA_COMPARISON.md</a>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/PHASE_30Q_RESULTS.md">PHASE_30Q_RESULTS.md</a>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">EVIDENCE.md</a>
-          <code>npm run verify:published</code>
-        </p>
-      </div>
-    </section>
-
-    <!-- ============ GEMINI CROSS-MODEL ============ -->
-    <section class="section" id="gemini" aria-labelledby="gemini-title">
-      <div class="section-inner">
-        <div class="section-head" data-reveal>
-          <p class="kicker">Cross-model check</p>
-          <h2 id="gemini-title">Same story on a hosted frontier model.</h2>
-          <p class="section-lede">
-            Gemini 3.5 Flash, temperature 0, same 30 questions over 100K, 1M, and 2M corpora with model
-            context capped at 160K. At 2M tokens CSM answers 30/30 at ~29K mean input tokens while
-            long-context drops to 15/30 at ~170K tokens.
-          </p>
-        </div>
-
-        <div class="table-wrap card" data-reveal>
-          <table>
-            <caption>Gemini 3.5 Flash, 30 queries, corpus scaled 100K → 2M (single-trial, kept separate from the Gemma headline)</caption>
-            <thead>
-              <tr>
-                <th scope="col">System</th><th scope="col">100K</th><th scope="col">1M</th><th scope="col">2M</th>
-                <th scope="col">2M citation P/R/F1</th><th scope="col">2M mean input</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="hl"><th scope="row">CSM</th><td>30/30</td><td>28/30</td><td>30/30</td><td>0.722 / 0.450 / 0.479</td><td>28.7K</td></tr>
-              <tr><th scope="row">hybrid RAG</th><td>27/30</td><td>27/30</td><td>27/30</td><td>0.677 / 0.364 / 0.386</td><td>5.6K</td></tr>
-              <tr><th scope="row">vanilla RAG</th><td>28/30</td><td>26/30</td><td>26/30</td><td>0.600 / 0.315 / 0.334</td><td>5.4K</td></tr>
-              <tr><th scope="row">long-context</th><td>30/30</td><td>27/30</td><td>15/30</td><td>0.211 / 0.122 / 0.086</td><td>170.5K</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="chart-grid">
-          <figure class="paper-card" data-reveal>
-            <img src="assets/gemini-accuracy-scaling.svg" width="626" height="431" loading="lazy" decoding="async"
-                 alt="Gemini 3.5 Flash accuracy scaling from 100K to 2M tokens: CSM stays near 28 to 30 out of 30 while long-context drops to 15 out of 30 at 2M">
-            <figcaption>Accuracy from 100K to 2M: CSM stays at 28–30/30; long-context collapses at 2M.</figcaption>
-          </figure>
-          <figure class="paper-card" data-reveal style="--d:0.08s">
-            <img src="assets/gemini-citation-grounding.svg" width="618" height="363" loading="lazy" decoding="async"
-                 alt="Gemini 3.5 Flash citation grounding at 2M tokens: CSM leads hybrid RAG, vanilla RAG, and long-context on citation F1 while using far less input than long-context">
-            <figcaption>Citation grounding at 2M: CSM leads on F1 while using ~6× less input than long-context.</figcaption>
-          </figure>
-        </div>
-
-        <p class="evidence-row" data-reveal>
-          <span>Evidence</span>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/GEMINI.md">GEMINI.md</a>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/EVIDENCE.md">EVIDENCE.md</a>
-          <code>npm run verify:published</code>
-        </p>
-      </div>
-    </section>
-
-    <!-- ============ BABILONG ============ -->
-    <section class="section band" id="babilong" aria-labelledby="babilong-title">
-      <div class="section-inner">
-        <div class="section-head" data-reveal>
-          <p class="kicker">External diagnostic</p>
-          <h2 id="babilong-title">BABILong: promising — and explicitly not SOTA.</h2>
-          <p class="section-lede">
-            On the shared QA1/QA2 slice at 4K and 8K, CSM matches the historical top systems on QA1 and its
-            QA2 now beats GPT-4’s historical line and ChatQA + RAG by a wide margin — while still trailing the
-            fine-tuned ARMT/Mamba/RMT systems. The public BABILong leaderboard is a historical v0 snapshot,
-            so this repo does not use it as proof of 2026 SOTA.
-          </p>
-        </div>
-
-        <div class="table-wrap card" data-reveal>
-          <table>
-            <caption>BABILong shared slice (accuracy %), CSM vs historical leaderboard systems</caption>
-            <thead>
-              <tr>
-                <th scope="col">Slice</th><th scope="col">CSM</th><th scope="col">ARMT ft.</th>
-                <th scope="col">Mamba ft.</th><th scope="col">RMT ft.</th><th scope="col">GPT-4</th><th scope="col">ChatQA + RAG</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><th scope="row">QA1 / 4K</th><td class="hl-cell">100.0</td><td>100.0</td><td>100.0</td><td>100.0</td><td>95.0</td><td>58.0</td></tr>
-              <tr><th scope="row">QA1 / 8K</th><td class="hl-cell">96.7</td><td>100.0</td><td>100.0</td><td>100.0</td><td>93.0</td><td>58.0</td></tr>
-              <tr><th scope="row">QA2 / 4K</th><td class="hl-cell">73.3</td><td>100.0</td><td>98.0</td><td>98.0</td><td>68.0</td><td>19.0</td></tr>
-              <tr><th scope="row">QA2 / 8K</th><td class="hl-cell">83.3</td><td>100.0</td><td>98.0</td><td>97.0</td><td>65.0</td><td>14.0</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="fact-row" data-reveal>
-          <div class="fact">
-            <strong>3/30 → 22/30</strong>
-            <span>QA2 @ 4K across the June ablation (no bridge → entity bridge → chronicle)</span>
-          </div>
-          <div class="fact">
-            <strong>0/30 → 25/30</strong>
-            <span>QA2 @ 8K across the same three pipeline stages</span>
-          </div>
-          <div class="fact">
-            <strong>30/30 · 29/30</strong>
-            <span>QA1 stays at or near ceiling throughout</span>
-          </div>
-        </div>
-
-        <div class="chart-grid">
-          <figure class="paper-card" data-reveal>
-            <img src="assets/babilong-shared-sota-slice.svg" width="825" height="450" loading="lazy" decoding="async"
-                 alt="BABILong shared QA1 and QA2 slice comparing CSM against ARMT, Mamba, RMT, GPT-4, and ChatQA plus RAG at 4K and 8K">
-            <figcaption>The shared QA1/QA2 diagnostic slice: useful evidence, clearly-labeled gap to fine-tuned recurrence.</figcaption>
-          </figure>
-          <figure class="paper-card" data-reveal style="--d:0.08s">
-            <img src="assets/gemini-babilong-ablation.svg" width="667" height="407" loading="lazy" decoding="async"
-                 alt="Gemini 3.5 Flash plus CSM on BABILong: the entity bridge and then the June 2026 chronicle pipeline lift task2 from 10 to 73 percent at 4K and from 0 to 83 percent at 8K while task1 stays at or near 100 percent">
-            <figcaption>CSM ablation on BABILong tasks 1–2: the chronicle pipeline lifts QA2 from near-zero to 73–83%.</figcaption>
-          </figure>
-          <figure class="paper-card wide" data-reveal style="--d:0.16s">
-            <img src="assets/babilong-official-leaderboard.svg" width="686" height="457" loading="lazy" decoding="async"
-                 alt="Historical BABILong v0 leaderboard top systems: ARMT and Mamba fine-tunes are near 98 percent at 4K and 8K, RMT is around 90 percent, GPT-4 is in the low 70s, and ChatQA plus RAG is around 45 percent">
-            <figcaption>The historical BABILong v0 leaderboard, kept only for context and labeled stale on purpose.</figcaption>
-          </figure>
-        </div>
-
-        <p class="evidence-row" data-reveal>
-          <span>Evidence</span>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BABILONG_RESULTS.md">BABILONG_RESULTS.md</a>
-          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/BENCHMARK_FRESHNESS.md">BENCHMARK_FRESHNESS.md</a>
-          <code>npm run bench:babilong:csm</code>
-        </p>
-      </div>
-    </section>
-
     <!-- ============ JUNE R&D WAVE ============ -->
     <section class="section" id="rd" aria-labelledby="rd-title">
       <div class="section-inner">
@@ -1260,14 +1045,6 @@
               Hindsight reports only its answer context (no internal figure) and distills memory at ingest, so its
               all-in is unstated. CSM's internal tokens run on models ~10× cheaper — ~25% of the token count but
               ~7% of the dollars. Above 100K Hindsight also scores higher. All single-trial.
-            </p>
-          </details>
-          <details class="faq-item">
-            <summary>Is CSM state-of-the-art on BABILong?</summary>
-            <p>
-              No. On the shared QA1/QA2 slice CSM matches the historical top systems on QA1 (100.0 / 96.7) and its
-              QA2 (73.3 / 83.3) beats GPT-4’s historical line and ChatQA + RAG, while still trailing fine-tuned
-              ARMT/Mamba/RMT systems. The repo does not claim BABILong SOTA — the public board is a historical v0 snapshot.
             </p>
           </details>
         </div>
