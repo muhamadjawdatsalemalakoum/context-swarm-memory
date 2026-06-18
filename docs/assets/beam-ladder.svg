@@ -79,5 +79,5 @@
   <text class="ax" x="395" y="378" text-anchor="middle">BEAM split (per-unit haystack size)</text>
 
   <text class="cap" x="40" y="406">Single-trial · unmodified AMB runner · answer gemini-3.1-pro-preview, judge gemini-2.5-flash-lite.</text>
-  <text class="cap" x="40" y="424">Hindsight = Vectorize's own committed AMB run; CSM answer context ~26–33K tokens vs Hindsight ~18–27K.</text>
+  <text class="cap" x="40" y="424">Hindsight = Vectorize's own committed AMB run; CSM answer context ~26–33K (all-in ~36–38K incl. internal) vs Hindsight ~18–27K.</text>
 </svg>

@@ -30,9 +30,10 @@ snapshot, and event IDs**. Querying memory never mutates it; durable memory
 changes only through an explicit Committer protocol. It's an alternative to /
 complement of classic RAG, built for narrative, evolving project memory.
 
-The point of the design: **what the answering model sees stays small and
-bounded no matter how large the underlying memory gets** — so retrieval cost
-doesn't balloon with history.
+The point of the design: **CSM's total retrieval cost per query stays bounded
+no matter how large the underlying memory gets** — ~36–38K input tokens all-in
+(what the answer model sees, plus CSM's own probe/recall/synthesize calls),
+flat as history grows. Cost doesn't balloon with memory.
 
 ---
 
@@ -47,20 +48,30 @@ queries.
 
 <p align="center"><img src="docs/assets/beam-ladder.svg" width="760" alt="CSM vs Hindsight on BEAM 100K to 10M: CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K but stays flat from 1M to 10M while Hindsight drops, narrowing the gap."></p>
 
-| BEAM tier | CSM score | Hindsight score | CSM context | Hindsight context |
-|---|---:|---:|---:|---:|
-| 100K | **0.7367** | 0.7337 | 27.0K | 17.7K |
-| 500K | 0.6589 | **0.7112** | 26.6K | 20.5K |
-| 1M | 0.5693 | **0.7386** | 28.2K | 23.9K |
-| 10M | 0.5616 | **0.6408** | 32.5K | 27.3K |
+| BEAM tier | CSM score | Hindsight score | CSM answer-ctx | Hindsight answer-ctx | CSM all-in input¹ |
+|---|---:|---:|---:|---:|---:|
+| 100K | **0.7367** | 0.7337 | 27.0K | 17.7K | **35.8K** |
+| 500K | 0.6589 | **0.7112** | 26.6K | 20.5K | **36.2K** |
+| 1M | 0.5693 | **0.7386** | 28.2K | 23.9K | **38.1K** |
+| 10M | 0.5616 | **0.6408** | 32.5K | 27.3K | **35.9K** |
+
+<sup>¹ CSM all-in input = answer-visible context **plus** CSM's own
+probe/recall/synthesize tokens — the honest per-query total. Hindsight
+discloses no internal-pipeline cost and synthesizes memory at ingest, so it has
+no comparable all-in figure; its column is answer-context only.</sup>
 
 Read straight, three things:
 
-1. **Cost stays flat across a 100× range.** CSM's answer-visible context is
-   ~26–33K tokens whether the per-unit haystack is 154K (100K) or **11.7M**
-   (10M); its internal pipeline cost is bounded too. Retrieval cost does not
-   scale with corpus size. (Hindsight is also bounded — and leaner — so this is
-   a property of CSM, not a win over Hindsight.)
+1. **Total cost stays flat across a 100× range.** CSM's *all-in* input — what
+   the answer model sees **plus** CSM's own probe/recall/synthesize calls — is
+   **~36–38K tokens per query** whether the per-unit haystack is 154K (100K) or
+   **11.7M** (10M). Retrieval cost does not scale with corpus size. The
+   answer-visible slice alone is ~26–33K; the internal pipeline adds ~3–10K
+   (≈25% of the token count, but on models ~10× cheaper, so ~7% of dollars).
+   Apples-to-apples on the answer context Hindsight is leaner (17.7–27.3K vs our
+   26–33K); on *total* cost Hindsight reports no internal figure and distills
+   memory at ingest, so its all-in is unstated — CSM's accounting is the
+   complete one.
 2. **CSM trails Hindsight above 100K — stated plainly.** CSM edges Hindsight at
    100K (0.7367 vs 0.7337, within single-trial noise); Hindsight leads at
    500K/1M/10M, most at 1M (+0.17).
@@ -117,10 +128,14 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
   Hindsight numbers are recomputed from Vectorize's own committed AMB artifacts,
   not a fresh official run; and CSM has no "official" status until the
   maintainers accept the provider/result.
-- **Latency is multi-call by design.** CSM runs probe → recall → synthesize
-  rather than one retrieval call; the June 2026 rebuild cut average BEAM
-  retrieval ~8× (29.2s → 3.47s at 100K) but it remains heavier than single-call
-  retrieval, and trends heavier at the deepest tiers (non-monotonic: 4.5/7.5/5.6/11.9s, peaking at 10M).
+- **Multi-call by design — costs latency and internal tokens.** CSM runs
+  probe → recall → synthesize rather than one retrieval call. The June 2026
+  rebuild cut average BEAM retrieval ~8× (29.2s → 3.47s at 100K) but it remains
+  heavier than single-call retrieval, and trends heavier at the deepest tiers
+  (non-monotonic: 4.5/7.5/5.6/11.9s, peaking at 10M). It also spends ~3–10K
+  internal input tokens/query on top of the answer context — counted in the
+  all-in ~36–38K above, on models ~10× cheaper. Hindsight's single-call design
+  carries less of this tax (though it pays an undisclosed ingest-time distillation cost).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
 ## Further evidence (synthetic + diagnostic, kept separate from BEAM)

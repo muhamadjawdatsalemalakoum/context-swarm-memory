@@ -150,9 +150,12 @@ probes): 30-query PaySwift average is now **7.15 s**; BEAM-scale expectation
    R&D topic for the portfolio wave).
 
 Target: average BEAM-style retrieval at or below **~6-7 s**, i.e. Hindsight
-parity, while keeping CSM's score and lower answer-visible context. Every
-change above is schedule-only or gated on internal-bench accuracy; none touch
-what the answer model sees except by making it available sooner.
+parity, while keeping CSM's score and bounded answer-visible context. (On the
+final BEAM ladder CSM's answer context is actually *higher* than Hindsight's —
+27.0K vs 17.7K at 100K — because the coverage chronicle fills its return-K
+budget; CSM's all-in input is ~36-38K/query. See `AMB_BEAM_LADDER_2026_06_18.md`.)
+Every change above is schedule-only or gated on internal-bench accuracy; none
+touch what the answer model sees except by making it available sooner.
 
 ## Quality gates
 

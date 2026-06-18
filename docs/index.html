@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory</title>
-  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Across the full AMB BEAM ladder (100K→10M) its answer-visible context stays flat at ~26–33K tokens; CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Across the full AMB BEAM ladder (100K→10M) its total retrieval cost stays flat at ~36–38K input tokens/query (answer model + internal pipeline); CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="Muhamad J. Akoum">
   <meta name="application-name" content="Context Swarm Memory">
@@ -21,7 +21,7 @@
   <meta property="og:site_name" content="Context Swarm Memory">
   <meta property="og:locale" content="en_US">
   <meta property="og:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta property="og:description" content="Cited, auditable LLM agent memory whose answer context stays flat (~26–33K tokens) across the full AMB BEAM ladder, 100K→10M. CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta property="og:description" content="Cited, auditable LLM agent memory whose total retrieval cost stays flat (~36–38K input tokens/query) across the full AMB BEAM ladder, 100K→10M. CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta property="og:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1916">
@@ -31,7 +31,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta name="twitter:description" content="Full AMB BEAM ladder 100K→10M: CSM's answer context stays flat at ~26–33K tokens as the haystack grows 100×. Leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta name="twitter:description" content="Full AMB BEAM ladder 100K→10M: CSM's total retrieval cost stays flat at ~36–38K input tokens/query as the haystack grows 100×. Leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta name="twitter:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta name="twitter:image:alt" content="Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet">
 
@@ -352,7 +352,7 @@
         "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
         "name": "Context Swarm Memory",
         "alternateName": ["CSM", "Context Swarm Memory (CSM)"],
-        "description": "Open-source LLM agent memory system with bounded read-only shards, cited recall, and Committer-gated writes, benchmarked across the full AMB BEAM ladder (100K to 10M) where its answer-visible context stays flat, and leading Hindsight at the shared 100K tier.",
+        "description": "Open-source LLM agent memory system with bounded read-only shards, cited recall, and Committer-gated writes, benchmarked across the full AMB BEAM ladder (100K to 10M) where its total retrieval cost stays flat (~36-38K input tokens per query, answer model plus internal pipeline), and leading Hindsight at the shared 100K tier.",
         "inLanguage": "en",
         "publisher": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
       },
@@ -361,7 +361,7 @@
         "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#webpage",
         "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
         "name": "Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory",
-        "description": "Homepage and evidence summary for Context Swarm Memory: the full AMB BEAM scaling ladder (100K to 10M, single-trial) showing answer-context held flat as memory grows, the Hindsight head-to-head at the shared 100K tier (submitted upstream, pending acceptance), and supporting synthetic and diagnostic studies.",
+        "description": "Homepage and evidence summary for Context Swarm Memory: the full AMB BEAM scaling ladder (100K to 10M, single-trial) showing total retrieval cost held flat (~36-38K input tokens per query) as memory grows, the Hindsight head-to-head at the shared 100K tier (submitted upstream, pending acceptance), and supporting synthetic and diagnostic studies.",
         "isPartOf": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#website" },
         "primaryImageOfPage": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#cover-image" },
         "mainEntity": [
@@ -401,7 +401,7 @@
         "programmingLanguage": "TypeScript",
         "runtimePlatform": "Node.js 22+",
         "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
-        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M) its answer-visible context stays flat at roughly 26 to 33K tokens even as the corpus grows 100x; it leads Hindsight at the shared 100K tier (0.7367 versus 0.7337), submitted upstream and pending acceptance.",
+        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M) its total cost per query stays flat at roughly 36 to 38K input tokens (a 26 to 33K answer packet plus its internal probe/recall/synthesize calls) even as the corpus grows 100x; it leads Hindsight at the shared 100K tier (0.7367 versus 0.7337), submitted upstream and pending acceptance.",
         "keywords": [
           "LLM memory",
           "agent memory",
@@ -467,7 +467,7 @@
             "name": "What is the honest tradeoff versus Hindsight?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "In the official-runner rerun CSM scores higher and retrieves 1.84x faster, but its answer-visible context is larger than Hindsight's (27.0K vs 17.7K tokens, +53%), it additionally spends 8.8K internal input tokens per query on its probe/recall/synthesis pipeline (reported separately so total cost is never under-stated), and the run is single-trial."
+              "text": "At 100K CSM scores higher and retrieves 1.84x faster, but it spends more tokens. CSM's all-in cost is ~35.8K input tokens/query: a 27.0K answer packet (vs Hindsight's 17.7K, +53%) plus 8,805 input / 625 output tokens on its internal probe/recall/synthesize pipeline. Hindsight reports only its answer context (no internal figure) and distills memory at ingest, so its all-in total is unstated. CSM's internal tokens run on models ~10x cheaper, so they are ~25% of the token count but ~7% of the dollars. Above 100K Hindsight also scores higher. All single-trial."
             }
           },
           {
@@ -516,12 +516,13 @@
           <a href="https://github.com/vectorize-io/agent-memory-benchmark/pull/19">PR&nbsp;#19</a> ·
           <strong>pending acceptance</strong></span>
       </p>
-      <h1 id="hero-title">The haystack grows 100×. The context stays <span class="hl">flat</span>.</h1>
+      <h1 id="hero-title">The haystack grows 100×. The cost stays <span class="hl">flat</span>.</h1>
       <p class="hero-lede">
-        Context Swarm Memory (CSM) is open-source agent memory built so the answering model sees a
-        small, fully-<strong>cited</strong> packet — about 26–33K tokens — whether the underlying memory
-        holds 100K or <strong>10M</strong> tokens. Bounded read-only shards, cheap probes, cited recall,
-        one explicit write gate; querying memory never mutates it.
+        Context Swarm Memory (CSM) is open-source agent memory whose <strong>total cost per query
+        stays flat</strong> — about <strong>36–38K input tokens</strong> all-in (the small, fully-<strong>cited</strong>
+        packet the answer model sees, ~26–33K, plus CSM's own probe/recall/synthesize calls) — whether the
+        underlying memory holds 100K or <strong>10M</strong> tokens. Bounded read-only shards, cheap probes,
+        cited recall, one explicit write gate; querying memory never mutates it.
       </p>
       <div class="hero-actions">
         <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">View on GitHub</a>
@@ -638,9 +639,9 @@
         <h2 id="numbers-title" class="sr-only">Headline metrics</h2>
         <div class="metric-grid" data-reveal>
           <div class="metric-card">
-            <strong class="metric-num">27–33<em>K</em></strong>
-            <span class="metric-label">answer context, 100K → 10M</span>
-            <span class="metric-sub">stays flat as haystack grows 100×</span>
+            <strong class="metric-num">36–38<em>K</em></strong>
+            <span class="metric-label">total input tokens/query, 100K → 10M</span>
+            <span class="metric-sub">all-in cost stays flat as haystack grows 100×</span>
           </div>
           <div class="metric-card">
             <strong class="metric-num"><span data-count="2000">2000</span></strong>
@@ -676,9 +677,10 @@
           <h2 id="beam-title">The full BEAM ladder: 100K → 10M.</h2>
           <p class="section-lede">
             CSM ran through the <strong>unmodified public AMB runner</strong> at every BEAM split, next to
-            Vectorize's own committed Hindsight run (same answer + judge models). CSM keeps a bounded
-            <strong>~26–33K-token packet at every tier</strong> — even at 10M, where each unit is an ~11.7M-token
-            document. It <strong>trails Hindsight above 100K</strong>, but degrades gracefully and
+            Vectorize's own committed Hindsight run (same answer + judge models). CSM keeps its
+            <strong>total cost per query bounded — ~36–38K input tokens all-in</strong> (a ~26–33K answer
+            packet plus its own probe/recall/synthesize calls) — at every tier, even at 10M, where each unit
+            is an ~11.7M-token document. It <strong>trails Hindsight above 100K</strong>, but degrades gracefully and
             <strong>stabilizes at the extreme</strong> while Hindsight drops — so the gap narrows from 1M to 10M.
           </p>
         </div>
@@ -691,15 +693,15 @@
 
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption>Full BEAM ladder, unmodified AMB runner, same answer/judge models, single-trial. Hindsight = Vectorize's own committed run; leader per tier highlighted.</caption>
+            <caption>Full BEAM ladder, unmodified AMB runner, same answer/judge models, single-trial. Hindsight = Vectorize's own committed run; leader per tier highlighted. <strong>CSM all-in</strong> = answer-visible context <strong>plus</strong> CSM's internal probe/recall/synthesize tokens — the honest per-query total. Hindsight discloses no internal cost (and distills memory at ingest), so its column is answer-context only and it has no comparable all-in figure.</caption>
             <thead>
-              <tr><th scope="col">BEAM tier</th><th scope="col">CSM score</th><th scope="col">Hindsight score</th><th scope="col">CSM context</th><th scope="col">Hindsight context</th></tr>
+              <tr><th scope="col">BEAM tier</th><th scope="col">CSM score</th><th scope="col">Hindsight score</th><th scope="col">CSM answer-ctx</th><th scope="col">Hindsight answer-ctx</th><th scope="col">CSM all-in input</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">100K</th><td class="hl-cell">0.7367</td><td>0.7337</td><td>27.0K</td><td>17.7K</td></tr>
-              <tr><th scope="row">500K</th><td>0.6589</td><td class="hl-cell">0.7112</td><td>26.6K</td><td>20.5K</td></tr>
-              <tr><th scope="row">1M</th><td>0.5693</td><td class="hl-cell">0.7386</td><td>28.2K</td><td>23.9K</td></tr>
-              <tr><th scope="row">10M</th><td>0.5616</td><td class="hl-cell">0.6408</td><td>32.5K</td><td>27.3K</td></tr>
+              <tr><th scope="row">100K</th><td class="hl-cell">0.7367</td><td>0.7337</td><td>27.0K</td><td>17.7K</td><td><strong>35.8K</strong></td></tr>
+              <tr><th scope="row">500K</th><td>0.6589</td><td class="hl-cell">0.7112</td><td>26.6K</td><td>20.5K</td><td><strong>36.2K</strong></td></tr>
+              <tr><th scope="row">1M</th><td>0.5693</td><td class="hl-cell">0.7386</td><td>28.2K</td><td>23.9K</td><td><strong>38.1K</strong></td></tr>
+              <tr><th scope="row">10M</th><td>0.5616</td><td class="hl-cell">0.6408</td><td>32.5K</td><td>27.3K</td><td><strong>35.9K</strong></td></tr>
             </tbody>
           </table>
         </div>
@@ -714,8 +716,8 @@
             <span>1M→10M: CSM nearly flat (improves in 7/10 categories) while Hindsight drops</span>
           </div>
           <div class="fact">
-            <strong>26–33K</strong>
-            <span>CSM answer context, flat across a 100× range (Hindsight also bounded, leaner)</span>
+            <strong>36–38K</strong>
+            <span>CSM all-in input/query, flat across a 100× range (~26–33K answer packet + internal pipeline; Hindsight leaner on answer context, discloses no internal)</span>
           </div>
         </div>
 
@@ -785,7 +787,7 @@
 
           <div class="duel card" data-reveal style="--d:0.16s">
             <h3>Avg answer-visible context <span class="duel-tag trade">honest trade: +53%</span></h3>
-            <p class="duel-note">lower is better — Hindsight is leaner here</p>
+            <p class="duel-note">lower is better — Hindsight is leaner here. Answer-context only (apples-to-apples); CSM's all-in is ~35.8K with +8.8K internal, Hindsight discloses no internal cost.</p>
             <div class="duel-row">
               <span class="duel-label">CSM</span>
               <span class="duel-track"><i class="duel-bar csm" style="--w:100%"></i></span>
@@ -800,13 +802,16 @@
         </div>
 
         <div class="callout" data-reveal>
-          <h3>Disclosed trades, in plain sight</h3>
+          <h3>The all-in cost, printed — not left to be added up</h3>
           <p>
-            CSM’s answer-visible context is now <strong>larger than Hindsight’s (+53%)</strong> because the coverage
-            chronicle fills its return-K budget, and CSM additionally spends <strong>8,805 input / 625 output tokens
-            per query</strong> on its internal probe/recall/synthesis pipeline (down 58% from May’s 21,020) — reported
-            separately via a telemetry sidecar so total cost is never under-stated. The run is <strong>single-trial</strong>.
-            No gold answers, rubrics, or query IDs ever reach retrieval.
+            At 100K, CSM's <strong>all-in cost is ~35.8K input tokens/query</strong>: a 27.0K answer packet
+            (larger than Hindsight's 17.7K, <strong>+53%</strong>, because the coverage chronicle fills its
+            return-K budget) <strong>plus 8,805 input / 625 output tokens</strong> on its internal
+            probe/recall/synthesize pipeline (down 58% from May's 21,020). We print the sum rather than report the
+            halves separately. Hindsight reports only its answer context — no internal figure — and distills memory
+            at ingest, so its all-in total is unstated and not directly comparable. The internal tokens run on models
+            ~10× cheaper than the answer model, so they're ~25% of the token <em>count</em> but ~7% of the
+            <em>dollars</em>. The run is <strong>single-trial</strong>; no gold answers, rubrics, or query IDs ever reach retrieval.
           </p>
         </div>
 
@@ -1249,9 +1254,12 @@
           <details class="faq-item">
             <summary>What is the honest tradeoff versus Hindsight?</summary>
             <p>
-              CSM scores higher and retrieves 1.84× faster in the official-runner rerun, but its answer-visible
-              context is larger than Hindsight’s (27.0K vs 17.7K tokens, +53%), it spends 8.8K internal input
-              tokens per query on its probe/recall/synthesis pipeline (reported separately), and the run is single-trial.
+              At 100K CSM scores higher and retrieves 1.84× faster, but it spends more tokens. CSM's
+              <strong>all-in cost is ~35.8K input tokens/query</strong>: a 27.0K answer packet (vs Hindsight's
+              17.7K, +53%) <strong>plus</strong> 8,805 input / 625 output internal tokens on probe/recall/synthesize.
+              Hindsight reports only its answer context (no internal figure) and distills memory at ingest, so its
+              all-in is unstated. CSM's internal tokens run on models ~10× cheaper — ~25% of the token count but
+              ~7% of the dollars. Above 100K Hindsight also scores higher. All single-trial.
             </p>
           </details>
           <details class="faq-item">

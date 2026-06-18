@@ -15,12 +15,16 @@ instructions and demonstrate results with the benchmark runners.
 
 CSM is +0.95 score points and +11 correct rows versus the published Hindsight
 row, with retrieval now **1.84x FASTER** than Hindsight (the May local run was
-4.58x slower). Honest trades, disclosed: answer-visible context is now larger
-than Hindsight's (+53%) because the coverage chronicle fills its return-K
-budget, and the run is single-trial. CSM-internal retrieval spend dropped to
-**8,805 input / 625 output tokens per query** (May: 21,020 / 2,531 — a 58%
-internal-input cut), reported separately via the telemetry sidecar so total
-cost is never under-stated.
+4.58x slower). Honest trades, disclosed: CSM spends more tokens. Its
+answer-visible context is larger than Hindsight's (27,026 vs 17,655, **+53%**)
+because the coverage chronicle fills its return-K budget, and it spends a
+further **8,805 input / 625 output tokens per query** on its internal
+probe/recall/synthesize pipeline (May: 21,020 / 2,531 — a 58% internal-input
+cut). **All-in that is ~35.8K input tokens/query** — the honest total, stated
+rather than left to be added up. Hindsight reports only its answer context (no
+internal figure) and distills memory at ingest, so its all-in is unstated; and
+CSM's internal tokens run on models ~10x cheaper than the answer model (~25% of
+the token count, ~7% of dollars). The run is single-trial.
 
 ## Per-category
 

@@ -27,25 +27,34 @@ Complete BEAM scaling ladder for Context Swarm Memory, run through the
 
 ## Headline results
 
-| Tier | Correct | Score | Avg retrieve | Avg answer-context | CSM-internal tok (in/out) |
-|---|---:|---:|---:|---:|---:|
-| 100K | 335/400 | **0.7367** | 4.47s | 27,026 | 8,805 / 625 |
-| 500K | 497/700 | **0.6589** | 7.51s | 26,618 | 9,603 / 684 |
-| 1M | 445/700 | **0.5693** | 5.60s | 28,192 | 9,934 / 703 |
-| 10M | 122/200 | **0.5616** | 11.92s | 32,512 | 3,427 / 185 |
+| Tier | Correct | Score | Avg retrieve | Avg answer-context | CSM-internal tok (in/out) | All-in input¹ |
+|---|---:|---:|---:|---:|---:|---:|
+| 100K | 335/400 | **0.7367** | 4.47s | 27,026 | 8,805 / 625 | **35,831** |
+| 500K | 497/700 | **0.6589** | 7.51s | 26,618 | 9,603 / 684 | **36,221** |
+| 1M | 445/700 | **0.5693** | 5.60s | 28,192 | 9,934 / 703 | **38,126** |
+| 10M | 122/200 | **0.5616** | 11.92s | 32,512 | 3,427 / 185 | **35,939** |
 
 All rows unique (no duplicates); 2,000/2,000 graded.
 
+¹ **All-in input** = answer-visible context + CSM-internal input tokens — the
+honest per-query total, printed rather than left for the reader to add. The
+answer-visible tokens hit `gemini-3.1-pro-preview`; the internal tokens hit
+`gemini-3.5-flash` / `gemini-2.5-flash-lite` (~10× cheaper per token), so
+internal is ~25% of the token count but only ~7% of dollar cost. Internal
+output (185–703 tok) is excluded from this input total and reported in the
+in/out column.
+
 ## The two load-bearing findings
 
-**1. Answer-visible context stays bounded across a 100× haystack.**
-27.0K → 26.6K → 28.2K → 32.5K tokens as the per-unit haystack grows from
-~154K (100K) to ~11.7M (10M) tokens. This is the core CSM property,
-now measured end-to-end: retrieval cost to the answer model does not scale
-with corpus size. A brute-force long-context system at 10M would feed the
-answer model on the order of millions of tokens (or simply not fit).
-CSM-internal pipeline cost also stays bounded (and is actually *lowest* at
-10M — one giant shard means one probe + one recall).
+**1. Total cost stays bounded across a 100× haystack.** All-in input per query
+is 35.8K → 36.2K → 38.1K → 35.9K tokens (answer-visible 27.0K → 26.6K → 28.2K →
+32.5K, plus the internal pipeline) as the per-unit haystack grows from ~154K
+(100K) to ~11.7M (10M) tokens. This is the core CSM property, now measured
+end-to-end: total retrieval cost does not scale with corpus size. A brute-force
+long-context system at 10M would feed the answer model on the order of millions
+of tokens (or simply not fit). The internal pipeline is actually *lowest* at 10M
+(one giant shard means one probe + one recall) and runs on models ~10× cheaper
+than the answer model, so it is ~25% of the token count but ~7% of dollars.
 
 **2. Accuracy declines with scale, but the decline flattens and is
 category-specific.** Overall 0.737 → 0.659 → 0.569 → 0.562 — monotonic, but
@@ -150,5 +159,6 @@ the verifier prints an explicit SKIP otherwise). The pins live in
 | 10M | `5a6ba9d83233ee7da908c4f86a2f4044888c1ae4d427f61bd56fce49d85f8b90` | `5b4c1320be6fdb55bde41857d4d8b4039c57750860287f166a7bb07f5fb6738b` |
 
 CSM-internal token cost per query (deduped telemetry, in/out): 100K
-8,805/625 · 500K 9,603/684 · 1M 9,934/703 · 10M 3,427/185 — reported
-separately from the answer-visible context so total cost is never under-stated.
+8,805/625 · 500K 9,603/684 · 1M 9,934/703 · 10M 3,427/185 — added to the
+answer-visible context to give the **All-in input** column in the headline
+table (35.8K/36.2K/38.1K/35.9K), so the total is printed, not just implied.

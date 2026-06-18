@@ -25,13 +25,22 @@ CSM vs Hindsight by tier:
 - 10M:  CSM 0.5616 vs Hindsight 0.6408  (Hindsight leads, +0.08)
 
 Answer-visible context per tier (CSM / Hindsight): 27.0K/17.7K, 26.6K/20.5K,
-28.2K/23.9K, 32.5K/27.3K.
+28.2K/23.9K, 32.5K/27.3K. CSM ALL-IN input per tier (answer-visible + internal
+pipeline): 35.8K, 36.2K, 38.1K, 35.9K — this is the honest per-query total.
+Hindsight discloses no internal-pipeline cost (and distills memory at ingest),
+so its all-in total is unstated and not directly comparable; the answer-visible
+column is the only apples-to-apples cost comparison.
 
 Honest reading (this is the canonical framing; do not overstate it):
-- CSM keeps the answer model's context bounded (~26-33K tokens) whether the
-  per-unit haystack is 154K or 11.7M tokens, and its internal pipeline cost is
-  bounded too. Hindsight is also bounded and slightly leaner, so flat cost is a
-  property of CSM, NOT a win over Hindsight.
+- CSM keeps its TOTAL cost per query bounded (~36-38K all-in input tokens =
+  ~26-33K answer-visible + ~3-10K internal pipeline) whether the per-unit
+  haystack is 154K or 11.7M tokens. "A token is a token" for count/latency:
+  internal is ~25% of the token count; but the internal tokens hit models ~10x
+  cheaper than the answer model, so they are only ~7% of dollar cost. On the
+  apples-to-apples answer-visible slice Hindsight is leaner (17.7-27.3K vs CSM's
+  26-33K); on TOTAL cost Hindsight reports no internal figure, so CSM's
+  accounting is the complete one. Flat cost is a property of CSM, NOT a win over
+  Hindsight.
 - CSM leads Hindsight ONLY at 100K (thin, within noise) and TRAILS at
   500K/1M/10M.
 - But CSM degrades gracefully and stabilizes at the extreme: from 1M to 10M CSM
@@ -83,9 +92,10 @@ A: CSM trails Hindsight above 100K, but degrades gracefully and stabilizes at
 the extreme while Hindsight drops: from 1M to 10M CSM is essentially flat
 (-0.008, improving in 7 of 10 categories on the identical 10M questions) while
 Hindsight falls -0.098 (9 of 10), so Hindsight's lead more than halves (+0.169
-to +0.079). CSM also keeps a bounded ~26-33K answer context across the 100x
-corpus range. Honest summary: competitive and faster at 100K, trails at depth,
-with a narrowing gap and graceful degradation — not a win. Whether CSM overtakes
+to +0.079). CSM also keeps its total cost bounded across the 100x corpus range
+(~36-38K all-in input tokens/query = ~26-33K answer-visible + ~3-10K internal
+pipeline). Honest summary: competitive and faster at 100K, trails at depth, with
+a narrowing gap and graceful degradation — not a win. Whether CSM overtakes
 beyond 10M is an open question.
 
 Q: Is this an official leaderboard claim?
@@ -100,12 +110,16 @@ hardcoding (the June 2026 wave also deleted the legacy domain term tables from
 the active path).
 
 Q: What is the main tradeoff versus Hindsight?
-A: At 100K CSM scores slightly higher and retrieves 1.84x faster, but at
-500K/1M/10M Hindsight scores higher and uses a leaner answer context. CSM's
-honest edges are architectural — open-source, cited to shard/snapshot/event
-IDs, zero-LLM indexing, Committer-gated, auditable — plus graceful degradation
-that narrows the gap at the extreme. CSM spends ~8.8K internal input tokens per
-query (reported separately), and all runs are single-trial.
+A: At 100K CSM scores slightly higher and retrieves 1.84x faster, but it spends
+more tokens. CSM's all-in cost is ~35.8K input tokens/query at 100K = a 27.0K
+answer packet (vs Hindsight's 17.7K, +53%) plus 8,805 input / 625 output
+internal tokens on probe/recall/synthesize. Hindsight reports only its answer
+context (no internal figure) and distills memory at ingest, so its all-in is
+unstated. CSM's internal tokens run on models ~10x cheaper, so they are ~25% of
+the token count but ~7% of dollars. Above 100K Hindsight also scores higher.
+CSM's honest edges are architectural — open-source, cited to
+shard/snapshot/event IDs, zero-LLM indexing, Committer-gated, auditable — plus
+graceful degradation that narrows the gap at the extreme. All single-trial.
 
 Q: Does CSM degrade as memory grows?
 A: It depends on the comparison. On BEAM, CSM's absolute accuracy declines with
@@ -177,8 +191,9 @@ Context Swarm Memory (CSM) is an open-source LLM memory system using bounded
 read-only memory shards, cited recall (shard/snapshot/event IDs), and
 Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M,
 single-trial, unmodified runner, same answer/judge models as Hindsight), CSM
-keeps the answer-visible context bounded (~26-33K tokens) as the corpus grows
-100x. CSM leads Hindsight at 100K (0.7367 vs 0.7337) and trails at 500K/1M/10M
+keeps its total cost per query bounded (~36-38K all-in input tokens = ~26-33K
+answer-visible + ~3-10K internal pipeline) as the corpus grows 100x. CSM leads
+Hindsight at 100K (0.7367 vs 0.7337) and trails at 500K/1M/10M
 (0.659/0.569/0.562 vs 0.711/0.739/0.641), but degrades gracefully and
 stabilizes at the extreme as Hindsight drops — the gap narrows from +0.17 to
 +0.08 between 1M and 10M. The 100K tier is submitted upstream
