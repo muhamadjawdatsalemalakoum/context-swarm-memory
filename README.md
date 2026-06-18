@@ -57,7 +57,7 @@ queries.
 Read straight, three things:
 
 1. **Cost stays flat across a 100× range.** CSM's answer-visible context is
-   ~27–33K tokens whether the per-unit haystack is 154K (100K) or **11.7M**
+   ~26–33K tokens whether the per-unit haystack is 154K (100K) or **11.7M**
    (10M); its internal pipeline cost is bounded too. Retrieval cost does not
    scale with corpus size. (Hindsight is also bounded — and leaner — so this is
    a property of CSM, not a win over Hindsight.)
@@ -113,12 +113,14 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
 - **Accuracy declines with BEAM scale**, concentrated in multi-hop categories;
   `multi_session_reasoning` at 10M (0.12) is the clearest gap. The flat-cost
   property is the durable claim, not absolute accuracy at extreme scale.
-- **No Hindsight comparison beyond 100K**, and no "official" status until the
+- **No *official-runner* Hindsight comparison beyond 100K.** The 500K/1M/10M
+  Hindsight numbers are recomputed from Vectorize's own committed AMB artifacts,
+  not a fresh official run; and CSM has no "official" status until the
   maintainers accept the provider/result.
 - **Latency is multi-call by design.** CSM runs probe → recall → synthesize
   rather than one retrieval call; the June 2026 rebuild cut average BEAM
   retrieval ~8× (29.2s → 3.47s at 100K) but it remains heavier than single-call
-  retrieval, and grows at deeper tiers.
+  retrieval, and trends heavier at the deepest tiers (non-monotonic: 4.5/7.5/5.6/11.9s, peaking at 10M).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
 ## Further evidence (synthetic + diagnostic, kept separate from BEAM)

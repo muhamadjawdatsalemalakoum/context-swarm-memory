@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory</title>
-  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Across the full AMB BEAM ladder (100K→10M) its answer-visible context stays flat at ~27–33K tokens; CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Across the full AMB BEAM ladder (100K→10M) its answer-visible context stays flat at ~26–33K tokens; CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="Muhamad J. Akoum">
   <meta name="application-name" content="Context Swarm Memory">
@@ -21,7 +21,7 @@
   <meta property="og:site_name" content="Context Swarm Memory">
   <meta property="og:locale" content="en_US">
   <meta property="og:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta property="og:description" content="Cited, auditable LLM agent memory whose answer context stays flat (~27–33K tokens) across the full AMB BEAM ladder, 100K→10M. CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta property="og:description" content="Cited, auditable LLM agent memory whose answer context stays flat (~26–33K tokens) across the full AMB BEAM ladder, 100K→10M. CSM leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta property="og:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1916">
@@ -31,7 +31,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta name="twitter:description" content="Full AMB BEAM ladder 100K→10M: CSM's answer context stays flat at ~27–33K tokens as the haystack grows 76×. Leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
+  <meta name="twitter:description" content="Full AMB BEAM ladder 100K→10M: CSM's answer context stays flat at ~26–33K tokens as the haystack grows 100×. Leads Hindsight at the shared 100K tier (0.7367 vs 0.7337) — submitted upstream, pending acceptance.">
   <meta name="twitter:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta name="twitter:image:alt" content="Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet">
 
@@ -401,7 +401,7 @@
         "programmingLanguage": "TypeScript",
         "runtimePlatform": "Node.js 22+",
         "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
-        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M) its answer-visible context stays flat at roughly 27 to 33K tokens even as the per-unit haystack grows 76x; it leads Hindsight at the shared 100K tier (0.7367 versus 0.7337), submitted upstream and pending acceptance.",
+        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the full AMB BEAM ladder (100K to 10M) its answer-visible context stays flat at roughly 26 to 33K tokens even as the corpus grows 100x; it leads Hindsight at the shared 100K tier (0.7367 versus 0.7337), submitted upstream and pending acceptance.",
         "keywords": [
           "LLM memory",
           "agent memory",
@@ -519,7 +519,7 @@
       <h1 id="hero-title">The haystack grows 100×. The context stays <span class="hl">flat</span>.</h1>
       <p class="hero-lede">
         Context Swarm Memory (CSM) is open-source agent memory built so the answering model sees a
-        small, fully-<strong>cited</strong> packet — about 27–33K tokens — whether the underlying memory
+        small, fully-<strong>cited</strong> packet — about 26–33K tokens — whether the underlying memory
         holds 100K or <strong>10M</strong> tokens. Bounded read-only shards, cheap probes, cited recall,
         one explicit write gate; querying memory never mutates it.
       </p>
@@ -640,7 +640,7 @@
           <div class="metric-card">
             <strong class="metric-num">27–33<em>K</em></strong>
             <span class="metric-label">answer context, 100K → 10M</span>
-            <span class="metric-sub">stays flat as haystack grows 76×</span>
+            <span class="metric-sub">stays flat as haystack grows 100×</span>
           </div>
           <div class="metric-card">
             <strong class="metric-num"><span data-count="2000">2000</span></strong>
@@ -677,7 +677,7 @@
           <p class="section-lede">
             CSM ran through the <strong>unmodified public AMB runner</strong> at every BEAM split, next to
             Vectorize's own committed Hindsight run (same answer + judge models). CSM keeps a bounded
-            <strong>~27–33K-token packet at every tier</strong> — even at 10M, where each unit is an ~11.7M-token
+            <strong>~26–33K-token packet at every tier</strong> — even at 10M, where each unit is an ~11.7M-token
             document. It <strong>trails Hindsight above 100K</strong>, but degrades gracefully and
             <strong>stabilizes at the extreme</strong> while Hindsight drops — so the gap narrows from 1M to 10M.
           </p>
@@ -714,14 +714,15 @@
             <span>1M→10M: CSM nearly flat (improves in 7/10 categories) while Hindsight drops</span>
           </div>
           <div class="fact">
-            <strong>27–33K</strong>
+            <strong>26–33K</strong>
             <span>CSM answer context, flat across a 100× range (Hindsight also bounded, leaner)</span>
           </div>
         </div>
 
         <h3 class="sub-title" data-reveal>The 100K submission (PR&nbsp;#19)</h3>
         <p class="section-lede" data-reveal style="margin-bottom:18px">
-          The 100K tier is the one submitted upstream for review: CSM's official-runner rerun scored
+          The 100K tier is the one submitted upstream for review: CSM's official-runner rerun — a separate,
+          single-trial run from the 0.7367 ladder tile above — scored
           <strong>0.743110</strong> (337/400) vs Hindsight's accepted artifact 0.733658 (326/400) — a thin,
           single-trial lead, retrieved 1.84× faster. The full-ladder table above shows the honest rest:
           Hindsight leads at 500K/1M/10M, and CSM narrows the gap at the extreme.
