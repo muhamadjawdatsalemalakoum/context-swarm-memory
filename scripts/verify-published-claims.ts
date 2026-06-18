@@ -705,6 +705,76 @@ function assertOfficialBeamRerun(): void {
   );
 }
 
+interface LadderTier {
+  contextTokens: number;
+  correct: number;
+  meanScore: number;
+  name: string;
+  retrieveMs: number;
+  sha256: string;
+  split: string;
+  total: number;
+}
+
+/**
+ * Verify the 2026-06-18 full BEAM ladder (100K -> 500K -> 1M -> 10M), all
+ * produced by the unmodified AMB runner on the frozen CSM pipeline (src/
+ * identical to 599dfc0). Each tier's raw output is large and gitignored, so
+ * — exactly like assertOfficialBeamRerun — it is LF-sha256-pinned and its
+ * headline numbers are recomputed from the rows whenever the file exists in
+ * the working tree, and reported as an explicit SKIP otherwise. Numbers back
+ * docs/AMB_BEAM_LADDER_2026_06_18.md.
+ */
+const BEAM_LADDER: LadderTier[] = [
+  { split: "100k", name: "amb-beam-100k-official-v2", total: 400, correct: 335, meanScore: 0.736688, retrieveMs: 4466.1, contextTokens: 27026.2, sha256: "7831c20d7074ed5ee65d6754a20e5af79400a830b3618dfe7b247cc0ca068e98" },
+  { split: "500k", name: "amb-beam-500k-official-v1", total: 700, correct: 497, meanScore: 0.658934, retrieveMs: 7510.5, contextTokens: 26617.8, sha256: "5a033dc623fdb776ff491e638690e1190471d3dc5fe949b7764204f18e8f1a6d" },
+  { split: "1m", name: "amb-beam-1m-official-v1", total: 700, correct: 445, meanScore: 0.569334, retrieveMs: 5596.2, contextTokens: 28192.3, sha256: "07f0b87eb3349e8f75ac8452a2f41399c58792d29a65f616a22f67cce28697ac" },
+  { split: "10m", name: "amb-beam-10m-official-v1", total: 200, correct: 122, meanScore: 0.561572, retrieveMs: 11915.1, contextTokens: 32512.1, sha256: "5a6ba9d83233ee7da908c4f86a2f4044888c1ae4d427f61bd56fce49d85f8b90" },
+];
+
+function assertBeamLadder(): void {
+  for (const tier of BEAM_LADDER) {
+    const rel = `data/eval/runs/${tier.name}/amb-outputs/beam/${tier.name}/rag/${tier.split}.json`;
+    const abs = join(process.cwd(), rel);
+    if (!existsSync(abs)) {
+      console.log(
+        `SKIP BEAM ladder ${tier.split} (raw output not in working tree; LF-sha256 ${tier.sha256.slice(0, 12)}…, see docs/AMB_BEAM_LADDER_2026_06_18.md)`,
+      );
+      continue;
+    }
+    assertEqual(sha256(rel), tier.sha256, `${rel} sha256`);
+    const output = JSON.parse(readFileSync(abs, "utf8")) as OfficialBeamOutput;
+    assertEqual(output.memory_provider, "csm", `ladder ${tier.split} provider`);
+    assertEqual(output.oracle, false, `ladder ${tier.split} oracle flag`);
+    assertEqual(output.answer_llm, "gemini:gemini-3.1-pro-preview", `ladder ${tier.split} answer model`);
+    assertEqual(output.judge_llm, "gemini:gemini-2.5-flash-lite", `ladder ${tier.split} judge model`);
+    assertEqual(output.results.length, tier.total, `ladder ${tier.split} row count`);
+    assertEqual(
+      output.results.filter((row) => row.correct).length,
+      tier.correct,
+      `ladder ${tier.split} recomputed correct count`,
+    );
+    assertNear(
+      mean(output.results.map((row) => row.score)),
+      tier.meanScore,
+      `ladder ${tier.split} recomputed mean score`,
+    );
+    assertEqual(
+      Number(mean(output.results.map((row) => row.retrieve_time_ms)).toFixed(1)),
+      tier.retrieveMs,
+      `ladder ${tier.split} recomputed mean retrieve ms`,
+    );
+    assertEqual(
+      Number(mean(output.results.map((row) => row.context_tokens)).toFixed(1)),
+      tier.contextTokens,
+      `ladder ${tier.split} recomputed mean answer-context tokens`,
+    );
+    console.log(
+      `PASS BEAM ladder ${tier.split}: CSM ${tier.correct}/${tier.total}, score ${tier.meanScore.toFixed(4)}, retrieve ${(tier.retrieveMs / 1000).toFixed(2)}s, answer ctx ${Math.round(tier.contextTokens / 100) / 10}K`,
+    );
+  }
+}
+
 function main(): void {
   for (const [path, expected] of Object.entries(HASHES)) {
     assertEqual(sha256(path), expected, `${path} sha256`);
@@ -766,6 +836,7 @@ function main(): void {
 
   assertBeamComparison();
   assertOfficialBeamRerun();
+  assertBeamLadder();
 }
 
 main();
