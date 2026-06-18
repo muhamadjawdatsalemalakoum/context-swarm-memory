@@ -432,10 +432,10 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "Does CSM beat Hindsight on BEAM 100K?",
+            "name": "Does CSM beat Hindsight on BEAM?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes, on the public AMB runner with the same answer/judge models as the accepted Hindsight artifact: 0.743110 and 337/400 correct rows for CSM versus 0.733658 and 326/400 for Hindsight, with CSM retrieval 1.84x faster."
+              "text": "Only at 100K, and within single-trial noise: CSM 0.7367 vs Hindsight 0.7337 on the ladder (the submitted official-runner rerun is 0.743110 / 337-400, retrieving 1.84x faster). Across the full ladder Hindsight leads above 100K (500K/1M/10M: 0.711 / 0.739 / 0.641 vs CSM 0.659 / 0.569 / 0.562), so CSM does not beat Hindsight overall. What holds up is graceful degradation: from 1M to 10M CSM is essentially flat while Hindsight drops, narrowing the gap from +0.17 to +0.08."
             }
           },
           {
@@ -1210,11 +1210,15 @@
 
         <div class="faq-list" data-reveal>
           <details class="faq-item" open>
-            <summary>Does CSM beat Hindsight on BEAM 100K?</summary>
+            <summary>Does CSM beat Hindsight on BEAM?</summary>
             <p>
-              Yes, on the public AMB runner with the same answer/judge models as the accepted Hindsight artifact:
-              <strong>0.743110</strong> and <strong>337/400</strong> correct rows for CSM versus
-              <strong>0.733658</strong> and <strong>326/400</strong> for Hindsight, with CSM retrieval 1.84× faster.
+              Only at 100K, and within single-trial noise — CSM <strong>0.7367</strong> vs Hindsight
+              <strong>0.7337</strong> on the ladder (the submitted official-runner rerun is
+              <strong>0.743110</strong> / 337–400, retrieving <strong>1.84×</strong> faster). Across the
+              full ladder Hindsight leads above 100K (500K/1M/10M: 0.711 / 0.739 / 0.641 vs CSM
+              0.659 / 0.569 / 0.562), so CSM does <strong>not</strong> beat Hindsight overall. What holds
+              up is graceful degradation: from 1M to 10M CSM is essentially flat while Hindsight drops,
+              narrowing the gap from +0.17 to +0.08.
             </p>
           </details>
           <details class="faq-item">
