@@ -491,6 +491,50 @@ tr.hl:hover { background: var(--focus-tint); }
 }
 .paper-card.wide { grid-column: 1 / -1; max-width: 760px; justify-self: center; width: 100%; }
 
+/* stacked, full-width charts with breathing room */
+.chart-stack { display: grid; gap: 30px; margin: 10px 0 26px; }
+
+/* ---------- Lightbox ---------- */
+figure img { cursor: zoom-in; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: rgba(14, 26, 30, 0.82);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.lightbox.is-open { opacity: 1; pointer-events: auto; }
+.lightbox-img {
+  max-width: 94vw; max-height: 88vh; width: auto; height: auto;
+  border-radius: 12px; background: #fff;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+  transform-origin: center center;
+  transition: transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.lightbox-close {
+  position: absolute; top: clamp(12px, 2.5vw, 24px); right: clamp(12px, 2.5vw, 28px);
+  width: 42px; height: 42px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12); color: #fff;
+  font-size: 22px; line-height: 1; cursor: pointer;
+  transition: background 0.18s ease;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.26); }
+.lightbox-hint {
+  position: absolute; bottom: clamp(14px, 3vw, 28px); left: 0; right: 0;
+  text-align: center; color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8rem; letter-spacing: 0.02em; pointer-events: none;
+}
+body.lightbox-lock { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .lightbox, .lightbox-img { transition: opacity 0.2s ease; }
+  .lightbox-img { transition: none; }
+}
+
 /* ---------- Fact rows ---------- */
 .fact-row {
   display: grid;

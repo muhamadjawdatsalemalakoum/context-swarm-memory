@@ -35,6 +35,111 @@
     });
   }
 
+  /* ---------- image lightbox (charts / graphs) ---------- */
+  (function setupLightbox() {
+    var triggers = Array.prototype.slice.call(
+      document.querySelectorAll("figure img")
+    );
+    if (!triggers.length) { return; }
+
+    var overlay = document.createElement("div");
+    overlay.className = "lightbox";
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Enlarged figure");
+    overlay.innerHTML =
+      '<button class="lightbox-close" type="button" aria-label="Close (Esc)">×</button>' +
+      '<img class="lightbox-img" alt="">' +
+      '<p class="lightbox-hint">Click anywhere or press Esc to close</p>';
+    document.body.appendChild(overlay);
+
+    var lbImg = overlay.querySelector(".lightbox-img");
+    var closeBtn = overlay.querySelector(".lightbox-close");
+    var lastTrigger = null;
+    var isOpen = false;
+    var resetTimer = null;
+
+    function flipFrom(rect) {
+      var last = lbImg.getBoundingClientRect();
+      if (!last.width || !rect.width) { return null; }
+      return (
+        "translate(" +
+        (rect.left + rect.width / 2 - (last.left + last.width / 2)) + "px," +
+        (rect.top + rect.height / 2 - (last.top + last.height / 2)) + "px) " +
+        "scale(" + rect.width / last.width + ")"
+      );
+    }
+
+    function open(img) {
+      if (isOpen) { return; }
+      lastTrigger = img;
+      isOpen = true;
+      lbImg.src = img.currentSrc || img.src;
+      lbImg.alt = img.alt || "";
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("lightbox-lock");
+
+      if (!reduceMotion) {
+        var first = img.getBoundingClientRect();
+        requestAnimationFrame(function () {
+          var t = flipFrom(first);
+          if (!t) { return; }
+          lbImg.style.transition = "none";
+          lbImg.style.transform = t;
+          lbImg.getBoundingClientRect(); // force reflow
+          lbImg.style.transition = "";
+          requestAnimationFrame(function () { lbImg.style.transform = ""; });
+        });
+      }
+      closeBtn.focus();
+    }
+
+    function finishClose() {
+      if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
+      lbImg.removeEventListener("transitionend", finishClose);
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("lightbox-lock");
+      lbImg.style.transition = "";
+      lbImg.style.transform = "";
+      lbImg.removeAttribute("src");
+      var returnTo = lastTrigger;
+      lastTrigger = null;
+      isOpen = false;
+      if (returnTo && typeof returnTo.focus === "function") { returnTo.focus(); }
+    }
+
+    function close() {
+      if (!isOpen) { return; }
+      if (reduceMotion || !lastTrigger) {
+        overlay.classList.remove("is-open");
+        finishClose();
+        return;
+      }
+      var t = flipFrom(lastTrigger.getBoundingClientRect());
+      overlay.classList.remove("is-open"); // fade the backdrop + image out
+      if (t) { lbImg.style.transform = t; }
+      lbImg.addEventListener("transitionend", finishClose);
+      resetTimer = setTimeout(finishClose, 440); // fallback if transitionend misses
+    }
+
+    triggers.forEach(function (img) {
+      img.setAttribute("tabindex", "0");
+      img.setAttribute("role", "button");
+      img.addEventListener("click", function () { open(img); });
+      img.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(img); }
+      });
+    });
+    overlay.addEventListener("click", function (e) {
+      if (e.target !== lbImg) { close(); }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && isOpen) { close(); }
+    });
+  })();
+
   /* ---------- count-up numbers ---------- */
   function animateCount(el) {
     if (el.dataset.counted) { return; }

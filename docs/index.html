@@ -665,13 +665,13 @@
           </p>
         </div>
 
-        <div class="chart-grid" data-reveal>
-          <figure class="paper-card">
+        <div class="chart-stack" data-reveal>
+          <figure class="paper-card wide">
             <img src="assets/beam-token-cost.svg" width="760" height="470" loading="lazy" decoding="async"
                  alt="Input tokens per query, log scale, BEAM 100K to 10M. A full-context line climbs ~100x from ~100K to ~10M tokens and crosses the ~1-2M model context window above the 1M tier. CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K); Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K).">
             <figcaption><strong>Cost — the headline, drawn.</strong> As the haystack grows 100×, a brute-force full-context system's input explodes past the model's context window, while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat. Retrieval cost does not scale with the corpus.</figcaption>
           </figure>
-          <figure class="paper-card">
+          <figure class="paper-card wide">
             <img src="assets/beam-ladder.svg" width="760" height="450" loading="lazy" decoding="async"
                  alt="CSM vs Hindsight on BEAM 100K to 10M. CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K, then stays flat from 1M to 10M while Hindsight drops, narrowing the gap from 0.17 to 0.08.">
             <figcaption><strong>Accuracy — the honest other half.</strong> CSM trails Hindsight above 100K, then holds flat from 1M→10M while Hindsight drops — the gap more than halves (+0.17 → +0.08).</figcaption>
