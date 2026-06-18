@@ -45,56 +45,45 @@ path; a 3-file CSM provider and nothing else). Answer model
 accepted Hindsight artifact. Frozen CSM pipeline, single-trial, 2,000 graded
 queries.
 
-| BEAM tier | Score | Correct | Answer-visible context | Avg retrieve |
+<p align="center"><img src="docs/assets/beam-ladder.svg" width="760" alt="CSM vs Hindsight on BEAM 100K to 10M: CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K but stays flat from 1M to 10M while Hindsight drops, narrowing the gap."></p>
+
+| BEAM tier | CSM score | Hindsight score | CSM context | Hindsight context |
 |---|---:|---:|---:|---:|
-| 100K | 0.7367 | 335/400 | 27.0K tok | 4.5s |
-| 500K | 0.6589 | 497/700 | 26.6K tok | 7.5s |
-| 1M | 0.5693 | 445/700 | 28.2K tok | 5.6s |
-| 10M | 0.5616 | 122/200 | 32.5K tok | 11.9s |
+| 100K | **0.7367** | 0.7337 | 27.0K | 17.7K |
+| 500K | 0.6589 | **0.7112** | 26.6K | 20.5K |
+| 1M | 0.5693 | **0.7386** | 28.2K | 23.9K |
+| 10M | 0.5616 | **0.6408** | 32.5K | 27.3K |
 
-Two things this shows, both stated straight:
+Read straight, three things:
 
-1. **Cost stays flat across a 100× range.** The answer model sees ~27K→33K
-   tokens whether the per-unit haystack is 154K (100K) or **11.7M** (10M)
-   tokens. CSM's internal pipeline cost stays bounded too (8.8K→9.9K input
-   tokens/query, and *lower* at 10M). This is the core property, now measured
-   end-to-end: retrieval cost does not scale with corpus size. A brute-force
-   long-context approach at 10M would feed the model on the order of millions
-   of tokens, or simply not fit.
-2. **Accuracy declines gracefully, and the decline flattens.** 0.74 → 0.66 →
-   0.57 → 0.56 — monotonic but levelling off (1M ≈ 10M, not a cliff). It is
-   **category-specific**: abstention, preference-following and
-   instruction-following stay strong (≥0.85, several reach 1.0 at 10M), while
-   multi-hop / cross-session categories degrade — `multi_session_reasoning`
-   falls to 0.12 at 10M. That failure mode is concrete and named: at 10M a unit
-   is a single ~11.7M-token document, which defeats shard-level routing, so
-   broad multi-hop coverage is the next R&D target.
+1. **Cost stays flat across a 100× range.** CSM's answer-visible context is
+   ~27–33K tokens whether the per-unit haystack is 154K (100K) or **11.7M**
+   (10M); its internal pipeline cost is bounded too. Retrieval cost does not
+   scale with corpus size. (Hindsight is also bounded — and leaner — so this is
+   a property of CSM, not a win over Hindsight.)
+2. **CSM trails Hindsight above 100K — stated plainly.** CSM edges Hindsight at
+   100K (0.7367 vs 0.7337, within single-trial noise); Hindsight leads at
+   500K/1M/10M, most at 1M (+0.17).
+3. **But CSM degrades gracefully and stabilizes at the extreme, while Hindsight
+   drops.** From 1M→10M CSM is essentially flat (−0.008; it *improves* in 7 of
+   10 categories) while Hindsight takes its single biggest drop (−0.098,
+   declining in 9 of 10) — so the gap **more than halves, +0.169 → +0.079.** At
+   the hardest tier (one ~11.7M-token document) CSM's bounded-retrieval design
+   holds where Hindsight's begins to slip. Both collapse on
+   `multi_session_reasoning` at 10M (0.12 vs 0.17) — the shared unsolved frontier.
 
-> This is **not** an "edge grows with scale" claim. On BEAM, CSM's absolute
-> accuracy *declines* with scale; what stays flat is *cost*. Full per-category
-> table, honest limitations, and artifact hashes:
-> [`docs/AMB_BEAM_LADDER_2026_06_18.md`](docs/AMB_BEAM_LADDER_2026_06_18.md).
+Honest caveats: single-trial on both sides; 10M is 200 queries (higher
+variance); **CSM still trails Hindsight at every tier above 100K**; two points
+don't prove the trend continues — *"does CSM overtake beyond 10M?"* is the open
+question, not a settled win. (The 100K artifact submitted as
+[PR&nbsp;#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19),
+pending acceptance, scored 0.743110; the ladder reproduces 100K at 0.7367.)
 
-## vs Hindsight (BEAM 100K)
-
-Hindsight has a published BEAM result only at **100K**, so that is the one tier
-where a head-to-head exists:
-
-| BEAM 100K | Score | Correct | Avg retrieve |
-|---|---:|---:|---:|
-| CSM | 0.7367 (ladder) · 0.743110 (submitted rerun) | 335 · 337/400 | 4.5s · 3.47s |
-| Hindsight (accepted artifact) | 0.733658 | 326/400 | 6.38s |
-
-CSM **leads at 100K** by a thin, consistent margin (the two CSM rows differ by
-single-trial variance; both clear Hindsight). The submitted artifact is at
-[vectorize-io/agent-memory-benchmark#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19),
-**pending maintainer acceptance — not claimed as an official leaderboard
-placement.** There is **no Hindsight baseline at 500K/1M/10M**, so the deeper
-ladder tiers are CSM's own curve, not a head-to-head. Disclosed trade: CSM's
-answer context is larger than Hindsight's (27K vs 17.7K) and CSM spends ~8.8K
-internal pipeline tokens/query, reported separately so total cost is never
-under-stated. Method, per-category deltas, no-gold audit:
-[`docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`](docs/AMB_BEAM_100K_OFFICIAL_RERUN.md).
+Hindsight's numbers are recomputed from Vectorize's own committed AMB artifacts
+(`outputs/beam/hindsight/single-query/*.json.gz`), same answer/judge models —
+re-verify with `node scripts/verify-hindsight-ladder.mjs`. Full per-category
+analysis and sources:
+[`docs/AMB_BEAM_LADDER_2026_06_18.md`](docs/AMB_BEAM_LADDER_2026_06_18.md).
 
 ## How it works
 

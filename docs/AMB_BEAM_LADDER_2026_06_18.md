@@ -73,30 +73,52 @@ shard-level routing is moot and a bounded return-K can't surface enough of
 the right turns. `multi_session_reasoning` at 10M (0.120) is the clearest
 failure mode.
 
-## Hindsight comparison
+## Hindsight comparison — full ladder
 
-Only available at **100K** (the accepted Hindsight artifact, BEAM 100K only):
+Hindsight's full BEAM ladder **is** published: Vectorize committed its own AMB
+run to `outputs/beam/hindsight/single-query/{100k,500k,1m,10m}.json.gz` in the
+agent-memory-benchmark repo. Same answer model (`gemini-3.1-pro-preview`),
+judge (`gemini-2.5-flash-lite`), `oracle=false` — apples-to-apples with our run.
+Recomputed directly from those artifacts (re-verify: `node
+scripts/verify-hindsight-ladder.mjs`):
 
-| | Score | Correct |
-|---|---:|---:|
-| CSM (this ladder, 100K) | 0.7367 | 335/400 |
-| CSM (earlier official rerun) | 0.7431 | 337/400 |
-| **Hindsight** | **0.7337** | 326/400 |
+| Tier | CSM score | Hindsight score | leader | CSM context | Hindsight context |
+|---|---:|---:|:--|---:|---:|
+| 100K | **0.7367** | 0.7337 | CSM (+0.003) | 27.0K | 17.7K |
+| 500K | 0.6589 | **0.7112** | Hindsight (+0.052) | 26.6K | 20.5K |
+| 1M | 0.5693 | **0.7386** | Hindsight (+0.169) | 28.2K | 23.9K |
+| 10M | 0.5616 | **0.6408** | Hindsight (+0.079) | 32.5K | 27.3K |
 
-CSM leads Hindsight at 100K by a thin, consistent margin. **There is no
-Hindsight result at 500K/1M/10M** in the AMB checkout or anywhere we have, so
-the deeper-tier comparison cannot be made from our side — it requires
-Hindsight's own scaling numbers (maintainer-side) or a separate Hindsight run.
+**CSM trails Hindsight at every tier above 100K** (edges it at 100K within
+single-trial noise). But the *trend at the extreme favors CSM*: from 1M→10M CSM
+is essentially flat (−0.008, and *improves* in 7 of 10 categories on the
+identical 10M questions) while Hindsight takes its single largest drop (−0.098,
+declining in 9 of 10) — so Hindsight's lead **more than halves, +0.169 → +0.079**.
+Per-category 1M→10M (CSM Δ / Hindsight Δ): instruction_following +0.142/−0.008,
+knowledge_update +0.121/−0.014, temporal +0.070/−0.184, information_extraction
++0.066/−0.100, abstention +0.014/−0.100; both collapse on
+multi_session_reasoning (CSM 0.12, Hindsight 0.17). At one ~11.7M-token document
+CSM's bounded-retrieval design holds where Hindsight's begins to slip. Whether
+CSM overtakes beyond 10M is an open question, not a settled result.
+
+Context note: Hindsight is **leaner** at every tier (17.7→27.3K vs 27.0→32.5K),
+so bounded context is a property of CSM, not a win over Hindsight.
+
+Sources: AMB repo raw artifacts (above); Vectorize blog cross-check
+<https://hindsight.vectorize.io/blog/2026/04/02/beam-sota>. Honcho also has
+imported BEAM figures in the repo's `external_results.json`, but its backbone
+answer/judge models are unstated and unverifiable beyond 100K — not comparable,
+so it is excluded from the head-to-head.
 
 ## Honest limitations
 
 - **Single-trial** per tier. Gemini at temperature 0 is not bitwise
   deterministic; the 100K tier reproduced at 0.7367 here vs 0.7431 in the
   earlier official rerun — single-run variance of ~±0.01 is expected.
-- **No "edge grows" claim on BEAM.** CSM's *absolute* BEAM accuracy declines
-  with scale. The "edge grows as it scales" thesis is about CSM vs
-  long-context/RAG (Gemma/Gemini studies, where the baselines collapse), not
-  CSM vs Hindsight on BEAM, and the repo already scopes it that way.
+- **No "CSM wins / edge grows" claim on BEAM.** CSM's *absolute* accuracy
+  declines with scale and trails Hindsight above 100K. The favorable read —
+  graceful degradation that stabilizes while Hindsight drops, narrowing the gap
+  at 10M — is a *trend on two deep points*, single-trial, not a proven crossover.
 - **The 10M structural gap is the concrete next R&D target:** one giant
   document per unit defeats shard-level routing; multi-hop coverage needs
   unit-chunking + broader retrieval before CSM is competitive on

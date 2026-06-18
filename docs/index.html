@@ -675,55 +675,56 @@
           <p class="kicker">The measured result</p>
           <h2 id="beam-title">The full BEAM ladder: 100K → 10M.</h2>
           <p class="section-lede">
-            CSM ran through the <strong>unmodified public AMB runner</strong> at every BEAM split. The answer
-            model sees a bounded <strong>~27–33K-token packet at every tier</strong> — even at 10M, where each
-            unit is an ~11.7M-token document. Accuracy declines gently as the haystack grows, flattening at the
-            deep end; the drop is concentrated in multi-hop categories.
+            CSM ran through the <strong>unmodified public AMB runner</strong> at every BEAM split, next to
+            Vectorize's own committed Hindsight run (same answer + judge models). CSM keeps a bounded
+            <strong>~27–33K-token packet at every tier</strong> — even at 10M, where each unit is an ~11.7M-token
+            document. It <strong>trails Hindsight above 100K</strong>, but degrades gracefully and
+            <strong>stabilizes at the extreme</strong> while Hindsight drops — so the gap narrows from 1M to 10M.
           </p>
         </div>
 
         <figure class="paper-card wide" data-reveal>
-          <img src="assets/beam-ladder.svg" width="760" height="430" loading="lazy" decoding="async"
-               alt="CSM BEAM accuracy declines from 0.737 at 100K to 0.562 at 10M while the answer context stays flat at 27 to 33K tokens as the haystack grows 76 times">
-          <figcaption>One unmodified-runner ladder: accuracy declines gracefully while the answer-visible context stays flat across a 100× corpus range.</figcaption>
+          <img src="assets/beam-ladder.svg" width="760" height="450" loading="lazy" decoding="async"
+               alt="CSM vs Hindsight on BEAM 100K to 10M. CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K, then stays flat from 1M to 10M while Hindsight drops, narrowing the gap from 0.17 to 0.08.">
+          <figcaption>CSM vs Hindsight across the ladder: CSM trails above 100K, then holds flat from 1M→10M while Hindsight drops — the gap more than halves (+0.17 → +0.08).</figcaption>
         </figure>
 
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption>Full BEAM ladder, unmodified AMB runner, frozen CSM pipeline, single-trial (2026-06-18)</caption>
+            <caption>Full BEAM ladder, unmodified AMB runner, same answer/judge models, single-trial. Hindsight = Vectorize's own committed run; leader per tier highlighted.</caption>
             <thead>
-              <tr><th scope="col">BEAM tier</th><th scope="col">Score</th><th scope="col">Correct</th><th scope="col">Answer context</th><th scope="col">Avg retrieve</th></tr>
+              <tr><th scope="col">BEAM tier</th><th scope="col">CSM score</th><th scope="col">Hindsight score</th><th scope="col">CSM context</th><th scope="col">Hindsight context</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">100K</th><td>0.7367</td><td>335/400</td><td>27.0K</td><td>4.5s</td></tr>
-              <tr><th scope="row">500K</th><td>0.6589</td><td>497/700</td><td>26.6K</td><td>7.5s</td></tr>
-              <tr><th scope="row">1M</th><td>0.5693</td><td>445/700</td><td>28.2K</td><td>5.6s</td></tr>
-              <tr><th scope="row">10M</th><td>0.5616</td><td>122/200</td><td>32.5K</td><td>11.9s</td></tr>
+              <tr><th scope="row">100K</th><td class="hl-cell">0.7367</td><td>0.7337</td><td>27.0K</td><td>17.7K</td></tr>
+              <tr><th scope="row">500K</th><td>0.6589</td><td class="hl-cell">0.7112</td><td>26.6K</td><td>20.5K</td></tr>
+              <tr><th scope="row">1M</th><td>0.5693</td><td class="hl-cell">0.7386</td><td>28.2K</td><td>23.9K</td></tr>
+              <tr><th scope="row">10M</th><td>0.5616</td><td class="hl-cell">0.6408</td><td>32.5K</td><td>27.3K</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="fact-row" data-reveal>
           <div class="fact">
-            <strong>27K → 33K</strong>
-            <span>answer context across a 100× corpus range — the cost that doesn't scale</span>
+            <strong>+0.17 → +0.08</strong>
+            <span>Hindsight's lead over CSM more than halves from 1M to 10M</span>
           </div>
           <div class="fact">
-            <strong>0.74 → 0.56</strong>
-            <span>accuracy, declining gently and flattening (1M ≈ 10M)</span>
+            <strong>−0.008 vs −0.098</strong>
+            <span>1M→10M: CSM nearly flat (improves in 7/10 categories) while Hindsight drops</span>
           </div>
           <div class="fact">
-            <strong>multi-hop is the gap</strong>
-            <span>multi_session_reasoning falls to 0.12 at 10M — the named next R&amp;D target</span>
+            <strong>27–33K</strong>
+            <span>CSM answer context, flat across a 100× range (Hindsight also bounded, leaner)</span>
           </div>
         </div>
 
-        <h3 class="sub-title" data-reveal>vs Hindsight — the one shared tier (100K)</h3>
+        <h3 class="sub-title" data-reveal>The 100K submission (PR&nbsp;#19)</h3>
         <p class="section-lede" data-reveal style="margin-bottom:18px">
-          Hindsight has a published BEAM result only at 100K, so that is the only head-to-head. CSM leads there
-          by a thin, consistent margin. <strong>There is no Hindsight baseline at 500K/1M/10M</strong> — the deeper
-          tiers above are CSM's own curve. (The 100K artifact submitted as PR&nbsp;#19 scored 0.743110; the ladder
-          reproduces 100K at 0.7367 — single-trial variance.)
+          The 100K tier is the one submitted upstream for review: CSM's official-runner rerun scored
+          <strong>0.743110</strong> (337/400) vs Hindsight's accepted artifact 0.733658 (326/400) — a thin,
+          single-trial lead, retrieved 1.84× faster. The full-ladder table above shows the honest rest:
+          Hindsight leads at 500K/1M/10M, and CSM narrows the gap at the extreme.
         </p>
 
         <div class="scoreboard card" data-reveal>
