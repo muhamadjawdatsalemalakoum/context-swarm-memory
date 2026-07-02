@@ -13,6 +13,7 @@ import { selectCandidates } from "./router.js";
 import { selectCandidatesHybrid, type RouterIndex } from "./routerEmbed.js";
 import { probeShard } from "./probe.js";
 import { recallShard } from "./recall.js";
+import { resolveSignalsRanker } from "./digestSelection.js";
 import { synthesizeMemoryPacket, packetFromSingleRecall, emptyPacket } from "./synthesize.js";
 import {
   attachCoverage,
@@ -21,7 +22,7 @@ import {
   resolveCoverageRecallTokens,
 } from "./coverage.js";
 import type { MemoryShardSnapshot } from "./types.js";
-import { DEFAULT_RECALL_BUDGET } from "./tokenBudget.js";
+import { DEFAULT_RECALL_BUDGET, resolveRecallBudget } from "./tokenBudget.js";
 import { newRunId } from "../utils/ids.js";
 import { nowIso } from "../utils/time.js";
 
@@ -83,9 +84,18 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   // deterministic chronicle assembler attaches a date-ordered, fully-cited
   // timeline to the packet (zero extra LLM calls, zero extra storage loads).
   const coverageIntent = resolveCoverageMode() ? classifyQueryIntent(query) : null;
-  const recallTokensPerShard = coverageIntent
+  const baseRecallTokens = coverageIntent
     ? resolveCoverageRecallTokens(coverageIntent, budget.maxRecallTokensPerShard)
     : budget.maxRecallTokensPerShard;
+  // Optional CSM_RECALL_BUDGET override (default OFF → baseRecallTokens unchanged).
+  // Lets the token-cut A/B run a smaller recall budget (e.g. 600) under Signals.
+  const recallTokensPerShard = resolveRecallBudget(baseRecallTokens);
+
+  // Signals digest ranker (CSM_SIGNALS_RANKER, default OFF — when unset, every
+  // recall digest below is byte-identical to the blind builder). When ON, recall
+  // reorders events by query salience and uses salient intra-event truncation so
+  // answer-bearing evidence that blind head-truncation would drop survives.
+  const useSignalsRanker = resolveSignalsRanker();
 
   const cost: AskRunCost = {
     inputTokensEstimate: 0,
@@ -203,6 +213,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
             relevantEventIdsHint: o.result.relevantEventIds,
             maxRecallTokensPerShard: recallTokensPerShard,
             model: stageModels.recall,
+            useSignalsRanker,
           }).then(({ result, usage }) => ({ result, usage }));
         })
         // Capture instead of rejecting NOW: a rejection with no handler
@@ -293,6 +304,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
           relevantEventIdsHint: p.relevantEventIds,
           maxRecallTokensPerShard: recallTokensPerShard,
           model: stageModels.recall,
+          useSignalsRanker,
         }).then(({ result, usage }) => ({ result, usage }));
       });
     }
@@ -305,6 +317,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
       relevantEventIdsHint: p.relevantEventIds,
       maxRecallTokensPerShard: recallTokensPerShard,
       model: stageModels.recall,
+      useSignalsRanker,
     }).then(({ result, usage }) => ({ result, usage }));
   });
 

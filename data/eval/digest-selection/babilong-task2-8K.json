@@ -1,0 +1,431 @@
+{
+  "task": 2,
+  "label": "8K",
+  "instances": 30,
+  "needleSurvivalBlind": 2,
+  "needleSurvivalSalient": 3,
+  "rescued": 1,
+  "lost": 0,
+  "perQuery": [
+    {
+      "id": "bq2-0000",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 510
+    },
+    {
+      "id": "bq2-0001",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 496
+    },
+    {
+      "id": "bq2-0002",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 577
+    },
+    {
+      "id": "bq2-0003",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 582
+    },
+    {
+      "id": "bq2-0004",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 596
+    },
+    {
+      "id": "bq2-0005",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 540
+    },
+    {
+      "id": "bq2-0006",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 522
+    },
+    {
+      "id": "bq2-0007",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 643
+    },
+    {
+      "id": "bq2-0008",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 627
+    },
+    {
+      "id": "bq2-0009",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 388
+    },
+    {
+      "id": "bq2-0010",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 593
+    },
+    {
+      "id": "bq2-0011",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 585
+    },
+    {
+      "id": "bq2-0012",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 564
+    },
+    {
+      "id": "bq2-0013",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 572
+    },
+    {
+      "id": "bq2-0014",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 599
+    },
+    {
+      "id": "bq2-0015",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.25,
+        "salientFull": 0.25
+      },
+      "instanceEvents": 626
+    },
+    {
+      "id": "bq2-0016",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 649
+    },
+    {
+      "id": "bq2-0017",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 587
+    },
+    {
+      "id": "bq2-0018",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 540
+    },
+    {
+      "id": "bq2-0019",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 583
+    },
+    {
+      "id": "bq2-0020",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 581
+    },
+    {
+      "id": "bq2-0021",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 749
+    },
+    {
+      "id": "bq2-0022",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 703
+    },
+    {
+      "id": "bq2-0023",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 706
+    },
+    {
+      "id": "bq2-0024",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 646
+    },
+    {
+      "id": "bq2-0025",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 478
+    },
+    {
+      "id": "bq2-0026",
+      "needleSurvived": {
+        "blind": true,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0.3,
+        "salientOrder": 0.3,
+        "salientFull": 0.3
+      },
+      "instanceEvents": 457
+    },
+    {
+      "id": "bq2-0027",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 607
+    },
+    {
+      "id": "bq2-0028",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": false,
+        "salientFull": false
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 661
+    },
+    {
+      "id": "bq2-0029",
+      "needleSurvived": {
+        "blind": true,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 524
+    }
+  ]
+}

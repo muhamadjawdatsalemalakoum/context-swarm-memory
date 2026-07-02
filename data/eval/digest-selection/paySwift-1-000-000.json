@@ -1,0 +1,618 @@
+{
+  "corpus": {
+    "label": "1,000,000",
+    "targetTokens": 1000000,
+    "totalTokens": 999140,
+    "events": 2467,
+    "shards": 48
+  },
+  "budget": {
+    "recallTokens": 1200,
+    "perEventChars": 480
+  },
+  "aggregate": {
+    "scoredQueries": 28,
+    "meanGoldRetained": {
+      "blind": 0.5226419413919413,
+      "salientOrder": 0.8215463108320252,
+      "salientFull": 0.8215463108320252
+    },
+    "allGoldRetained": {
+      "blind": 7,
+      "salientFull": 13,
+      "of": 28
+    },
+    "lever1OrderWins": 19,
+    "lever1OrderLosses": 4
+  },
+  "perQuery": [
+    {
+      "id": "q01",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 2,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 0.75,
+        "salientFull": 0.75
+      },
+      "termCoverage": {
+        "blind": 0.75,
+        "salientOrder": 0.75,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.75,
+        "salientFull": 0.9166666666666666
+      }
+    },
+    {
+      "id": "q02",
+      "category": "single-shard",
+      "goldCount": 7,
+      "goldShards": 2,
+      "longGoldEvents": 7,
+      "goldRetained": {
+        "blind": 0.7142857142857143,
+        "salientOrder": 0.42857142857142855,
+        "salientFull": 0.42857142857142855
+      },
+      "termCoverage": {
+        "blind": 0.5,
+        "salientOrder": 0.6666666666666666,
+        "salientFull": 0.8333333333333334
+      },
+      "goldContentTermsKept": {
+        "blind": 1,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q03",
+      "category": "single-shard",
+      "goldCount": 6,
+      "goldShards": 3,
+      "longGoldEvents": 6,
+      "goldRetained": {
+        "blind": 0.6666666666666666,
+        "salientOrder": 0.5,
+        "salientFull": 0.5
+      },
+      "termCoverage": {
+        "blind": 0.2,
+        "salientOrder": 0.2,
+        "salientFull": 0.4
+      },
+      "goldContentTermsKept": {
+        "blind": 0,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q04",
+      "category": "single-shard",
+      "goldCount": 6,
+      "goldShards": 2,
+      "longGoldEvents": 6,
+      "goldRetained": {
+        "blind": 0.16666666666666666,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "termCoverage": {
+        "blind": 0.4,
+        "salientOrder": 0.6,
+        "salientFull": 0.6
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q05",
+      "category": "single-shard",
+      "goldCount": 5,
+      "goldShards": 2,
+      "longGoldEvents": 5,
+      "goldRetained": {
+        "blind": 0.2,
+        "salientOrder": 0.4,
+        "salientFull": 0.4
+      },
+      "termCoverage": {
+        "blind": 0.5,
+        "salientOrder": 0.5,
+        "salientFull": 0.75
+      },
+      "goldContentTermsKept": {
+        "blind": 0,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q06",
+      "category": "single-shard",
+      "goldCount": 3,
+      "goldShards": 2,
+      "longGoldEvents": 3,
+      "goldRetained": {
+        "blind": 0.3333333333333333,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.2,
+        "salientOrder": 0.6,
+        "salientFull": 0.6
+      },
+      "goldContentTermsKept": {
+        "blind": 0.7142857142857143,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q07",
+      "category": "single-shard",
+      "goldCount": 3,
+      "goldShards": 1,
+      "longGoldEvents": 3,
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.6666666666666666,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q08",
+      "category": "single-shard",
+      "goldCount": 3,
+      "goldShards": 2,
+      "longGoldEvents": 3,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.8333333333333334,
+        "salientOrder": 0.8333333333333334,
+        "salientFull": 0.8333333333333334
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5555555555555556,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q09",
+      "category": "single-shard",
+      "goldCount": 5,
+      "goldShards": 2,
+      "longGoldEvents": 5,
+      "goldRetained": {
+        "blind": 0.8,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.6666666666666666,
+        "salientOrder": 0.8333333333333334,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.75,
+        "salientFull": 0.9166666666666666
+      }
+    },
+    {
+      "id": "q10",
+      "category": "single-shard",
+      "goldCount": 2,
+      "goldShards": 1,
+      "longGoldEvents": 2,
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.375,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.8461538461538461,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q11",
+      "category": "single-shard",
+      "goldCount": 2,
+      "goldShards": 1,
+      "longGoldEvents": 2,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.6666666666666666,
+        "salientOrder": 0.7777777777777778,
+        "salientFull": 0.8888888888888888
+      },
+      "goldContentTermsKept": {
+        "blind": 0.3333333333333333,
+        "salientFull": 0.9166666666666666
+      }
+    },
+    {
+      "id": "q12",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 3,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 0.75,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.875,
+        "salientOrder": 0.875,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.6470588235294118,
+        "salientFull": 0.9411764705882353
+      }
+    },
+    {
+      "id": "q13",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 1,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 0.75,
+        "salientFull": 0.75
+      },
+      "termCoverage": {
+        "blind": 0.8,
+        "salientOrder": 0.8,
+        "salientFull": 0.8
+      },
+      "goldContentTermsKept": {
+        "blind": 1,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q14",
+      "category": "single-shard",
+      "goldCount": 3,
+      "goldShards": 2,
+      "longGoldEvents": 3,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.8333333333333334,
+        "salientOrder": 0.8333333333333334,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5555555555555556,
+        "salientFull": 0.8888888888888888
+      }
+    },
+    {
+      "id": "q15",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 2,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.5,
+        "salientOrder": 0.6666666666666666,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.7142857142857143,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q16",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 2,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 0.5,
+        "salientOrder": 0.75,
+        "salientFull": 0.75
+      },
+      "termCoverage": {
+        "blind": 0.5,
+        "salientOrder": 0.75,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.46153846153846156,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q17",
+      "category": "single-shard",
+      "goldCount": 5,
+      "goldShards": 2,
+      "longGoldEvents": 5,
+      "goldRetained": {
+        "blind": 0.2,
+        "salientOrder": 0.6,
+        "salientFull": 0.6
+      },
+      "termCoverage": {
+        "blind": 0.6,
+        "salientOrder": 0.8,
+        "salientFull": 0.8
+      },
+      "goldContentTermsKept": {
+        "blind": 0.6,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q18",
+      "category": "single-shard",
+      "goldCount": 4,
+      "goldShards": 1,
+      "longGoldEvents": 4,
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.9333333333333333,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q19",
+      "category": "multi-shard",
+      "goldCount": 10,
+      "goldShards": 3,
+      "longGoldEvents": 10,
+      "goldRetained": {
+        "blind": 0.6,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.7777777777777778,
+        "salientOrder": 0.8888888888888888,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.7446808510638298,
+        "salientFull": 0.9787234042553191
+      }
+    },
+    {
+      "id": "q20",
+      "category": "multi-shard",
+      "goldCount": 8,
+      "goldShards": 5,
+      "longGoldEvents": 8,
+      "goldRetained": {
+        "blind": 0.25,
+        "salientOrder": 0.875,
+        "salientFull": 0.875
+      },
+      "termCoverage": {
+        "blind": 0.6363636363636364,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5185185185185185,
+        "salientFull": 0.8888888888888888
+      }
+    },
+    {
+      "id": "q21",
+      "category": "multi-shard",
+      "goldCount": 7,
+      "goldShards": 3,
+      "longGoldEvents": 7,
+      "goldRetained": {
+        "blind": 0.2857142857142857,
+        "salientOrder": 0.8571428571428571,
+        "salientFull": 0.8571428571428571
+      },
+      "termCoverage": {
+        "blind": 0.36363636363636365,
+        "salientOrder": 0.6363636363636364,
+        "salientFull": 0.9090909090909091
+      },
+      "goldContentTermsKept": {
+        "blind": 0.42105263157894735,
+        "salientFull": 0.8947368421052632
+      }
+    },
+    {
+      "id": "q22",
+      "category": "multi-shard",
+      "goldCount": 7,
+      "goldShards": 3,
+      "longGoldEvents": 7,
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.6666666666666666,
+        "salientOrder": 0.8888888888888888,
+        "salientFull": 0.8888888888888888
+      },
+      "goldContentTermsKept": {
+        "blind": 0.6756756756756757,
+        "salientFull": 0.9459459459459459
+      }
+    },
+    {
+      "id": "q23",
+      "category": "multi-shard",
+      "goldCount": 8,
+      "goldShards": 4,
+      "longGoldEvents": 8,
+      "goldRetained": {
+        "blind": 0.25,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "termCoverage": {
+        "blind": 0.7142857142857143,
+        "salientOrder": 0.8571428571428571,
+        "salientFull": 0.8571428571428571
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5,
+        "salientFull": 0.9375
+      }
+    },
+    {
+      "id": "q24",
+      "category": "multi-shard",
+      "goldCount": 8,
+      "goldShards": 2,
+      "longGoldEvents": 8,
+      "goldRetained": {
+        "blind": 0.625,
+        "salientOrder": 0.875,
+        "salientFull": 0.875
+      },
+      "termCoverage": {
+        "blind": 0.5,
+        "salientOrder": 0.625,
+        "salientFull": 0.875
+      },
+      "goldContentTermsKept": {
+        "blind": 0.5555555555555556,
+        "salientFull": 0.8888888888888888
+      }
+    },
+    {
+      "id": "q25",
+      "category": "multi-shard",
+      "goldCount": 10,
+      "goldShards": 2,
+      "longGoldEvents": 10,
+      "goldRetained": {
+        "blind": 0.6,
+        "salientOrder": 0.8,
+        "salientFull": 0.8
+      },
+      "termCoverage": {
+        "blind": 0.625,
+        "salientOrder": 0.625,
+        "salientFull": 0.875
+      },
+      "goldContentTermsKept": {
+        "blind": 0.6785714285714286,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q26",
+      "category": "multi-shard",
+      "goldCount": 7,
+      "goldShards": 3,
+      "longGoldEvents": 7,
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.5714285714285714,
+        "salientFull": 0.5714285714285714
+      },
+      "termCoverage": {
+        "blind": 0.375,
+        "salientOrder": 0.625,
+        "salientFull": 0.75
+      },
+      "goldContentTermsKept": {
+        "blind": 0.8,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q27",
+      "category": "multi-shard",
+      "goldCount": 13,
+      "goldShards": 3,
+      "longGoldEvents": 13,
+      "goldRetained": {
+        "blind": 0.6923076923076923,
+        "salientOrder": 0.8461538461538461,
+        "salientFull": 0.8461538461538461
+      },
+      "termCoverage": {
+        "blind": 0.2857142857142857,
+        "salientOrder": 0.42857142857142855,
+        "salientFull": 0.7142857142857143
+      },
+      "goldContentTermsKept": {
+        "blind": 0.8461538461538461,
+        "salientFull": 1
+      }
+    },
+    {
+      "id": "q30",
+      "category": "adversarial",
+      "goldCount": 3,
+      "goldShards": 2,
+      "longGoldEvents": 3,
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.6666666666666666,
+        "salientFull": 0.6666666666666666
+      },
+      "termCoverage": {
+        "blind": 0.2222222222222222,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.7777777777777778
+      },
+      "goldContentTermsKept": {
+        "blind": 0.4,
+        "salientFull": 0.8
+      }
+    }
+  ]
+}

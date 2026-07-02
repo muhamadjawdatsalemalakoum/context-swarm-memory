@@ -6,6 +6,49 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Write-time memory wave — the Observation lever + fact registry (2026-06/07)
+
+Root-cause pass over the BEAM ladder's failed answers found two distinct
+failure mechanisms and shipped one write-time lever for each, both **default
+OFF** behind intent gates validated over all 2,000 BEAM queries (zero fires on
+the eight winning categories). Full write-up with artifacts + hashes:
+`docs/WRITE_TIME_MEMORY_2026_07.md`.
+
+- **Ingestion-time Observation** (`CSM_AMB_OBSERVE_MEMORY`). The warm AMB
+  server builds one organized chronological memory per conversation at ingest
+  (`CsmBaseline.organizeMemoryScaled`: single-pass under ~700K tokens,
+  hierarchical chunk→map→reduce above it, `chunkByTokenBudget` +
+  fail-fast `mapWithConcurrency`), caches it (versioned, single-flight), and
+  serves it verbatim to retrospective summary/order queries with reduced raw
+  docs. **Measured (official config, paired 40q): BEAM 100K summarization
+  0.7139 → 0.9364 (+0.2224) at −42.6% answer-visible context.** Event_ordering
+  measured a score wash (+0.008 paired, mechanism-lab stack) at −57.6% context
+  — kept as a cost lever. Hierarchical build validated live on a 1.07M-token
+  conversation (316-entry faithful chronology, ~$0.35).
+- **Fact registry** (`CSM_AMB_FACT_MEMORY`). Write-time per-metric value
+  histories with LATEST markers (`organizeFactsScaled`: extract→merge), aimed
+  at multi-session aggregation answers that sum stale values (BEAM 10M
+  multi_session_reasoning = 0.12). Gated to aggregation intent
+  (fires multi_session-only at every tier; knowledge_update deliberately not
+  gated — lexically indistinguishable from information_extraction). Built and
+  tested; score A/B staged, not yet run.
+- **Honest accounting extended to write-time cost.** The one-time build cost
+  (~1 pass over the conversation) is attributed to the exact query that paid it
+  (`observationBuildCost`/`factBuildCost` in the bridge payload + telemetry);
+  cache hits report zero. An early build missed this — found by an adversarial
+  19-agent audit, fixed next day; the audit also caught two gate-leak classes
+  at tiers the original validation skipped (now permanent regression tests) and
+  a truncation default that would have silently capped observations 6× below
+  the proven config.
+- **`OpenAIProvider` hardened for hosted gpt-5-era models**:
+  `max_completion_tokens` / `reasoning_effort` / no Ollama `think` param on
+  hosted endpoints, 429/5xx retry honoring `Retry-After`, fail-fast on
+  requests larger than the org's TPM ceiling. Enables the OpenAI
+  mechanism-lab twin of the BEAM runner (`run-obs-oai.sh` in the harness).
+- Tests 333 → 368 (gate regressions, map-reduce orchestration, fail-fast
+  cancellation, server observation/fact caching); mutation-safety and
+  BEAM-leakage firewalls unchanged and green.
+
 ### Phase α / β.1 / γ — token-efficiency + SOTA-baseline pass (2026-05)
 
 Driven by a multi-agent research sweep: four parallel agents surveyed the 2024-2026 long-context-memory SOTA, audited CSM's token sinks, and produced implementation plans for token efficiency, serving-stack migration, and SOTA baseline integration. The findings reframed CSM's pitch from "beats hybrid RAG" (2023-vintage) to "competitive with the published 2025 frontier (HippoRAG 2 / LightRAG / Mem0) AND uniquely scalable to 10M+ token corpora where the frontier cannot be indexed at all on consumer hardware." Implementation in three rolling phases:

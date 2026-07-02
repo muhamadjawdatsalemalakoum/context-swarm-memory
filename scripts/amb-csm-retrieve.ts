@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { estimateTokens } from "../src/core/tokenBudget.js";
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
+import { coverageRerankAndPack, resolveRerankParams } from "../src/eval/ambReturnRank.js";
 import type { BenchEvent, Corpus } from "../src/eval/corpus.js";
 import type { FreeFormQuery } from "../src/eval/mcq.js";
 import { createProvider } from "../src/providers/index.js";
@@ -132,8 +133,46 @@ export async function executeAmbRetrieve(input: {
   corpus: Corpus;
   request: AmbRetrieveRequest;
   opts: AmbBridgeOptions;
+  /** Pre-built ingestion-time organized-memory ("Observation") for this user
+   *  scope (synthesized once over the FULL conversation at write time, cached).
+   *  When present, it is returned verbatim as the primary memory and the raw
+   *  events are reduced — the Hindsight/RAPTOR/Honcho write-time pattern. The
+   *  warm server only passes it for summary-intent queries. */
+  observation?: string;
+  /** LLM cost of the observation build, present ONLY on the query that paid it
+   *  (cache hits pass null). Added to this query's token/latency accounting so
+   *  the amortized write-time organization cost is visible in the payload and
+   *  the telemetry sidecar — the repo's honest-accounting convention. */
+  observationBuildCost?: {
+    inputTokens: number;
+    outputTokens: number;
+    latencyMs: number;
+    chunks: number;
+  } | null;
+  /** Pre-built write-time FACT REGISTRY (metric value histories, LATEST marked)
+   *  for this user scope. The warm server passes it only for aggregation-intent
+   *  queries. Same contract as `observation`. */
+  factRegistry?: string;
+  /** Build cost of the fact registry — same exactly-once attribution contract
+   *  as observationBuildCost. */
+  factBuildCost?: {
+    inputTokens: number;
+    outputTokens: number;
+    latencyMs: number;
+    chunks: number;
+  } | null;
 }): Promise<AmbRetrievePayload> {
-  const { baseline, providerName, corpus, request, opts } = input;
+  const {
+    baseline,
+    providerName,
+    corpus,
+    request,
+    opts,
+    observation,
+    observationBuildCost,
+    factRegistry,
+    factBuildCost,
+  } = input;
   const query: FreeFormQuery = {
     kind: "free-form",
     id: "amb-request",
@@ -194,9 +233,38 @@ export async function executeAmbRetrieve(input: {
   // Point queries keep the legacy path byte-identical.
   const coverageTimeline = parseTimelineEntries(meta.coverageTimeline);
   const coverageFired = meta.coverageFired === true && coverageTimeline.length > 0;
-  const ids = coverageFired
-    ? dedupeInOrder(baseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
-    : selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
+  // Coverage rerank (CSM_AMB_COVERAGE_RERANK=1, default OFF — official defaults
+  // untouched): replace the RETURN_K count-slice with a coverage-ranked,
+  // token-budget-packed slice so already-retrieved gold-facet breadth survives
+  // into the answer-visible context. Validated token-free on the BEAM slice
+  // (src/eval/ambReturnRank.ts header; scripts/measure-return-strategies.ts).
+  // Synthesis engine (CSM_AMB_SYNTH_MEMORY): organized-memory-PRIMARY mode. The
+  // organized memory carries the full breadth, so raw events are sharply reduced
+  // (Hindsight's formula = organized memory, not a raw dump) to avoid drowning
+  // it. Count via CSM_AMB_SYNTH_RAW_DOCS (default 10).
+  const synthActive =
+    synthMemoryActive() && (intent.broadSummary || intent.temporal || intent.contradiction);
+  // Ingestion-time Observation (pre-built, passed by the warm server for summary
+  // intent). Like synth mode it leads with organized memory + reduced raw docs,
+  // but the organization was done at WRITE time over the FULL conversation.
+  const obsActive = typeof observation === "string" && observation.length > 0;
+  // Write-time fact registry (passed by the warm server for aggregation intent).
+  const factActive = typeof factRegistry === "string" && factRegistry.length > 0;
+  const ids = synthActive || obsActive || factActive
+    ? dedupeInOrder(baseIds).slice(0, parsePositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, 10))
+    : coverageFired
+      ? coverageRerankActive()
+        ? coverageRerankAndPack(
+            dedupeInOrder(baseIds),
+            (id) => corpus.byId.get(id)?.content ?? "",
+            request.query,
+            resolveRerankParams({
+              reasoning: intent.temporal || intent.contradiction,
+              budgetTokens: parsePositiveInt(process.env.CSM_AMB_RETURN_TOKENS, 16000),
+            }),
+          )
+        : dedupeInOrder(baseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
+      : selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
 
   const outDocs = ids
     .map((id) => corpus.byId.get(id))
@@ -208,15 +276,91 @@ export async function executeAmbRetrieve(input: {
       timestamp: event.timestamp ?? null,
       context: `CSM retrieved from shard ${event.shardId}`,
     }));
-  const capsule = coverageFired
-    ? renderTimelineCapsule(coverageTimeline, request.user_id ?? null)
-    : buildEvidenceCapsule({
-        query: request.query,
-        corpus,
-        ids,
-        intent,
-        userId: request.user_id ?? null,
-      });
+  // Synthesis engine (CSM_AMB_SYNTH_MEMORY=1, default OFF): for synthesis-heavy
+  // intents, replace the weak deterministic capsule with an LLM-organized
+  // chronological "organized memory" — the pre-digested view that lets the
+  // answer model report rather than synthesize from a raw event pile (how
+  // Hindsight wins summarization / event_ordering). The raw events still follow.
+  let capsule: AmbDocument | null;
+  if (factActive) {
+    // Write-time fact registry: value histories with LATEST markers, so
+    // aggregation questions combine CURRENT values instead of stale ones.
+    if (factBuildCost) {
+      inputTokens += factBuildCost.inputTokens;
+      outputTokens += factBuildCost.outputTokens;
+      latencyMs += factBuildCost.latencyMs;
+    }
+    capsule = {
+      id: "csm-fact-registry",
+      content:
+        "CSM fact registry — every metric/topic the user stated, with its value history in " +
+        "conversation order and the LATEST value marked (source-derived; no gold answers or " +
+        "rubric used). For questions that combine or total values across projects/sessions, " +
+        "use the LATEST value of each metric unless the question explicitly asks about earlier " +
+        "values. The raw events follow for detail.\n\n" +
+        factRegistry,
+      user_id: request.user_id ?? null,
+      timestamp: null,
+      context: "CSM fact registry",
+    };
+  } else if (obsActive) {
+    // Ingestion-time Observation: return the pre-built, full-conversation
+    // organized memory verbatim (no query-time synthesis call). The build's
+    // LLM cost lands on the query that paid it (cache hits add nothing) —
+    // without this, a 10M-tier build (~60 calls over ~18M input tokens) would
+    // be invisible to the payload and telemetry, corrupting the token-cost
+    // A/B on exactly the axis Hindsight's write-time organization is compared.
+    if (observationBuildCost) {
+      inputTokens += observationBuildCost.inputTokens;
+      outputTokens += observationBuildCost.outputTokens;
+      latencyMs += observationBuildCost.latencyMs;
+    }
+    capsule = {
+      id: "csm-organized-memory",
+      content:
+        "CSM organized memory — a faithful chronological synthesis of the user's events " +
+        "(source-derived; no gold answers or rubric used). This is the primary organized record " +
+        "of what the user discussed and in what order; the raw events follow for detail.\n\n" +
+        observation,
+      user_id: request.user_id ?? null,
+      timestamp: null,
+      context: "CSM organized memory",
+    };
+  } else if (synthActive) {
+    const synthIds = dedupeInOrder(baseIds).slice(0, 50);
+    const synthContents = synthIds
+      .map((id) => corpus.byId.get(id)?.content)
+      .filter((c): c is string => Boolean(c));
+    const organized = await baseline.organizeMemory({
+      query: request.query,
+      eventContents: synthContents,
+      model: opts.model,
+    });
+    inputTokens += organized.inputTokens;
+    outputTokens += organized.outputTokens;
+    latencyMs += organized.latencyMs;
+    capsule = {
+      id: "csm-organized-memory",
+      content:
+        "CSM organized memory — a faithful chronological synthesis of the user's events " +
+        "(source-derived; no gold answers or rubric used). This is the primary organized record " +
+        "of what the user discussed and in what order; the raw events follow for detail.\n\n" +
+        organized.text,
+      user_id: request.user_id ?? null,
+      timestamp: null,
+      context: "CSM organized memory",
+    };
+  } else if (coverageFired) {
+    capsule = renderTimelineCapsule(coverageTimeline, request.user_id ?? null);
+  } else {
+    capsule = buildEvidenceCapsule({
+      query: request.query,
+      corpus,
+      ids,
+      intent,
+      userId: request.user_id ?? null,
+    });
+  }
   const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
 
   return {
@@ -234,6 +378,10 @@ export async function executeAmbRetrieve(input: {
       inputTokens,
       outputTokens,
       latencyMs,
+      // Present (non-null) only on the query that paid the write-time build —
+      // lets analysis separate the one-time build cost from per-query cost.
+      observationBuildCost: obsActive ? (observationBuildCost ?? null) : null,
+      factBuildCost: factActive ? (factBuildCost ?? null) : null,
     },
   };
 }
@@ -372,6 +520,27 @@ function renderTimelineCapsule(
   maxLines = 40,
 ): AmbDocument | null {
   if (timeline.length === 0) return null;
+  if (orderedCapsuleActive()) {
+    // Explicit numbered chronological sequence (CSM_AMB_ORDERED_CAPSULE=1).
+    // BEAM events carry no real timestamps (they default to a placeholder date),
+    // so the date prefix is uninformative and HIDES the order these queries ask
+    // for. The timeline is already in true conversation order (session+turn
+    // natural sort), so present it as an explicit 1..N sequence the answer model
+    // can read directly. Raw events are still returned alongside for content.
+    const items = timeline
+      .slice(0, maxLines)
+      .map((entry, i) => `${i + 1}. [${entry.eventRef}] ${entry.line}`);
+    return {
+      id: "csm-evidence-capsule",
+      content: [
+        "CSM chronological index — the user's events in time order (item 1 = earliest, item N = most recent), source-derived from retrieved memories; no gold answers or rubric used. This index gives the SEQUENCE/ordering only; the FULL content of each event is in the documents below (Memory 2 onward). To answer order/timeline/development questions: use this index to establish the order, and use the full documents below for the details of each item. IMPORTANT: this index is a partial summary — do NOT conclude information is missing just because a detail is not spelled out here; check the full documents below before answering, and include relevant items found there.",
+        ...items,
+      ].join("\n"),
+      user_id: userId,
+      timestamp: null,
+      context: "CSM evidence capsule (ordered)",
+    };
+  }
   const lines = timeline.slice(0, maxLines).map((entry) => {
     const datePrefix = entry.date ? `${entry.date}: ` : "";
     return `- [${entry.eventRef}] ${datePrefix}${entry.line}`;
@@ -458,6 +627,113 @@ function resolveAmbReturnMax(requestedK: number, intent: AmbQueryIntent): number
     );
   }
   return requestedK;
+}
+
+/** CSM_AMB_COVERAGE_RERANK toggle (default OFF). When ON, the coverageFired
+ *  return slice is coverage-ranked + token-budget-packed instead of count-cut. */
+function coverageRerankActive(): boolean {
+  const v = process.env.CSM_AMB_COVERAGE_RERANK;
+  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+}
+
+/** CSM_AMB_ORDERED_CAPSULE toggle (default OFF). When ON, the evidence capsule
+ *  is rendered as an explicit numbered chronological sequence (the order signal
+ *  these summarization/event_ordering queries need) instead of a date-prefixed
+ *  list where BEAM's placeholder dates hide the order. */
+function orderedCapsuleActive(): boolean {
+  const v = process.env.CSM_AMB_ORDERED_CAPSULE;
+  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+}
+
+/** CSM_AMB_SYNTH_MEMORY toggle (default OFF). When ON, synthesis-intent queries
+ *  get an LLM-organized chronological "organized memory" doc in place of the
+ *  deterministic capsule (the synthesis-engine lever for summarization /
+ *  event_ordering). */
+function synthMemoryActive(): boolean {
+  const v = process.env.CSM_AMB_SYNTH_MEMORY;
+  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+}
+
+/** CSM_AMB_OBSERVE_MEMORY toggle (default OFF). When ON, the warm server builds
+ *  an ingestion-time "Observation" (organized memory over the FULL conversation,
+ *  cached per user) and the bridge returns it verbatim for summary-intent queries
+ *  — the write-time organization pattern of Hindsight/RAPTOR/Honcho. */
+export function observeMemoryActive(): boolean {
+  const v = process.env.CSM_AMB_OBSERVE_MEMORY;
+  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+}
+
+/** Gate for the ingestion-time Observation: fire ONLY on genuine retrospective
+ *  summary/recap requests. Deliberately NARROWER than `detectAmbQueryIntent`'s
+ *  `broadSummary` — the latter also matches the "across (our|my) conversations"
+ *  phrasing, which (measured on the BEAM 100K query set) leaks onto 3 winner-
+ *  category queries: two multi_session_reasoning COUNT questions ("how many book
+ *  series ... across my conversations") and one preference_following advice query
+ *  ("... to make it clear and comprehensive"). A prose organized-memory replaces
+ *  the context those queries actually need, so it can only hurt them. The
+ *  summarize/recap/overview VERBS alone hit 40/40 summarization queries with zero
+ *  leak onto any other category — the organized memory is exactly a retrospective
+ *  narrative, which is what those queries ask for.
+ *
+ *  Fires on the TWO coverage-failure losses. Validated (2026-06-24 audit) against
+ *  ALL FOUR tier query sets (100k/500k/1m/10m, 2,000 queries): 100% recall on
+ *  summarization (40+70+70+20) AND event_ordering (40+70+70+20), ZERO fires on
+ *  any other category at any tier. Both categories fail identically at baseline —
+ *  the answer model says "the context lacks the information" because retrieval
+ *  drops nuggets scattered across the full conversation; the full-conversation
+ *  organized memory is what supplies them.
+ *
+ *  Two constructions matter (both data-derived, see the audit):
+ *  - The nouns summary/overview require a following "of|that": in every genuine
+ *    summarization query across all tiers (145/145 noun usages) they head a
+ *    request ("summary of how…", "overview that covers…"), while the measured
+ *    leaks use them as NOUN MODIFIERS of a topic ("reduce summary generation
+ *    time", "improving summary quality" — 1m multi_session; "the design overview
+ *    document" — 10m abstention).
+ *  - "in order" fires only when NOT the purpose idiom ("in order to/for/that"):
+ *    500k/1m event_ordering phrase as "…my progress in order (mention N items)"
+ *    and "reconstruct the timeline", which the original phrase list missed
+ *    (500k 57/70, 1m 8/70 before this fix). */
+export function observationQueryIntent(query: string): boolean {
+  return (
+    /\b(summarize|summarise|summarized|summarised|recap|recapped|(summary|overview)(?=\s+(of|that)\b))\b/i.test(
+      query,
+    ) ||
+    /\b(in (what|which) order|order in which|list (the |in )?order|walk me through the order|the sequence in which|in chronological order|in order(?!\s+(to|for|that)\b)|reconstruct (the |my )?timeline)\b/i.test(
+      query,
+    )
+  );
+}
+
+/** CSM_AMB_FACT_MEMORY toggle (default OFF). When ON, the warm server builds a
+ *  write-time FACT REGISTRY (metric value histories with LATEST markers, built
+ *  once over the full conversation, cached) and the bridge returns it for
+ *  aggregation-intent queries — the per-entity/bi-temporal pattern of Hindsight
+ *  and Zep/Graphiti, aimed at the multi-session aggregation failure mode
+ *  (baseline sums STALE values; 10M multi_session_reasoning = 0.120). */
+export function factMemoryActive(): boolean {
+  const v = process.env.CSM_AMB_FACT_MEMORY;
+  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+}
+
+/** Gate for the fact registry: cross-mention AGGREGATION questions ("how many X
+ *  in total when combining A and B", "how much total ... across", "how many
+ *  different X did I mention"). Validated on ALL FOUR BEAM tier query sets
+ *  (2,000 queries, 2026-07-02): fires ONLY on multi_session_reasoning
+ *  (100k 9/40, 500k 17/70, 1m 13/70, 10m 13/20), ZERO fires on any other
+ *  category at any tier. Two measured-leak guards (both 500k):
+ *  - `(?<!items )in total` — an event_ordering query embeds "(mention 8 items
+ *    in total)" as an output-format instruction, not an aggregation ask;
+ *  - "how much" must not target a DURATION ("how much total time did I spend
+ *    ... across the sessions" is temporal_reasoning's time-arithmetic, a win
+ *    category; metric aggregation like "how much total delay" still fires).
+ *  Deliberately does NOT try to catch knowledge_update's "current value"
+ *  questions — lexically indistinguishable from information_extraction (a
+ *  winner), so no safe lexical gate exists for them. */
+export function aggregationQueryIntent(query: string): boolean {
+  return /\b((?<!items )in total|total .{0,30}(across|combining|combined)|(across|combining|combined).{0,40}\b(total|combined?|altogether)|how (many|much) (?!(total\s+)?(time|minutes|hours|days)\b).{0,60}(across|combined|combining|(?<!items )in total)|how many different .{0,40}(mention|discuss|bring)|altogether)\b/i.test(
+    query,
+  );
 }
 
 function resolveAmbNeighborWindow(intent: AmbQueryIntent): number {

@@ -7,7 +7,11 @@ import {
   getScopedCorpus,
   type AmbServerState,
 } from "../scripts/amb-csm-server.js";
-import type { AmbDocument } from "../scripts/amb-csm-retrieve.js";
+import {
+  aggregationQueryIntent,
+  type AmbDocument,
+  observationQueryIntent,
+} from "../scripts/amb-csm-retrieve.js";
 import { MockProvider } from "../src/providers/MockProvider.js";
 
 const DOCS: AmbDocument[] = [
@@ -144,6 +148,86 @@ describe("amb-csm-server", () => {
     });
     const payload = (await retrieve.json()) as { raw_response: { reason?: string } };
     expect(payload.raw_response.reason).toBe("no_documents_in_scope");
+  });
+
+  it("observation_gate_fires_on_both_coverage_loss_categories", () => {
+    // Summarization category (retrospective-summary requests) fire.
+    for (const q of [
+      "Can you give me a summary of how my work with Robert developed over time?",
+      "Summarize my major progress between April and May 2024.",
+      "Can you summarize how I approached the issues with my web project?",
+      "Give me a recap of our conversations.",
+      "Provide an overview of how my plans have progressed.",
+    ]) {
+      expect(observationQueryIntent(q)).toBe(true);
+    }
+    // Event_ordering category fires — including the 500k/1m phrasings the
+    // original phrase list missed ("progress in order", "reconstruct the
+    // timeline"; 2026-06-24 all-tier audit).
+    for (const q of [
+      "Can you walk me through the order in which I brought up different ways my family supported me?",
+      "Can you list the order in which I brought up different aspects of improving my resume?",
+      "Can you list in order how I brought up different aspects of my research projects?",
+      "Can you walk me through my progress in order? Mention ONLY and ONLY six items.",
+      "Can you help me reconstruct the timeline of my project decisions?",
+    ]) {
+      expect(observationQueryIntent(q)).toBe(true);
+    }
+    // Must NOT fire — every measured leak across all four tiers:
+    // - the 100k broadSummary leaks (multi_session COUNT + preference advice),
+    // - the 1m leak (summary as a NOUN MODIFIER: "summary generation time",
+    //   "summary quality" — a how-to question about a summarization model),
+    // - the 10m leak (overview as a document name: "design overview document"
+    //   — an abstention query, the worst category to leak into),
+    // - the "in order to" purpose idiom and a plain temporal question.
+    for (const q of [
+      "How many different book series or genres have I mentioned wanting to explore across my conversations?",
+      "How many specific assets have I mentioned across my conversations that are part of my estate planning?",
+      "I'm preparing materials to support my patent application. What types of content should I include to make it clear and comprehensive?",
+      "Considering my different implementations and tests with Pegasus-large, how can I best reduce summary generation time while maintaining or improving summary quality, based on my code and performance details?",
+      "Could you provide the detailed content or key sections of the design overview document I shared with my team about modularity benefits?",
+      "What should I do in order to improve my resume before the deadline?",
+      "When did I first mention the lockout policy?",
+    ]) {
+      expect(observationQueryIntent(q)).toBe(false);
+    }
+  });
+
+  it("aggregation_gate_fires_on_multi_session_totals_only", () => {
+    // Measured multi_session aggregation phrasings (the fact-registry target).
+    for (const q of [
+      "How many documents am I planning to handle in total when combining my Elasticsearch and Solr projects?",
+      "How many queries per second am I aiming to support across sharding, load balancing, and partitioning efforts combined?",
+      "How much total delay have I noted across the agent updates, pedestrian updates, and camera data sync issues?",
+    ]) {
+      expect(aggregationQueryIntent(q)).toBe(true);
+    }
+    // ACCEPTED MISS: widening the gate to catch this phrasing ("how many
+    // different [>40 chars] mention across my sessions") was measured to leak
+    // onto event_ordering + temporal_reasoning at 500k — winner categories.
+    // Zero-leak precision beats +1 recall; the gate stays narrow.
+    expect(
+      aggregationQueryIntent(
+        "How many different error types related to sensor data debugging did I mention across my sessions?",
+      ),
+    ).toBe(false);
+    // Winner-category shapes must NOT fire: info_extraction point lookups,
+    // knowledge_update current-value questions (deliberately not gated — no
+    // safe lexical gate exists), summarization, plain temporal questions, and
+    // the two leaks MEASURED at 500k (an event_ordering query embedding
+    // "mention 8 items in total" as an output-format instruction, and a
+    // temporal_reasoning duration-arithmetic "how much total time did I spend").
+    for (const q of [
+      "What event processing capacity does my log tool support per minute without downtime?",
+      "How many tasks have I logged in Jira for the sprint on 2024-11-05, and what is my sprint completion target percentage?",
+      "Can you give me a summary of how my work with Robert developed over time?",
+      "What database did I choose for the MVP?",
+      "When did I first mention the lockout policy?",
+      "Can you list the order in which I brought up different aspects of improving and securing my Flask API throughout our conversations in order (mention 8 items in total)?",
+      "How much total time did I spend practicing derivatives across the sessions where I worked through both equations, considering I initially spent 3 hours over 2 days on the basics?",
+    ]) {
+      expect(aggregationQueryIntent(q)).toBe(false);
+    }
   });
 
   it("amb_server_rejects_bad_requests", async () => {

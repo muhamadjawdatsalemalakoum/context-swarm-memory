@@ -4,7 +4,7 @@ import { recallResultSchema } from "./schemas.js";
 import { completeAndValidate } from "./providerJson.js";
 import { recallPrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
 import { tokenize } from "./router.js";
-import { estimateTokens } from "./tokenBudget.js";
+import { selectEventDigest, truncate } from "./digestSelection.js";
 
 export async function recallShard(args: {
   provider: LlmProvider;
@@ -16,6 +16,10 @@ export async function recallShard(args: {
   /** Hard cap on event-digest input tokens to keep recall calls bounded. */
   maxRecallTokensPerShard?: number;
   model?: string;
+  /** Signals lever (CSM_SIGNALS_RANKER). When true, the event digest is built
+   *  with query-aware reordering + salient intra-event truncation instead of
+   *  blind insertion-order head-truncation. Default false (blind). */
+  useSignalsRanker?: boolean;
 }): Promise<{ result: RecallResult; usage: ProviderUsage }> {
   const {
     provider,
@@ -24,10 +28,14 @@ export async function recallShard(args: {
     relevantEventIdsHint,
     maxRecallTokensPerShard = 1200,
     model,
+    useSignalsRanker,
   } = args;
   const isMock = provider.name === "mock";
 
-  const eventDigest = scopedEventDigest(snapshot, relevantEventIdsHint, maxRecallTokensPerShard);
+  const eventDigest = scopedEventDigest(snapshot, relevantEventIdsHint, maxRecallTokensPerShard, {
+    query: userQuery,
+    signalsRanker: useSignalsRanker,
+  });
 
   let promptSuffix = "";
   if (isMock) {
@@ -116,37 +124,24 @@ function scopedEventDigest(
   snapshot: MemoryShardSnapshot,
   hint: string[] | undefined,
   maxTokens: number,
+  opts?: { query?: string; signalsRanker?: boolean },
 ): string {
-  const allEvents = snapshot.events;
-  let candidates: typeof allEvents;
-  if (hint && hint.length) {
-    const hintSet = new Set(hint);
-    const inHint = allEvents.filter((e) => hintSet.has(e.eventId));
-    const outOfHint = allEvents.filter((e) => !hintSet.has(e.eventId));
-    candidates = [...inHint, ...outOfHint];
-  } else {
-    candidates = allEvents;
+  if (opts?.signalsRanker) {
+    // Signals mode: query-aware reordering (lever #1) + salient intra-event
+    // truncation (lever #2). Pure/deterministic; the [eXXXX]/role/date prefix is
+    // rendered outside the scored span, so citation tokens stay byte-verbatim.
+    return selectEventDigest(snapshot.events, {
+      maxTokens,
+      hint,
+      reorderBySalience: true,
+      salientTruncation: true,
+      query: opts.query ?? "",
+    }).text;
   }
-
-  const lines: string[] = [];
-  let usedTokens = 0;
-  for (const e of candidates) {
-    // Date-stamp each line (date part only — full ISO is token noise). The
-    // recall LLM otherwise only sees timestamps when they happen to appear in
-    // content text, which starves event-ordering/temporal claims of anchors.
-    const day = e.createdAt ? e.createdAt.slice(0, 10) : "";
-    const line = `- [${e.eventId}] (${e.role}${day ? ` ${day}` : ""}) ${truncate(e.content, 480)}${
-      e.tags.length ? `  tags=[${e.tags.join(",")}]` : ""
-    }`;
-    const lineTokens = estimateTokens(line);
-    if (usedTokens + lineTokens > maxTokens) {
-      lines.push(`- (… ${candidates.length - lines.length} more events truncated to fit budget)`);
-      break;
-    }
-    lines.push(line);
-    usedTokens += lineTokens;
-  }
-  return lines.join("\n") || "(no events)";
+  // Blind mode (no salience levers): byte-identical to the legacy builder —
+  // hint-priority order, 480-char head-truncation, greedy budget pack, and the
+  // `(… N more events truncated)` overflow marker.
+  return selectEventDigest(snapshot.events, { maxTokens, hint }).text;
 }
 
 // ─── Phase 0 mock implementation (only used when provider.name === "mock") ──
@@ -197,9 +192,4 @@ function mockRecall(
     unknowns: [],
     conflicts: [],
   };
-}
-
-function truncate(s: string, n: number): string {
-  if (s.length <= n) return s;
-  return s.slice(0, n - 1) + "…";
 }

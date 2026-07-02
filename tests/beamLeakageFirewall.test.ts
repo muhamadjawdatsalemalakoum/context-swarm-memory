@@ -17,9 +17,10 @@
  *      `retrievalScore.ts` is absent from each of their transitive runtime
  *      closures.
  *   3. Nothing in `src/` or `scripts/` imports the gold module except the
- *      eval-side CLI `scripts/score-beam-slice.ts` (reverse-dependency scan
- *      over the whole repo). Tests are exempt — they live outside both
- *      paths and assert on behavior.
+ *      eval-side scoring tools in `EVAL_SIDE_GOLD_CONSUMERS` (the CLI plus the
+ *      token-free measurement scripts) — reverse-dependency scan over the whole
+ *      repo. Each is itself isolated from retrieval logic. Tests are exempt —
+ *      they live outside both paths and assert on behavior.
  *   4. The eval-side CLI is itself import-isolated from the retrieval path:
  *      its closure contains no `src/core/**`, no `src/providers/**`, no
  *      `src/eval/baselines/**`, and no `scripts/amb-*` module. The only
@@ -41,6 +42,18 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const GOLD_MODULE = "src/eval/retrievalScore.ts";
 const EVAL_CLI = "scripts/score-beam-slice.ts";
+/**
+ * Eval-side scoring/measurement tools allowed to read the gold module. All
+ * read gold ONLY to SCORE (never to rank/retrieve) and none is imported by the
+ * retrieval path. Each is isolated from retrieval logic below (same guarantee
+ * as the CLI), so adding a tool here STRENGTHENS coverage, it does not weaken
+ * the firewall. The retrieval-path invariants (#1/#2/#3) are unaffected.
+ */
+const EVAL_SIDE_GOLD_CONSUMERS = [
+  EVAL_CLI,
+  "scripts/measure-return-strategies.ts",
+  "scripts/measure-returnk-sweep.ts",
+];
 const RETRIEVAL_ENTRYPOINTS = [
   "scripts/amb-csm-retrieve.ts",
   "scripts/amb-csm-server.ts",
@@ -210,26 +223,27 @@ describe("BEAM gold leakage firewall (static import graph)", () => {
     }
   });
 
-  it("firewall_only_the_eval_cli_imports_the_gold_module", () => {
+  it("firewall_only_eval_side_tools_import_the_gold_module", () => {
     const allFiles = [...listTsFiles("src"), ...listTsFiles("scripts")];
     const importers = allFiles.filter(
       (f) => f !== GOLD_MODULE && scanModule(f).project.includes(GOLD_MODULE),
     );
-    expect(importers).toEqual([EVAL_CLI]);
+    expect(importers.sort()).toEqual([...EVAL_SIDE_GOLD_CONSUMERS].sort());
   });
 
-  it("firewall_eval_cli_is_isolated_from_retrieval_logic", () => {
-    const evalClosure = closure(EVAL_CLI);
+  it("firewall_eval_side_gold_consumers_are_isolated_from_retrieval_logic", () => {
     const forbiddenPrefixes = [
       "src/core/",
       "src/providers/",
       "src/eval/baselines/",
       "scripts/amb-",
     ];
-    const violations = [...evalClosure].filter((f) =>
-      forbiddenPrefixes.some((p) => f.startsWith(p)),
-    );
-    expect(violations).toEqual([]);
+    for (const consumer of EVAL_SIDE_GOLD_CONSUMERS) {
+      const violations = [...closure(consumer)].filter((f) =>
+        forbiddenPrefixes.some((p) => f.startsWith(p)),
+      );
+      expect(violations, `${consumer} reaches retrieval logic`).toEqual([]);
+    }
   });
 
   it("firewall_run_payloads_are_the_only_bridge_no_module_reads_scores_back", () => {

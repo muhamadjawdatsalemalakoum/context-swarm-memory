@@ -1,0 +1,431 @@
+{
+  "task": 1,
+  "label": "8K",
+  "instances": 30,
+  "needleSurvivalBlind": 2,
+  "needleSurvivalSalient": 30,
+  "rescued": 28,
+  "lost": 0,
+  "perQuery": [
+    {
+      "id": "bq1-0000",
+      "needleSurvived": {
+        "blind": true,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 438
+    },
+    {
+      "id": "bq1-0001",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.2,
+        "salientFull": 0.2
+      },
+      "instanceEvents": 526
+    },
+    {
+      "id": "bq1-0002",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 627
+    },
+    {
+      "id": "bq1-0003",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.125,
+        "salientFull": 0.125
+      },
+      "instanceEvents": 637
+    },
+    {
+      "id": "bq1-0004",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.4,
+        "salientFull": 0.4
+      },
+      "instanceEvents": 574
+    },
+    {
+      "id": "bq1-0005",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 618
+    },
+    {
+      "id": "bq1-0006",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 688
+    },
+    {
+      "id": "bq1-0007",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 631
+    },
+    {
+      "id": "bq1-0008",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.14285714285714285,
+        "salientFull": 0.14285714285714285
+      },
+      "instanceEvents": 620
+    },
+    {
+      "id": "bq1-0009",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.1,
+        "salientFull": 0.1
+      },
+      "instanceEvents": 571
+    },
+    {
+      "id": "bq1-0010",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 510
+    },
+    {
+      "id": "bq1-0011",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.08333333333333333,
+        "salientFull": 0.08333333333333333
+      },
+      "instanceEvents": 477
+    },
+    {
+      "id": "bq1-0012",
+      "needleSurvived": {
+        "blind": true,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0.5,
+        "salientOrder": 0.6666666666666666,
+        "salientFull": 0.6666666666666666
+      },
+      "instanceEvents": 673
+    },
+    {
+      "id": "bq1-0013",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 606
+    },
+    {
+      "id": "bq1-0014",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 576
+    },
+    {
+      "id": "bq1-0015",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 626
+    },
+    {
+      "id": "bq1-0016",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 592
+    },
+    {
+      "id": "bq1-0017",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 574
+    },
+    {
+      "id": "bq1-0018",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.3333333333333333,
+        "salientFull": 0.3333333333333333
+      },
+      "instanceEvents": 566
+    },
+    {
+      "id": "bq1-0019",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.2222222222222222,
+        "salientFull": 0.2222222222222222
+      },
+      "instanceEvents": 552
+    },
+    {
+      "id": "bq1-0020",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 532
+    },
+    {
+      "id": "bq1-0021",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 521
+    },
+    {
+      "id": "bq1-0022",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.25,
+        "salientFull": 0.25
+      },
+      "instanceEvents": 578
+    },
+    {
+      "id": "bq1-0023",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 595
+    },
+    {
+      "id": "bq1-0024",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 551
+    },
+    {
+      "id": "bq1-0025",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.5,
+        "salientFull": 0.5
+      },
+      "instanceEvents": 513
+    },
+    {
+      "id": "bq1-0026",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0,
+        "salientFull": 0
+      },
+      "instanceEvents": 533
+    },
+    {
+      "id": "bq1-0027",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.16666666666666666,
+        "salientFull": 0.16666666666666666
+      },
+      "instanceEvents": 627
+    },
+    {
+      "id": "bq1-0028",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 0,
+        "salientOrder": 0.16666666666666666,
+        "salientFull": 0.16666666666666666
+      },
+      "instanceEvents": 651
+    },
+    {
+      "id": "bq1-0029",
+      "needleSurvived": {
+        "blind": false,
+        "salientOrder": true,
+        "salientFull": true
+      },
+      "goldRetained": {
+        "blind": 1,
+        "salientOrder": 1,
+        "salientFull": 1
+      },
+      "instanceEvents": 605
+    }
+  ]
+}

@@ -995,12 +995,17 @@
         </p>
 
         <div class="callout" data-reveal>
-          <h3>What's next</h3>
+          <h3>New: write-time memory (July 2026)</h3>
           <p>
-            CSM is a multi-stage LLM pipeline whose internal recall/synthesis models are a tunable lever. The
-            BEAM ladder pins the answer and judge models to Hindsight's for an apples-to-apples comparison, so the
-            next R&amp;D focus is a stronger <em>internal</em> model set — aimed squarely at the multi-hop categories
-            where CSM trails. A roadmap, not a result.
+            Reading the ladder's failed answers found two failure mechanisms — missing scattered facts
+            (summarization, ordering) and stale-value aggregation (multi-session) — and one write-time lever was
+            built for each, both off by default behind intent gates validated on all 2,000 BEAM queries (zero
+            fires on the eight categories CSM already wins). Measured so far, official config, paired on the same
+            40 queries: <strong>BEAM&nbsp;100K summarization 0.714&nbsp;&rarr;&nbsp;0.936</strong> at 43% less
+            answer-visible context. The same lever is a score <em>wash</em> on event_ordering (published anyway)
+            while cutting its context 58%. The fact registry for aggregation queries is built but not yet
+            score-measured. Designs, gates, cost disclosures, and artifact hashes:
+            <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/WRITE_TIME_MEMORY_2026_07.md">WRITE_TIME_MEMORY_2026_07.md</a>.
           </p>
         </div>
       </div>

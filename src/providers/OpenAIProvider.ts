@@ -119,65 +119,107 @@ export class OpenAIProvider implements LlmProvider {
       );
     }
 
+    // Hosted reasoning-era models (o-series, gpt-5 family) reject the classic
+    // sampling surface: `max_tokens` must be `max_completion_tokens`, and
+    // `temperature`/`seed` are unsupported (server-side default decoding only).
+    // Local OpenAI-compat endpoints (Ollama) and classic hosted models keep the
+    // original byte-identical body — existing caches replay unchanged.
+    const reasoningEra =
+      !isLocalBase(this.baseURL) && /^(o\d|gpt-5)/i.test(model);
+
     const body: Record<string, unknown> = {
       model,
       messages: [
         { role: "system", content: args.system },
         { role: "user", content: args.prompt },
       ],
-      temperature: args.temperature ?? 0,
-      max_tokens: args.maxOutputTokens,
       stream: this.streamMode,
     };
-    // Forward the sampling seed when provided. OpenAI accepts `seed`; Ollama's
-    // OpenAI-compat endpoint maps it to `options.seed`. (No-op at temperature 0,
-    // where decoding is greedy, but makes the "seeded" claim true and aids
-    // reproducibility at temperature > 0.)
-    if (args.seed !== undefined) {
-      body.seed = args.seed;
+    if (reasoningEra) {
+      body.max_completion_tokens = args.maxOutputTokens;
+      // Reasoning effort: env-tunable cost lever for R&D stages. disableThinking
+      // maps to the cheapest tier (the gpt-5 family accepts "minimal").
+      const effort =
+        process.env.CSM_OPENAI_REASONING_EFFORT ??
+        (args.disableThinking ? "minimal" : undefined);
+      if (effort) body.reasoning_effort = effort;
+    } else {
+      body.temperature = args.temperature ?? 0;
+      body.max_tokens = args.maxOutputTokens;
+      // Forward the sampling seed when provided. OpenAI accepts `seed`; Ollama's
+      // OpenAI-compat endpoint maps it to `options.seed`. (No-op at temperature 0,
+      // where decoding is greedy, but makes the "seeded" claim true and aids
+      // reproducibility at temperature > 0.)
+      if (args.seed !== undefined) {
+        body.seed = args.seed;
+      }
+      // Ollama-native field. Suppresses the <think>...</think> reasoning channel
+      // for thinking-style models (Gemma 4, DeepSeek R1, Qwen 3). Only sent to
+      // local endpoints — hosted OpenAI rejects unknown parameters.
+      if (args.disableThinking && isLocalBase(this.baseURL)) {
+        body.think = false;
+      }
     }
     if (args.jsonMode) {
       body.response_format = { type: "json_object" };
     }
-    // Ollama-native field. Suppresses the <think>...</think> reasoning channel
-    // for thinking-style models (Gemma 4, DeepSeek R1, Qwen 3). Silently ignored
-    // by real OpenAI. We set it only when explicitly requested so existing
-    // cached responses (generated with thinking ON) remain byte-identical replays.
-    if (args.disableThinking) {
-      body.think = false;
-    }
 
-    // Manual AbortController + unref'd timer.
-    // Why not AbortSignal.timeout: on Windows + Node 24 with multiple parallel
-    // fetches, libuv races during shutdown of the unfired timers and prints
-    // an assertion ("UV_HANDLE_CLOSING") to stderr. Manual setTimeout we can
-    // .unref() so it does not keep the loop alive, and clearTimeout it on resolve.
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    if (typeof (timer as unknown as { unref?: () => void }).unref === "function") {
-      (timer as unknown as { unref: () => void }).unref();
-    }
     const start = Date.now();
-    let response: Response;
-    try {
-      response = await this.fetchImpl(`${this.baseURL}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+    // Transient-error retry: hosted OpenAI throttles by tokens-per-minute (429)
+    // and has occasional 5xx blips. Honor Retry-After when present; otherwise
+    // exponential backoff. A request LARGER than the org's whole TPM limit can
+    // never succeed ("Requested X. ... must be reduced") — fail fast on those.
+    const maxRetries = parseNonNegativeInt(process.env.CSM_OPENAI_MAX_RETRIES, 5);
+    let response!: Response;
+    for (let attempt = 0; ; attempt++) {
+      // Manual AbortController + unref'd timer.
+      // Why not AbortSignal.timeout: on Windows + Node 24 with multiple parallel
+      // fetches, libuv races during shutdown of the unfired timers and prints
+      // an assertion ("UV_HANDLE_CLOSING") to stderr. Manual setTimeout we can
+      // .unref() so it does not keep the loop alive, and clearTimeout it on resolve.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      if (typeof (timer as unknown as { unref?: () => void }).unref === "function") {
+        (timer as unknown as { unref: () => void }).unref();
+      }
+      try {
+        response = await this.fetchImpl(`${this.baseURL}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
 
-    if (!response.ok) {
+      if (response.ok) break;
       const errBody = await safeReadBody(response);
-      throw new Error(
-        `${this.name}: HTTP ${response.status} from ${this.baseURL}/chat/completions :: ${errBody.slice(0, 400)}`,
+      const retryable =
+        (response.status === 429 || response.status >= 500) &&
+        // Oversized single request: retrying can never succeed.
+        !/must be reduced/i.test(errBody);
+      if (!retryable || attempt >= maxRetries) {
+        throw new Error(
+          `${this.name}: HTTP ${response.status} from ${this.baseURL}/chat/completions :: ${errBody.slice(0, 400)}`,
+        );
+      }
+      const retryAfterHeader = Number(response.headers.get("retry-after"));
+      const bodyHintMs = errBody.match(/try again in ([\d.]+)s/i);
+      const waitMs = Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+        ? retryAfterHeader * 1000
+        : bodyHintMs
+          ? Math.ceil(Number.parseFloat(bodyHintMs[1]!) * 1000) + 250
+          : 2000 * 2 ** attempt;
+      process.stderr.write(
+        `[${this.name}] HTTP ${response.status}, retry ${attempt + 1}/${maxRetries} in ${Math.round(waitMs / 1000)}s\n`,
       );
+      // NOT unref'd: during TPM-paced builds this sleep may be the only pending
+      // work — an unref'd timer would let the process exit mid-await.
+      await new Promise((resolve) => setTimeout(resolve, Math.min(waitMs, 120_000)));
     }
 
     let content = "";
@@ -273,6 +315,12 @@ export class OpenAIProvider implements LlmProvider {
     }
     return { data: content as unknown as T, usage, rawText: content };
   }
+}
+
+function parseNonNegativeInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function stripSlash(s: string): string {

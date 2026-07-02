@@ -33,10 +33,14 @@ import {
   type AmbDocument,
   type AmbRetrievePayload,
   type AmbRetrieveRequest,
+  aggregationQueryIntent,
   buildCorpus,
   createBridgeProvider,
   emptyAmbPayload,
   executeAmbRetrieve,
+  factMemoryActive,
+  observationQueryIntent,
+  observeMemoryActive,
   scopeDocuments,
 } from "./amb-csm-retrieve.js";
 
@@ -50,12 +54,48 @@ const CORPUS_CACHE_MAX = 4;
  *  bounding a runaway client. */
 const MAX_BODY_BYTES = 256 * 1024 * 1024;
 
+export interface ObservationBuildCost {
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs: number;
+  chunks: number;
+}
+
+export interface ScopedObservation {
+  text: string;
+  /** Non-null ONLY on the request that actually paid the build — the honest-
+   *  accounting hook (see csm.ts answer(): top-level tokens must reflect the
+   *  whole pipeline). Cache hits return null so the cost is attributed exactly
+   *  once, to the first firing query. */
+  buildCost: ObservationBuildCost | null;
+}
+
 export interface AmbServerState {
   documents: AmbDocument[];
   /** Bumped on every ingest/reset; corpus cache entries from older versions
    *  are stale and rebuilt on next use. */
   version: number;
   corpusCache: Map<string, { version: number; corpus: Corpus }>;
+  /** Ingestion-time organized-memory ("Observation") per user scope, built once
+   *  over the full conversation and reused across that user's summary queries.
+   *  Versioned like corpusCache so an ingest invalidates it. */
+  observationCache: Map<string, { version: number; text: string }>;
+  /** Single-flight guard for observation builds, keyed `${scope}@${version}`:
+   *  a concurrent (or timeout-retried) request for the same scope joins the
+   *  in-flight build instead of paying a second full multi-LLM pass — the same
+   *  promise-cache pattern as csm.ts routerIndexCache. Failed builds delete
+   *  their entry so the next request rebuilds (loud failure preserved). */
+  observationInflight: Map<
+    string,
+    Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number; chunks: number }>
+  >;
+  /** Write-time FACT REGISTRY per user scope (metric value histories with
+   *  LATEST markers) — same cache + single-flight contract as the Observation. */
+  factCache: Map<string, { version: number; text: string }>;
+  factInflight: Map<
+    string,
+    Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number; chunks: number }>
+  >;
   baseline: CsmBaseline;
   providerName: string;
   defaults: AmbBridgeOptions;
@@ -67,6 +107,10 @@ export function createAmbServerState(provider?: LlmProvider): AmbServerState {
     documents: [],
     version: 0,
     corpusCache: new Map(),
+    observationCache: new Map(),
+    observationInflight: new Map(),
+    factCache: new Map(),
+    factInflight: new Map(),
     baseline: new CsmBaseline({ provider: resolved }),
     providerName: resolved.name,
     defaults: defaultBridgeOptions(),
@@ -109,18 +153,200 @@ export function getScopedCorpus(
   return corpus;
 }
 
+/** Max user-scoped Observations kept warm (one LLM-built summary each). */
+const OBSERVATION_CACHE_MAX = 8;
+const OBSERVATION_FOCUS =
+  "the full conversation — every topic the user raised and how things developed over time";
+
+/** Build (or reuse) the ingestion-time Observation for a user scope: one
+ *  organized-memory synthesis over the FULL conversation (chronological),
+ *  cached and reused across that user's summary queries. This is the Hindsight/
+ *  RAPTOR/Honcho write-time pattern — synthesize once, retrieve verbatim.
+ *
+ *  Returns the text plus, on the request that actually paid the build, its full
+ *  LLM cost (honest accounting: at the 10M tier a build is ~60 map calls over
+ *  ~18M input tokens — invisible cost would corrupt the token-cost A/B vs
+ *  Hindsight, whose write-time organization cost is the very thing compared). */
+export async function getScopedObservation(
+  state: AmbServerState,
+  userId: string | null | undefined,
+  corpus: Corpus,
+): Promise<ScopedObservation | undefined> {
+  const key = userId ?? "__all__";
+  // Capture the version BEFORE the long await: an /ingest landing mid-build
+  // must leave this observation tagged stale, not fresh (TOCTOU hardening).
+  const version = state.version;
+  const hit = state.observationCache.get(key);
+  if (hit && hit.version === version) return { text: hit.text, buildCost: null };
+
+  // corpus.events is in document/turn (chronological) order. The default cap is
+  // high enough to cover a full conversation at any BEAM tier (10M units run to
+  // tens of thousands of turns); the hierarchical map-reduce inside
+  // organizeMemoryScaled — not this cap — is what bounds cost at scale.
+  const maxEvents = parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, 200_000);
+  const contents = corpus.events.slice(0, maxEvents).map((e) => e.content);
+  if (contents.length === 0) return undefined;
+
+  // Single-flight: a concurrent or timeout-retried request joins the in-flight
+  // build rather than starting a duplicate full multi-LLM pass.
+  const inflightKey = `${key}@${version}`;
+  let inflight = state.observationInflight.get(inflightKey);
+  const paysBuild = !inflight;
+  if (!inflight) {
+    // Scale-aware: single-pass for 100K-tier conversations (byte-equivalent to
+    // the proven win), hierarchical chunk→map→reduce once a conversation
+    // exceeds the model context window (500K/1M/10M tiers).
+    const approxTokens = contents.reduce((s, c) => s + Math.ceil(c.length / 4), 0);
+    process.stderr.write(
+      `[observation] building user=${key} events=${contents.length} ~tokens=${approxTokens} ...\n`,
+    );
+    inflight = state.baseline.organizeMemoryScaled({
+      query: OBSERVATION_FOCUS,
+      eventContents: contents,
+      model: state.defaults.model,
+      chunkTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, 600_000),
+      singlePassTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, 700_000),
+      chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_OUTPUT, 3000),
+      // Default matches organizeMemoryScaled's own default AND the proven
+      // 0.9364 run (measured observations were 4.0K–10.5K tokens; the old 2048
+      // default silently truncated ~95% of them — 2026-06-24 audit finding).
+      finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_OUTPUT, 12_000),
+      mapConcurrency: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, 4),
+      onProgress: (msg) => process.stderr.write(`[observation] user=${key} ${msg}\n`),
+    });
+    state.observationInflight.set(inflightKey, inflight);
+    // Failed builds clear the slot so the next request rebuilds (loud failure
+    // preserved — a silent baseline fallback would corrupt the A/B).
+    inflight.catch(() => state.observationInflight.delete(inflightKey));
+  }
+  const organized = await inflight;
+  state.observationInflight.delete(inflightKey);
+  process.stderr.write(
+    `[observation] done user=${key} chunks=${organized.chunks} ` +
+      `inTokens=${organized.inputTokens} outTokens=${organized.outputTokens} ` +
+      `ms=${Math.round(organized.latencyMs)}\n`,
+  );
+
+  state.observationCache.set(key, { version, text: organized.text });
+  for (const [k, v] of state.observationCache) {
+    if (state.observationCache.size <= OBSERVATION_CACHE_MAX) break;
+    if (k !== key && v.version !== state.version) state.observationCache.delete(k);
+  }
+  for (const k of state.observationCache.keys()) {
+    if (state.observationCache.size <= OBSERVATION_CACHE_MAX) break;
+    if (k !== key) state.observationCache.delete(k);
+  }
+  return {
+    text: organized.text,
+    buildCost: paysBuild
+      ? {
+          inputTokens: organized.inputTokens,
+          outputTokens: organized.outputTokens,
+          latencyMs: organized.latencyMs,
+          chunks: organized.chunks,
+        }
+      : null,
+  };
+}
+
+/** Build (or reuse) the write-time FACT REGISTRY for a user scope — mirror of
+ *  getScopedObservation (versioned cache, single-flight, exactly-once cost). */
+export async function getScopedFactRegistry(
+  state: AmbServerState,
+  userId: string | null | undefined,
+  corpus: Corpus,
+): Promise<ScopedObservation | undefined> {
+  const key = userId ?? "__all__";
+  const version = state.version;
+  const hit = state.factCache.get(key);
+  if (hit && hit.version === version) return { text: hit.text, buildCost: null };
+
+  const maxEvents = parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, 200_000);
+  const contents = corpus.events.slice(0, maxEvents).map((e) => e.content);
+  if (contents.length === 0) return undefined;
+
+  const inflightKey = `${key}@${version}`;
+  let inflight = state.factInflight.get(inflightKey);
+  const paysBuild = !inflight;
+  if (!inflight) {
+    const approxTokens = contents.reduce((s, c) => s + Math.ceil(c.length / 4), 0);
+    process.stderr.write(
+      `[facts] building user=${key} events=${contents.length} ~tokens=${approxTokens} ...\n`,
+    );
+    inflight = state.baseline.organizeFactsScaled({
+      eventContents: contents,
+      model: state.defaults.model,
+      chunkTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, 600_000),
+      singlePassTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, 700_000),
+      chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_FACT_CHUNK_OUTPUT, 4000),
+      finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_FACT_MAX_OUTPUT, 12_000),
+      mapConcurrency: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, 4),
+      onProgress: (msg) => process.stderr.write(`[facts] user=${key} ${msg}\n`),
+    });
+    state.factInflight.set(inflightKey, inflight);
+    inflight.catch(() => state.factInflight.delete(inflightKey));
+  }
+  const organized = await inflight;
+  state.factInflight.delete(inflightKey);
+  process.stderr.write(
+    `[facts] done user=${key} chunks=${organized.chunks} ` +
+      `inTokens=${organized.inputTokens} outTokens=${organized.outputTokens} ` +
+      `ms=${Math.round(organized.latencyMs)}\n`,
+  );
+
+  state.factCache.set(key, { version, text: organized.text });
+  for (const [k, v] of state.factCache) {
+    if (state.factCache.size <= OBSERVATION_CACHE_MAX) break;
+    if (k !== key && v.version !== state.version) state.factCache.delete(k);
+  }
+  for (const k of state.factCache.keys()) {
+    if (state.factCache.size <= OBSERVATION_CACHE_MAX) break;
+    if (k !== key) state.factCache.delete(k);
+  }
+  return {
+    text: organized.text,
+    buildCost: paysBuild
+      ? {
+          inputTokens: organized.inputTokens,
+          outputTokens: organized.outputTokens,
+          latencyMs: organized.latencyMs,
+          chunks: organized.chunks,
+        }
+      : null,
+  };
+}
+
 export async function handleRetrieve(
   state: AmbServerState,
   request: AmbRetrieveRequest,
 ): Promise<AmbRetrievePayload> {
   const corpus = getScopedCorpus(state, request.user_id);
   if (!corpus) return emptyAmbPayload("no_documents_in_scope");
+  // Write-time levers, each behind its own flag + validated zero-leak gate so
+  // every non-firing query stays byte-identical to baseline:
+  // - observation: retrospective summary / order-recap intent
+  // - fact registry: aggregation intent (multi_session "total/combined" questions)
+  // Observation intent is checked FIRST: summarization/event_ordering queries can
+  // embed incidental aggregation phrases ("mention 8 items in total" — measured
+  // at 500k), while multi_session aggregation queries match the observation gate
+  // 0/2000 times across all tiers — so this order is strictly protective.
+  let fact: ScopedObservation | undefined;
+  let observation: ScopedObservation | undefined;
+  if (observeMemoryActive() && observationQueryIntent(request.query)) {
+    observation = await getScopedObservation(state, request.user_id, corpus);
+  } else if (factMemoryActive() && aggregationQueryIntent(request.query)) {
+    fact = await getScopedFactRegistry(state, request.user_id, corpus);
+  }
   return executeAmbRetrieve({
     baseline: state.baseline,
     providerName: state.providerName,
     corpus,
     request,
     opts: state.defaults,
+    observation: observation?.text,
+    observationBuildCost: observation?.buildCost ?? null,
+    factRegistry: fact?.text,
+    factBuildCost: fact?.buildCost ?? null,
   });
 }
 
@@ -194,6 +420,10 @@ async function routeRequest(
     case "/reset": {
       state.documents = [];
       state.corpusCache.clear();
+      state.observationCache.clear();
+      state.observationInflight.clear();
+      state.factCache.clear();
+      state.factInflight.clear();
       state.version++;
       sendJson(res, 200, { ok: true });
       return;

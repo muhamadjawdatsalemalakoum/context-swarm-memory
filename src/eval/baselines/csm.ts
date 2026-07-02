@@ -387,6 +387,388 @@ export class CsmBaseline implements BaselineRunner {
 
   constructor(private opts: { provider: LlmProvider }) {}
 
+  /**
+   * Synthesis-engine pass for the AMB bridge (CSM_AMB_SYNTH_MEMORY). Organizes
+   * the retrieved conversation events into a comprehensive, chronological
+   * "organized memory" — the pre-digested, ordered view that lets the answer
+   * model REPORT rather than synthesize from a raw event pile (which is how a
+   * purpose-built memory system like Hindsight wins the synthesis-heavy
+   * summarization / event_ordering categories). Read-only: organizes only the
+   * provided events, no gold, no outside knowledge.
+   */
+  async organizeMemory(args: {
+    query: string;
+    eventContents: string[];
+    model: string;
+    maxOutputTokens?: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { query, eventContents, model, maxOutputTokens = 2048 } = args;
+    const events = eventContents.map((c, i) => `[${i + 1}] ${c}`).join("\n\n");
+    const system =
+      "You organize a user's conversation memory faithfully and completely. Use ONLY the " +
+      "provided events. Do not add outside knowledge, do not answer any question, do not invent.";
+    const prompt =
+      "The events below are the user's own conversation turns, already in CHRONOLOGICAL ORDER " +
+      "(earliest first). Produce a COMPREHENSIVE, CHRONOLOGICAL account of what the user brought " +
+      "up and how things developed over time.\n" +
+      "Rules:\n" +
+      "- Walk through the events in order, first to last; preserve that order.\n" +
+      "- Include EVERY distinct topic, request, decision, or event the user raised — do NOT omit " +
+      "or merge them; this is the user's memory, completeness matters.\n" +
+      "- For each, state briefly what the USER did or asked, in their framing (\"the user asked " +
+      "about X\", \"the user decided Y\"), with the concrete specifics (names, topics, values).\n" +
+      "- Output a numbered timeline, one entry per distinct topic/event, in order.\n" +
+      "- Be faithful and complete; do NOT answer any question, just organize the memory.\n\n" +
+      `Focus area for emphasis (still include everything): ${query}\n\n` +
+      `EVENTS (chronological):\n${events}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
+  /**
+   * Scale-aware organized memory (hierarchical / map-reduce). A single
+   * organizeMemory() call cannot summarize a conversation larger than the
+   * model's context window — BEAM 10M conversations are ~11M tokens, far past
+   * the ~1M flash context, so the single-pass Observation that wins at 100K
+   * physically cannot run at 10M. This packs the events into context-sized
+   * chunks, summarizes each chunk in order (map), then merges the ordered chunk
+   * summaries into one comprehensive chronological organized memory (reduce).
+   * Below `singlePassTokens` it is byte-equivalent to a single organizeMemory()
+   * call, so 100K-tier conversations (the proven win) are unchanged.
+   */
+  async organizeMemoryScaled(args: {
+    query: string;
+    eventContents: string[];
+    model: string;
+    chunkTokens?: number;
+    singlePassTokens?: number;
+    chunkOutputTokens?: number;
+    finalOutputTokens?: number;
+    mapConcurrency?: number;
+    /** Optional progress sink (chunk/reduce milestones) for live monitoring of
+     *  long 10M-tier builds. Pure side-channel; does not affect output. */
+    onProgress?: (msg: string) => void;
+  }): Promise<{
+    text: string;
+    inputTokens: number;
+    outputTokens: number;
+    latencyMs: number;
+    chunks: number;
+  }> {
+    const {
+      query,
+      eventContents,
+      model,
+      chunkTokens = 600_000,
+      singlePassTokens = 700_000,
+      chunkOutputTokens = 3000,
+      finalOutputTokens = 12_000,
+      mapConcurrency = 4,
+      onProgress,
+    } = args;
+
+    const totalTokens = eventContents.reduce((sum, c) => sum + estimateTokens(c), 0);
+    if (totalTokens <= singlePassTokens) {
+      const r = await this.organizeMemory({
+        query,
+        eventContents,
+        model,
+        maxOutputTokens: finalOutputTokens,
+      });
+      return { ...r, chunks: 1 };
+    }
+
+    const chunks = chunkByTokenBudget(eventContents, chunkTokens);
+    onProgress?.(`map start: ${chunks.length} chunks, concurrency=${mapConcurrency}`);
+    // Map: summarize each ordered chunk. Concurrency-limited so a 10M
+    // conversation's many chunks don't fire as one quota-busting burst.
+    let mapDone = 0;
+    const mapped = await mapWithConcurrency(chunks, mapConcurrency, async (chunkEvents, i) => {
+      const r = await this.summarizeSegment({
+        segmentIndex: i,
+        segmentCount: chunks.length,
+        eventContents: chunkEvents,
+        model,
+        maxOutputTokens: chunkOutputTokens,
+      });
+      mapDone += 1;
+      onProgress?.(`map ${mapDone}/${chunks.length} done (${Math.round(r.latencyMs)}ms)`);
+      return r;
+    });
+    onProgress?.(`reduce start: merging ${chunks.length} segment summaries`);
+    // Reduce: weave the ordered segment summaries into one organized memory.
+    const merged = await this.mergeSegmentSummaries({
+      query,
+      segmentSummaries: mapped.map((m) => m.text),
+      model,
+      maxOutputTokens: finalOutputTokens,
+    });
+    onProgress?.(`reduce done (${Math.round(merged.latencyMs)}ms)`);
+
+    return {
+      text: merged.text,
+      inputTokens: mapped.reduce((s, m) => s + m.inputTokens, 0) + merged.inputTokens,
+      outputTokens: mapped.reduce((s, m) => s + m.outputTokens, 0) + merged.outputTokens,
+      // Map runs concurrently, so its wall-clock is ~the slowest chunk, not the
+      // sum; approximate with max + the reduce call.
+      latencyMs:
+        (mapped.length ? Math.max(...mapped.map((m) => m.latencyMs)) : 0) + merged.latencyMs,
+      chunks: chunks.length,
+    };
+  }
+
+  /**
+   * Scale-aware FACT REGISTRY (hierarchical / map-reduce). The second write-time
+   * lever, aimed at the aggregation failure mode the prose Observation cannot
+   * fix: multi-session questions like "how many X in total when combining A and
+   * B" fail at baseline because the answer model aggregates STALE values — BEAM
+   * conversations update the same metric repeatedly ("1M docs" → later "1.8M
+   * docs") and placeholder dates hide which value is current (measured: 10M-tier
+   * multi_session_reasoning = 0.120, answers confidently sum outdated numbers).
+   * The registry tracks each metric's VALUE HISTORY in conversation order with
+   * the LATEST value marked — the per-entity observation / bi-temporal pattern
+   * of Hindsight and Zep/Graphiti. Same chunking/concurrency contract as
+   * organizeMemoryScaled.
+   */
+  async organizeFactsScaled(args: {
+    eventContents: string[];
+    model: string;
+    chunkTokens?: number;
+    singlePassTokens?: number;
+    chunkOutputTokens?: number;
+    finalOutputTokens?: number;
+    mapConcurrency?: number;
+    onProgress?: (msg: string) => void;
+  }): Promise<{
+    text: string;
+    inputTokens: number;
+    outputTokens: number;
+    latencyMs: number;
+    chunks: number;
+  }> {
+    const {
+      eventContents,
+      model,
+      chunkTokens = 600_000,
+      singlePassTokens = 700_000,
+      chunkOutputTokens = 4000,
+      finalOutputTokens = 12_000,
+      mapConcurrency = 4,
+      onProgress,
+    } = args;
+
+    const totalTokens = eventContents.reduce((sum, c) => sum + estimateTokens(c), 0);
+    const chunks =
+      totalTokens <= singlePassTokens
+        ? [eventContents]
+        : chunkByTokenBudget(eventContents, chunkTokens);
+    onProgress?.(`fact map start: ${chunks.length} chunks, concurrency=${mapConcurrency}`);
+    let mapDone = 0;
+    const mapped = await mapWithConcurrency(chunks, mapConcurrency, async (chunkEvents, i) => {
+      const r = await this.extractFactsSegment({
+        segmentIndex: i,
+        segmentCount: chunks.length,
+        eventContents: chunkEvents,
+        model,
+        maxOutputTokens: chunkOutputTokens,
+      });
+      mapDone += 1;
+      onProgress?.(`fact map ${mapDone}/${chunks.length} done (${Math.round(r.latencyMs)}ms)`);
+      return r;
+    });
+    // Single chunk still goes through the merge: it converts the raw ordered
+    // fact lines into the deduplicated per-metric registry with LATEST markers.
+    const merged = await this.mergeFactSegments({
+      segmentFacts: mapped.map((m) => m.text),
+      model,
+      maxOutputTokens: finalOutputTokens,
+    });
+    onProgress?.(`fact reduce done (${Math.round(merged.latencyMs)}ms)`);
+
+    return {
+      text: merged.text,
+      inputTokens: mapped.reduce((s, m) => s + m.inputTokens, 0) + merged.inputTokens,
+      outputTokens: mapped.reduce((s, m) => s + m.outputTokens, 0) + merged.outputTokens,
+      latencyMs:
+        (mapped.length ? Math.max(...mapped.map((m) => m.latencyMs)) : 0) + merged.latencyMs,
+      chunks: chunks.length,
+    };
+  }
+
+  /** Map step: extract every quantitative/stateful fact from ONE segment. */
+  private async extractFactsSegment(args: {
+    segmentIndex: number;
+    segmentCount: number;
+    eventContents: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { segmentIndex, segmentCount, eventContents, model, maxOutputTokens } = args;
+    const events = eventContents.map((c, i) => `[${i + 1}] ${c}`).join("\n\n");
+    const system =
+      "You extract facts from ONE segment of a long user conversation, faithfully and " +
+      "completely. Use ONLY the provided events. Do not add outside knowledge, do not answer " +
+      "any question, do not invent values.";
+    const prompt =
+      `This is segment ${segmentIndex + 1} of ${segmentCount} of one long conversation, in ` +
+      "CHRONOLOGICAL ORDER (earliest first). Extract EVERY quantitative or stateful fact the " +
+      "USER stated about their projects, plans, metrics, or life: counts, capacities, targets, " +
+      "percentages, durations, prices, quantities, named items in lists.\n" +
+      "Rules:\n" +
+      "- One line per fact, IN ORDER: FACT | <topic/metric, specific> | <value with unit> | <turn ref if visible>\n" +
+      "- When the user UPDATES or revises an earlier value, output the new value as its own " +
+      "line in order — do NOT collapse updates; the sequence matters.\n" +
+      "- Include distinct named items (e.g. error types, tools tried) as list-membership facts.\n" +
+      "- Do NOT omit any number the user stated. Do NOT answer questions. No commentary.\n\n" +
+      `EVENTS (chronological):\n${events}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
+  /** Reduce step: merge ordered per-segment fact lines into a value-history
+   *  registry with LATEST markers. */
+  private async mergeFactSegments(args: {
+    segmentFacts: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { segmentFacts, model, maxOutputTokens } = args;
+    const segments = segmentFacts.map((s, i) => `### Segment ${i + 1}\n${s}`).join("\n\n");
+    const system =
+      "You merge ordered fact lists from ONE long conversation into a single faithful fact " +
+      "registry. Use ONLY the provided facts. Do not add outside knowledge, do not answer any " +
+      "question, do not invent values.";
+    const prompt =
+      "Below are CHRONOLOGICAL fact lists (segment 1 = earliest) extracted from one long " +
+      "conversation. Merge them into ONE FACT REGISTRY.\n" +
+      "Rules:\n" +
+      "- One entry per DISTINCT metric/topic. Do not merge different metrics; do not drop any.\n" +
+      "- Each entry shows the value HISTORY in conversation order and marks the latest:\n" +
+      "  - <metric>: <v1> -> <v2> -> <v3>; LATEST: <v3>\n" +
+      "- A metric mentioned once shows: - <metric>: LATEST: <v1>\n" +
+      "- Keep list-membership facts as: - <topic> items mentioned: <a>, <b>, <c> (count: N)\n" +
+      "- Preserve concrete units and names. No commentary.\n\n" +
+      `FACT LISTS (chronological):\n${segments}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
+  /** Map step: comprehensive chronological summary of ONE segment. */
+  private async summarizeSegment(args: {
+    segmentIndex: number;
+    segmentCount: number;
+    eventContents: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { segmentIndex, segmentCount, eventContents, model, maxOutputTokens } = args;
+    const events = eventContents.map((c, i) => `[${i + 1}] ${c}`).join("\n\n");
+    const system =
+      "You faithfully summarize ONE segment of a long user conversation. Use ONLY the " +
+      "provided events. Do not add outside knowledge, do not answer any question, do not invent.";
+    const prompt =
+      `This is segment ${segmentIndex + 1} of ${segmentCount} of one long conversation, in ` +
+      "CHRONOLOGICAL ORDER (earliest first). Produce a COMPREHENSIVE, CHRONOLOGICAL list of " +
+      "what the user brought up in THIS segment.\n" +
+      "Rules:\n" +
+      "- Walk the events in order; preserve that order.\n" +
+      "- Include EVERY distinct topic, request, decision, or event the user raised — do NOT " +
+      "omit or merge them; completeness matters.\n" +
+      "- State briefly what the USER did or asked, in their framing, with concrete specifics " +
+      "(names, topics, values).\n" +
+      "- Output a numbered list, one entry per distinct topic/event, in order.\n" +
+      "- Be faithful and complete; do NOT answer any question.\n\n" +
+      `EVENTS (chronological):\n${events}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
+  /** Reduce step: merge ordered segment summaries into one organized memory. */
+  private async mergeSegmentSummaries(args: {
+    query: string;
+    segmentSummaries: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { query, segmentSummaries, model, maxOutputTokens } = args;
+    const segments = segmentSummaries
+      .map((s, i) => `### Segment ${i + 1}\n${s}`)
+      .join("\n\n");
+    const system =
+      "You merge ordered segment summaries of ONE long conversation into a single faithful " +
+      "organized memory. Use ONLY the provided summaries. Do not add outside knowledge, do not " +
+      "answer any question, do not invent.";
+    const prompt =
+      "Below are CHRONOLOGICAL segment summaries (segment 1 = earliest) of one long " +
+      "conversation. Merge them into ONE comprehensive, chronological organized memory.\n" +
+      "Rules:\n" +
+      "- Preserve chronological order across segments (segment 1 earliest, last segment most recent).\n" +
+      "- Include EVERY distinct topic/request/decision from EVERY segment — do NOT drop or " +
+      "over-merge; this is the user's memory, completeness matters.\n" +
+      "- Keep concrete specifics (names, topics, values).\n" +
+      "- Output a single numbered timeline, one entry per distinct topic/event, in order.\n" +
+      "- Do NOT answer any question; just organize the memory.\n\n" +
+      `Focus area for emphasis (still include everything): ${query}\n\n` +
+      `SEGMENT SUMMARIES (chronological):\n${segments}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
   async answer(
     query: Query,
     corpus: Corpus,
@@ -1262,4 +1644,65 @@ function escapeRegExp(s: string): string {
 
 function round2(x: number): number {
   return Math.round(x * 100) / 100;
+}
+
+/**
+ * Pack ordered event contents into chunks each ≤ `maxTokens` (estimated),
+ * preserving order. A single event larger than the budget gets its own chunk
+ * (never split — keeps a turn intact). Used by the hierarchical Observation to
+ * fit each map call inside the model context window.
+ */
+export function chunkByTokenBudget(contents: string[], maxTokens: number): string[][] {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  let currentTokens = 0;
+  for (const content of contents) {
+    const tokens = estimateTokens(content);
+    if (current.length > 0 && currentTokens + tokens > maxTokens) {
+      chunks.push(current);
+      current = [];
+      currentTokens = 0;
+    }
+    current.push(content);
+    currentTokens += tokens;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
+/**
+ * Map `fn` over `items` with at most `limit` in flight at once, preserving
+ * input order in the results. Bounds the concurrent LLM calls of the
+ * Observation map step so a long conversation's many chunks don't burst the
+ * provider's rate limit all at once.
+ *
+ * Fails fast: when any item's `fn` rejects, the remaining workers stop
+ * claiming new items (at most `limit - 1` already-in-flight calls complete).
+ * Without this, one failed chunk mid-build would reject the caller while the
+ * surviving workers silently burned through every remaining chunk — at the
+ * 10M tier that is ~10M discarded input tokens per incident (2026-06-24 audit).
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  let aborted = false;
+  const workerCount = Math.max(1, Math.min(limit, items.length));
+  const worker = async (): Promise<void> => {
+    while (!aborted) {
+      const index = next++;
+      if (index >= items.length) return;
+      try {
+        results[index] = await fn(items[index]!, index);
+      } catch (err) {
+        aborted = true;
+        throw err;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }

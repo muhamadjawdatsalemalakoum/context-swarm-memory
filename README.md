@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/tests-333%20passing-brightgreen.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-368%20passing-brightgreen.svg" alt="Tests">
   <img src="https://img.shields.io/badge/node-%E2%89%A522-339933.svg" alt="Node">
   <img src="https://img.shields.io/badge/status-R%26D%20prototype-orange.svg" alt="Status">
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg" alt="Website"></a>
@@ -146,19 +146,38 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs
   (though it pays an undisclosed ingest-time distillation cost).
 - **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
 
-## What's next
+## New: write-time memory (July 2026)
 
-CSM is a multi-stage LLM pipeline whose internal recall/synthesis models are a
-tunable lever. The BEAM ladder pins the answer and judge models to Hindsight's
-for an apples-to-apples comparison, so the next R&D focus is a stronger
-*internal* model set — aimed squarely at the multi-hop categories where CSM
-trails. A roadmap, not a result.
+Reading the ladder's failed answers showed **two distinct failure mechanisms**
+— "the context lacks the information" (summarization / event_ordering: the
+needed facts were never retrieved) and confidently-wrong stale aggregates
+(multi_session: the model sums outdated values). One write-time lever was built
+for each, both **off by default** behind intent gates validated on all 2,000
+BEAM queries (zero fires on the eight categories CSM already wins — winner
+regression is structurally impossible, not just unlikely):
+
+| Result (BEAM 100K, official config, paired 40q) | baseline | + Observation |
+|---|---:|---:|
+| **summarization** | 0.714 | **0.936** (+0.222) |
+| answer-visible context | 26.2K tok | **15.1K tok** (−43%) |
+
+The same lever is a **wash on event_ordering score** (+0.008, paired on a
+separate mechanism-lab stack) while still cutting context 58% — published as a
+cost lever there, not a score lever. The second lever (a fact registry with
+per-metric value histories for aggregation queries) is built and gated but not
+yet score-measured. The hierarchical build that scales the Observation past the
+model context window is validated live on a full 1M-token conversation
+(316-entry faithful chronology, ~$0.35).
+
+Full write-up — designs, gates, the results that *didn't* work, cost
+disclosures, artifacts + hashes:
+[`docs/WRITE_TIME_MEMORY_2026_07.md`](docs/WRITE_TIME_MEMORY_2026_07.md).
 
 ## Quickstart
 
 ```bash
 npm install
-npm test                       # 333 tests, no API keys (deterministic MockProvider)
+npm test                       # 368 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -175,7 +194,7 @@ setup: [`docs/GEMINI.md`](docs/GEMINI.md). Local Gemma-on-4090 reproduction:
 Don't trust the README — recompute it:
 
 ```bash
-npm test                  # 333 offline tests (MockProvider, no keys)
+npm test                  # 368 offline tests (MockProvider, no keys)
 npm run verify:published  # re-hash committed artifacts + recompute every headline number
 ```
 
@@ -205,6 +224,7 @@ verification.
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Methodology + threats to validity |
 | [`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md) | Latency rebuild ledger (29.2s → 3.47s) |
 | [`docs/RD_PORTFOLIO_2026_06.md`](docs/RD_PORTFOLIO_2026_06.md) | June 2026 R&D wave (incl. falsified hypotheses) |
+| [`docs/WRITE_TIME_MEMORY_2026_07.md`](docs/WRITE_TIME_MEMORY_2026_07.md) | July 2026 write-time memory wave: Observation lever (summarization 0.714→0.936), fact registry, gates, artifacts |
 | [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) | Synthetic-corpus comparison + full per-query results |
 | [`integrations/amb/README.md`](integrations/amb/README.md) | Running CSM as an AMB / BEAM memory provider |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) · [`docs/REPLICATION_KIT.md`](docs/REPLICATION_KIT.md) | Reproduction + third-party replication |
