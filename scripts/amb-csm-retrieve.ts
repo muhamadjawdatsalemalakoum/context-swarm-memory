@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { estimateTokens } from "../src/core/tokenBudget.js";
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
-import { coverageRerankAndPack, resolveRerankParams } from "../src/eval/ambReturnRank.js";
+import {
+  coverageRerankAndPack,
+  greedyCoverageOrder,
+  resolveRerankParams,
+} from "../src/eval/ambReturnRank.js";
 import type { BenchEvent, Corpus } from "../src/eval/corpus.js";
 import type { FreeFormQuery } from "../src/eval/mcq.js";
 import { createProvider } from "../src/providers/index.js";
@@ -282,20 +286,49 @@ export async function executeAmbRetrieve(input: {
   const obsActive = typeof observation === "string" && observation.length > 0;
   // Write-time fact registry (passed by the warm server for aggregation intent).
   const factActive = typeof factRegistry === "string" && factRegistry.length > 0;
+
+  // Coverage ORDER applied once, up front, so every downstream return path
+  // slices from coverage order instead of raw retrieval order.
+  //
+  // Previously the reranker was reachable on exactly ONE path (coverageFired &&
+  // flag && !synth && !obs && !fact); the synth/obs/fact path hard-cut at
+  // .slice(0, SYNTH_RAW_DOCS) and the remaining coverage path at
+  // .slice(0, resolveAmbReturnMax) — both in retrieval order.
+  //
+  // The measured effect is ORDERING, not size: paired and deterministic on the
+  // 100K slice at EQUAL token spend, coverage order beats retrieval order by
+  // +8.2 pts on event_ordering (14W/0L/26T) and +6.9 pts on summarization
+  // (14W/5L/21T). So reorder here and leave every path's own budget/count alone.
+  //
+  // Still gated on CSM_AMB_COVERAGE_RERANK (default OFF) — official numbers are
+  // untouched until the paid answer+judge gate confirms the proxy converts.
+  // selectAmbEvidenceIds() is deliberately NOT fed the reordered list: it has
+  // its own selection logic that may depend on retrieval order.
+  const rerankParams = resolveRerankParams({
+    reasoning: intent.temporal || intent.contradiction,
+    budgetTokens: parsePositiveInt(process.env.CSM_AMB_RETURN_TOKENS, 16000),
+  });
+  const orderedBaseIds = coverageRerankActive()
+    ? greedyCoverageOrder(
+        dedupeInOrder(baseIds),
+        (id) => corpus.byId.get(id)?.content ?? "",
+        request.query,
+        rerankParams.queryWeight,
+        rerankParams.normPow,
+      )
+    : baseIds;
+
   const ids = synthActive || obsActive || factActive
-    ? dedupeInOrder(baseIds).slice(0, parsePositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, 10))
+    ? dedupeInOrder(orderedBaseIds).slice(0, parsePositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, 10))
     : coverageFired
       ? coverageRerankActive()
         ? coverageRerankAndPack(
-            dedupeInOrder(baseIds),
+            dedupeInOrder(orderedBaseIds),
             (id) => corpus.byId.get(id)?.content ?? "",
             request.query,
-            resolveRerankParams({
-              reasoning: intent.temporal || intent.contradiction,
-              budgetTokens: parsePositiveInt(process.env.CSM_AMB_RETURN_TOKENS, 16000),
-            }),
+            rerankParams,
           )
-        : dedupeInOrder(baseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
+        : dedupeInOrder(orderedBaseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
       : selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
 
   const outDocs = ids
