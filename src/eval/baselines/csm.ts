@@ -322,6 +322,29 @@ export function resolveParallelProbes(
  * in docs/RD_PORTFOLIO_2026_06.md), so the default flips after the T3
  * BEAM-slice recall@k A/B confirms it on real BEAM data.
  */
+/**
+ * `CSM_SHARD_DESCRIPTORS` — write TF-IDF-derived terms into directory entries so
+ * the lexical router has query signal. Default OFF: at 100K the router selects
+ * 8 of 8.5 shards, so this cannot help there and must not perturb the frozen
+ * baseline. See `docs/experiments/EXP-router-component-bench.md`.
+ */
+export function resolveShardDescriptors(
+  raw = process.env.CSM_SHARD_DESCRIPTORS,
+): boolean {
+  if (raw === undefined || raw.trim().length === 0) return false;
+  const v = raw.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+/** Leading `[Month-DD-YYYY | Turn N]` header, as a "Mar-15-2024. " prefix. */
+function firstDatedHeader(events: Array<{ content: string }>): string | null {
+  for (const e of events) {
+    const m = /\[([A-Z][a-z]+-\d{1,2}-\d{4})\s*\|/.exec(e.content ?? "");
+    if (m) return `${m[1]!}. `;
+  }
+  return null;
+}
+
 export function resolveRouterHybrid(
   raw = process.env.CSM_ROUTER_HYBRID,
 ): boolean {
@@ -1396,6 +1419,36 @@ export function buildShardsFromCorpus(corpus: Corpus): {
   const createdAt = "2024-01-01T00:00:00.000Z";
   const snapshotId = "S001";
 
+  /**
+   * Real, query-scorable descriptors instead of boilerplate.
+   *
+   * `deriveShardDescriptors` (TF-IDF over sibling shards) already existed and
+   * was already used to build the router INDEX — but its terms were never
+   * written into the directory entries, which is what `scoreEntryLexical`
+   * actually reads. So the lexical router scored `name` = shard id,
+   * `description` = "Benchmark shard <id>", `summaryShort` = "Synthetic shard
+   * <id> (n events)." and one identical tag union per user, i.e. no query
+   * signal at all, and `selectCandidates` fell through to its
+   * `status === "active"` passthrough.
+   *
+   * Measured in `docs/experiments/EXP-router-component-bench.md`: with many
+   * shards per user (the upper-ladder regime) this lifts mean gold-facet
+   * coverage at a fixed 32-event budget from 0.457 to 0.676 — 54% -> 80% of the
+   * oracle — for pure string work, no embeddings and no LLM.
+   *
+   * Default OFF. 100K is saturated (8 of 8.5 shards probed), so this cannot
+   * help there and must not silently perturb the frozen baseline.
+   */
+  const enrich = resolveShardDescriptors();
+  const descriptors = enrich
+    ? deriveShardDescriptors(
+        [...corpus.byShard.entries()].map(([shardId, events]) => ({
+          shardId,
+          events: events.map((e) => ({ content: e.content, tags: e.tags })),
+        })),
+      )
+    : null;
+
   // Sort shard IDs so the directory order is deterministic — keeps the
   // router's tie-break behaviour stable across runs (cache-friendly).
   const shardIds = [...corpus.byShard.keys()].sort();
@@ -1411,10 +1464,17 @@ export function buildShardsFromCorpus(corpus: Corpus): {
     const memoryEvents: MemoryEvent[] = sortedEvents.map((e) =>
       toMemoryEvent(e, createdAt),
     );
-    const tagsUnion = dedupeInOrder(
-      sortedEvents.flatMap((e) => e.tags ?? []).map((t) => t.toLowerCase()),
-    );
-    const summary = `Synthetic shard ${shardId} (${memoryEvents.length} events).`;
+    const derived = descriptors?.get(shardId)?.terms ?? [];
+    const tagsUnion = dedupeInOrder([
+      ...sortedEvents.flatMap((e) => e.tags ?? []).map((t) => t.toLowerCase()),
+      // Tags carry the heaviest lexical weight (x2 in scoreEntryLexical), so
+      // this is where the derived terms earn the most.
+      ...derived,
+    ]);
+    const summary =
+      derived.length > 0
+        ? `${firstDatedHeader(sortedEvents) ?? ""}Topics: ${derived.join(", ")}.`
+        : `Synthetic shard ${shardId} (${memoryEvents.length} events).`;
 
     const snapshot: MemoryShardSnapshot = {
       shardId,
@@ -1431,8 +1491,8 @@ export function buildShardsFromCorpus(corpus: Corpus): {
     const tokens = estimateEventsTokens(memoryEvents);
     entries.push({
       id: shardId,
-      name: shardId,
-      description: `Benchmark shard ${shardId}`,
+      name: derived.length > 0 ? `${shardId} ${derived.slice(0, 6).join(" ")}` : shardId,
+      description: derived.length > 0 ? summary : `Benchmark shard ${shardId}`,
       tags: tagsUnion,
       createdAt,
       updatedAt: createdAt,

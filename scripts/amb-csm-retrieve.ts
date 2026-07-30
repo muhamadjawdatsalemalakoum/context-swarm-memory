@@ -497,16 +497,47 @@ export function buildCorpus(documents: AmbDocument[]): Corpus {
   };
 }
 
+/**
+ * `CSM_VIRTUAL_SHARDS=<n>` — split a document into virtual shards of `n` turns.
+ *
+ * Today one document is one shard, so a user's whole memory is 8-9 shards and
+ * `maxProbeShards = 8` selects ~94% of it: the router cannot matter, which is
+ * exactly what the official telemetry shows (`routerHybrid: false`, and the
+ * doc/session/chunk baselines all score identically in the component bench).
+ *
+ * Splitting raises shards-per-user so selection becomes load-bearing. Pairs
+ * with `CSM_SHARD_DESCRIPTORS` — measured together in
+ * `docs/experiments/EXP-router-component-bench.md`, they lift mean gold-facet
+ * coverage at a fixed 32-event budget from 0.457 to 0.696 (54% -> 82% of the
+ * oracle). NEITHER WORKS ALONE: finer shards without descriptors leaves the
+ * router blind, and descriptors without finer shards have nothing to choose
+ * between.
+ *
+ * Default 0 = OFF = one shard per document, byte-identical to the frozen
+ * baseline. The event `id` is deliberately unchanged so
+ * `tests/beamCorpus.test.ts` (eval-side ids must equal bridge ids) still holds
+ * — only `shardId` moves.
+ */
+function resolveVirtualShardSize(raw = process.env.CSM_VIRTUAL_SHARDS): number {
+  const n = Number.parseInt(String(raw ?? ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function documentToEvents(doc: AmbDocument, index: number): BenchEvent[] {
   const docId = doc.id || `amb-doc-${index}`;
   const chunks = splitTurns(doc.content);
   const sourceChunks = chunks.length > 0 ? chunks : [doc.content];
+  const shardSize = resolveVirtualShardSize();
   return sourceChunks.map((chunk, chunkIndex) => {
     const context = doc.context ? `Context: ${doc.context}\n\n` : "";
     const content = `${context}${chunk}`.trim();
+    const shardId =
+      shardSize > 0 && sourceChunks.length > shardSize
+        ? `${docId}::c${String(Math.floor(chunkIndex / shardSize)).padStart(4, "0")}`
+        : docId;
     return {
       id: sourceChunks.length === 1 ? docId : `${docId}#turn-${chunkIndex}`,
-      shardId: docId,
+      shardId,
       content,
       tokenCount: estimateTokens(content),
       isCore: true,
