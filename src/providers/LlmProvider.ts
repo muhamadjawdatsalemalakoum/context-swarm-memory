@@ -106,6 +106,9 @@ export interface ProviderEnv {
   CSM_OPENAI_BASE_URL?: string;
   CSM_GEMINI_BASE_URL?: string;
   CSM_GEMINI_MODEL?: string;
+  /** Claude model id for CSM_PROVIDER=agent-sdk. Left unset, the sidecar picks
+   *  its own default rather than inheriting another provider's model id. */
+  CSM_AGENT_MODEL?: string;
   CSM_MODEL?: string;
   OPENAI_API_KEY?: string;
   GEMINI_API_KEY?: string;
@@ -161,11 +164,17 @@ export function resolveStageModels(
   const providerDefault =
     providerName === "gemini"
       ? env.CSM_GEMINI_MODEL
-      : providerName === "openai" ||
-          providerName === "ollama" ||
-          providerName === "llama-server"
-        ? env.CSM_OPENAI_MODEL
-        : env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
+      : providerName === "agent-sdk"
+        ? // Claude model ids only. Without this branch agent-sdk fell through to
+          // the generic tail below and inherited CSM_GEMINI_MODEL from the root
+          // .env, handing "gemini-3.5-flash" to the Claude sidecar — the same
+          // cross-provider leak that 404'd an Ollama benchmark.
+          env.CSM_AGENT_MODEL
+        : providerName === "openai" ||
+            providerName === "ollama" ||
+            providerName === "llama-server"
+          ? env.CSM_OPENAI_MODEL
+          : env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
   const fallback = providerDefault || env.CSM_MODEL;
   return {
     probe: overrides.probe ?? env.CSM_PROBE_MODEL ?? fallback,
