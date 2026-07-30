@@ -61,7 +61,10 @@ const EVAL_SIDE_GOLD_CONSUMERS = [
  * builtin-only-leaf treatment as the retrieval scorer.
  */
 const JUDGE_MODULE = "src/eval/beamJudge.ts";
-const EVAL_SIDE_JUDGE_CONSUMERS = ["scripts/calibrate-judge.ts"];
+const EVAL_SIDE_JUDGE_CONSUMERS = [
+  "scripts/calibrate-judge.ts",
+  "scripts/judge-arms.ts",
+];
 const RETRIEVAL_ENTRYPOINTS = [
   "scripts/amb-csm-retrieve.ts",
   "scripts/amb-csm-server.ts",
@@ -284,6 +287,28 @@ describe("BEAM gold leakage firewall (static import graph)", () => {
       (f) => f !== JUDGE_MODULE && scanModule(f).project.includes(JUDGE_MODULE),
     );
     expect(importers.sort()).toEqual([...EVAL_SIDE_JUDGE_CONSUMERS].sort());
+  });
+
+  /**
+   * The answer gate is deliberately TWO processes: `scripts/answer-arms.ts`
+   * holds the corpus (and never reads gold), `scripts/judge-arms.ts` holds the
+   * rubric (and can never reach the bridge). They communicate only through
+   * `answers.jsonl`. This is what stops "add a judge" from becoming a back door
+   * into gold — a single module holding both would pass every other case here.
+   */
+  it("firewall_judge_consumers_are_isolated_from_retrieval_logic", () => {
+    const forbiddenPrefixes = [
+      "src/core/",
+      "src/providers/",
+      "src/eval/baselines/",
+      "scripts/amb-",
+    ];
+    for (const consumer of EVAL_SIDE_JUDGE_CONSUMERS) {
+      const violations = [...closure(consumer)].filter((f) =>
+        forbiddenPrefixes.some((p) => f.startsWith(p)),
+      );
+      expect(violations, `${consumer} reaches retrieval logic`).toEqual([]);
+    }
   });
 
   it("firewall_run_payloads_are_the_only_bridge_no_module_reads_scores_back", () => {
