@@ -214,29 +214,52 @@ export async function runBeamSlice(
       `categories=${categories.join(",")}`,
   );
 
+  // Flatten every pending query across every unit into ONE task list, so the
+  // worker pool saturates globally instead of draining one unit at a time.
+  // This matters because a category typically has only ~2 queries per unit —
+  // per-unit concurrency alone caps the speedup at ~2x no matter how high
+  // --jobs goes.
+  interface SliceTask {
+    userId: string;
+    query: BeamRetrievalQuery;
+  }
+  const tasks: SliceTask[] = [];
+  const unitDocs = new Map<string, AmbDocument[]>();
+
   for (const [userId, unitQueries] of byUnit) {
     const pending = unitQueries.filter((q) => !doneIds.has(q.id));
-    if (pending.length === 0) {
-      skipped += unitQueries.length;
-      continue;
-    }
     skipped += unitQueries.length - pending.length;
+    if (pending.length === 0) continue;
 
     const scoped: AmbDocument[] = scopeDocuments(documents, userId);
     if (scoped.length === 0) {
       log(`  unit ${userId}: 0 documents in scope — skipping ${pending.length} queries`);
       continue;
     }
-    const corpus = buildCorpus(scoped);
-    log(
-      `  unit ${userId}: ${scoped.length} docs → ${corpus.events.length} events, ` +
-        `${pending.length} queries`,
-    );
+    unitDocs.set(userId, scoped);
+    for (const q of pending) tasks.push({ userId, query: q });
+  }
 
-    // Bounded worker pool over this unit's pending queries. jobs=1 walks
-    // `pending` in order and is identical to the original serial loop.
+  // Corpora are built lazily and memoized per unit. buildCorpus is pure CPU over
+  // already-loaded documents, so the only cost of holding several at once is
+  // memory, bounded by the number of distinct units in flight (<= jobs). The
+  // check-then-set is safe without a lock because it contains no await.
+  const corpora = new Map<string, ReturnType<typeof buildCorpus>>();
+  const getCorpus = (userId: string): ReturnType<typeof buildCorpus> => {
+    const cached = corpora.get(userId);
+    if (cached) return cached;
+    const scoped = unitDocs.get(userId)!;
+    const built = buildCorpus(scoped);
+    corpora.set(userId, built);
+    log(`  unit ${userId}: ${scoped.length} docs → ${built.events.length} events`);
+    return built;
+  };
+
+  {
     // Appends are chained so two workers can never interleave a JSONL line.
-    const runOne = async (q: (typeof pending)[number]): Promise<void> => {
+    const runOne = async (task: SliceTask): Promise<void> => {
+      const q = task.query;
+      const corpus = getCorpus(task.userId);
       const t0 = Date.now();
       const payload = await executeAmbRetrieve({
         baseline,
@@ -281,12 +304,12 @@ export async function runBeamSlice(
     const worker = async (): Promise<void> => {
       for (;;) {
         const index = cursor++;
-        if (index >= pending.length) return;
-        await runOne(pending[index]!);
+        if (index >= tasks.length) return;
+        await runOne(tasks[index]!);
       }
     };
     await Promise.all(
-      Array.from({ length: Math.min(jobs, pending.length) }, () => worker()),
+      Array.from({ length: Math.min(jobs, tasks.length) }, () => worker()),
     );
   }
 
