@@ -29,6 +29,8 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
 
+import { buildCorpus } from "./amb-csm-retrieve.js";
+
 interface PayloadRow {
   harness: { queryId: string; category: string; userId: string };
   documents: Array<{ id: string; contentChars: number }>;
@@ -81,14 +83,29 @@ function loadSlice(split: string): { gold: Map<string, GoldRow>; text: Map<strin
   const gold = new Map<string, GoldRow>();
   for (const r of readMaybeGz("queries") as GoldRow[]) gold.set(r.id, r);
 
-  // Documents are split into "<docId>#turn-N" events by the bridge; rebuild the
-  // same per-turn text so a retrieved event id can be rendered back to prose.
+  // Resolve "<docId>#turn-N" ids through the bridge's OWN buildCorpus rather
+  // than re-deriving the split. An earlier version re-implemented it as
+  // split(/\n(?=\[)/), which also fires on markdown like "[link]" and produced
+  // turn indices misaligned with the bridge's — every excerpt was the wrong
+  // text, and the gate scored ~0.03 on BOTH arms, i.e. no discriminative power
+  // at all. Import the single source of truth instead.
+  const docs = readMaybeGz("documents") as Array<{
+    id: string;
+    content: string;
+    user_id?: string | null;
+    timestamp?: string | null;
+  }>;
+  const corpus = buildCorpus(
+    docs.map((d) => ({
+      id: d.id,
+      content: d.content,
+      user_id: d.user_id ?? null,
+      timestamp: d.timestamp ?? null,
+    })) as Parameters<typeof buildCorpus>[0],
+  );
   const text = new Map<string, string>();
-  for (const d of readMaybeGz("documents") as Array<{ id: string; content: string }>) {
-    const chunks = String(d.content).split(/\n(?=\[)/);
-    chunks.forEach((c, i) => text.set(`${d.id}#turn-${i}`, c.trim()));
-    text.set(d.id, String(d.content));
-  }
+  for (const [id, ev] of corpus.byId) text.set(id, ev.content);
+  for (const d of docs) if (!text.has(d.id)) text.set(d.id, String(d.content));
   return { gold, text };
 }
 
