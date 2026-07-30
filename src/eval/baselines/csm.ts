@@ -1375,7 +1375,19 @@ class InMemoryStorageReader implements StorageReader {
   }
 }
 
-function buildShardsFromCorpus(corpus: Corpus): {
+/**
+ * Exported so component benches (`scripts/bench-router.ts`) can drive the
+ * router in isolation against the exact directory the pipeline builds. Export
+ * only — behaviour is unchanged.
+ *
+ * NOTE for anyone tuning the router: on BEAM every entry below is boilerplate.
+ * `name` is the shard id, `description` is "Benchmark shard <id>", `summary` is
+ * "Synthetic shard <id> (n events)." and `tags` is the same four-tag union for
+ * every shard of a user. `scoreEntryLexical` scores tags, description, name and
+ * summary — so on BEAM the lexical leg has no query signal at all and selection
+ * falls through to recency/directory order.
+ */
+export function buildShardsFromCorpus(corpus: Corpus): {
   directory: MemoryDirectory;
   snapshots: Map<string, MemoryShardSnapshot>;
 } {
