@@ -74,18 +74,49 @@ fell −0.123 **and** retrieved evidence fell 55% — two independent measuremen
 agreeing that the arm is worse. Spending the gate to confirm a rejection is not
 a good use of it; the gate is reserved for candidates that look like wins.
 
-## The concrete next experiment
+## Arm C — event-normalised budgets (the fix, tested)
 
-Hold **events**, not shards, constant. If shard size drops ~10×, then
-`maxRecallShards` must rise ~10× to harvest the same evidence, and the
-shard-local floors/caps must be expressed in events rather than per-shard
-counts. Small shards make each recall digest cheap, so recalling 20 tiny shards
-may cost no more than 2 large ones — that is the version worth testing.
+`CSM_MAX_PROBE_SHARDS=24`, `CSM_MAX_RECALL_SHARDS=20` alongside the same
+sharding, to harvest events rather than shards:
 
-Falsification: if event-normalised budgets do not bring arm B's `retrieved` back
-to ~0.86 while keeping the router's selection advantage, virtual sharding is
-dead at this tier and the router fix should be pursued on document-sized shards
-only (where, at 100K, it cannot help — so it would move to the upper tiers).
+| category | A baseline | B shard-fixed | **C event-normalised** |
+|---|---:|---:|---:|
+| knowledge_update | **0.900** | 0.725 | 0.750 |
+| multi_session_reasoning | 0.743 | 0.700 | **0.797** |
+| summarization | **0.587** | 0.435 | 0.571 |
+| **MEAN cov@24** | **0.743** | 0.620 | 0.706 |
+| **MEAN retrieved** | **0.864** | 0.624 | 0.745 |
+
+| | probes | recalls | retrieved events | pipeline input tok |
+|---|---:|---:|---:|---:|
+| A | 6.95 | 2.85 | 58.3 | 20.5K |
+| B | 8.00 | 2.17 | 26.4 | 20.9K |
+| C | **24.00** | 5.52 | 39.0 | **59.8K** |
+
+**The fix works directionally and still loses.** Event-normalising recovers
+0.620 → 0.706 of the 0.743 baseline, but does not reach it — and pays **3.5× the
+probe calls and ~3× the input tokens** to get there. Recall still harvests only
+39 events against the baseline's 58, because 5.52 shards × 4 turns is ~22 events
+where 2.85 × ~40 is ~114; closing that fully would need ~28 recall shards and
+~60 probes, and the cost curve is already unacceptable.
+
+**One result survives:** `multi_session_reasoning` **0.743 → 0.797 (+0.054)** —
+arm C beats the baseline on precisely the category that collapses hardest up the
+ladder (0.480 at 100K → 0.120 at 10M). That is the one signal worth carrying
+forward.
+
+## Verdict
+
+**Both flags stay default-off.** At 100K virtual sharding is a cost regression
+with no aggregate benefit: −0.037 coverage for 3.5× the probe calls.
+
+The mechanism is now understood well enough to state the condition under which
+it *could* pay: the router only earns its keep when shards-per-user greatly
+exceeds the probe budget. At 100K that ratio is 8.5 : 8 — there is nothing to
+choose. The component bench needed a synthetic 75 : 8 to show the effect at all.
+So this belongs at 500K/1M/10M, which are **not on disk**; fetching them is the
+prerequisite for any further work on this lever, and the `multi_session_reasoning`
+gain is the reason to bother.
 
 ## Reproduce
 
