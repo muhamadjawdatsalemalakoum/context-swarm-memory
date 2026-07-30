@@ -220,7 +220,39 @@ export async function executeAmbRetrieve(input: {
 
   const retrievedEventIds = asStringArray(meta.csmRetrievedEventIds);
   const packedEventIds = asStringArray(meta.packedEventIds);
-  const baseIds = retrievedEventIds.length > 0 ? retrievedEventIds : packedEventIds;
+  // ID-namespace repair (CSM_AMB_ID_REPAIR=1, default OFF — official defaults
+  // untouched).
+  //
+  // `corpus.byId` is keyed `"<docId>#<turn>"` (see buildCorpus/documentToEvents).
+  // `csmRetrievedEventIds` is usually in that form, but when the packet's
+  // synthesis-cited tier leads it can arrive BARE ("turn-0"), because
+  // collectCitedEventIds() parses "shard@snapshot:event" and keeps only the
+  // trailing event id, dropping the shard qualifier. Bare ids resolve against
+  // nothing, so `outDocs` comes back EMPTY and the answer model receives only
+  // the capsule — observed live on the BEAM slice as retrieved=159 -> docs=1,
+  // i.e. ~99% of retrieved evidence silently discarded. It is worst on the
+  // multi-shard, high-recall queries that dominate larger units, which is the
+  // shape of CSM's degradation from 100K to 10M.
+  //
+  // Do NOT "fix" this by suffix-matching a bare id: every document in a unit has
+  // a "turn-0", so that would attach evidence from an arbitrary shard. Instead
+  // fall back to `packedEventIds`, which is already correctly qualified and is
+  // the same underlying selection.
+  // The list is MIXED: measured live, a failing query had 103 retrieved ids of
+  // which 33 were bare. Choosing between whole lists is not enough, because the
+  // bare ids sort FIRST (the synthesis-cited tier leads baseRetrievalOrder), so
+  // the top-K slice selects exactly the unresolvable ones and outDocs empties.
+  // Drop unresolvable ids in place, preserving order, and top up from the
+  // already-qualified packed list.
+  const idRepairActive = process.env.CSM_AMB_ID_REPAIR === "1";
+  const baseIds = idRepairActive
+    ? dedupeInOrder([
+        ...retrievedEventIds.filter((id) => corpus.byId.has(id)),
+        ...packedEventIds.filter((id) => corpus.byId.has(id)),
+      ])
+    : retrievedEventIds.length > 0
+      ? retrievedEventIds
+      : packedEventIds;
   const intent = detectAmbQueryIntent(request.query);
 
   // T1 migration step 2 ("bridge consumes core"): when the core's coverage
