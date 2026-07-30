@@ -1,0 +1,1269 @@
+{
+  "promptVersion": "v2",
+  "model": "claude-sonnet-5",
+  "split": "train",
+  "agreement": {
+    "n": 208,
+    "pearson": 0.8581542540566646,
+    "spearman": 0.860610239014163,
+    "mae": 0.07356379097507794,
+    "rmse": 0.17488949678308244,
+    "bias": 0.03927314575231489,
+    "loa95": [
+      -0.2947556880084245,
+      0.37330197951305427
+    ],
+    "binaryAgreement": 0.9375,
+    "excluded": 0
+  },
+  "rows": [
+    {
+      "queryId": "1_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_event_ordering_0",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.8333333333333334,
+      "free": 0.8333333333333334
+    },
+    {
+      "queryId": "1_instruction_following_1",
+      "category": "instruction_following",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "1_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 0.5
+    },
+    {
+      "queryId": "1_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "1_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 0.75
+    },
+    {
+      "queryId": "10_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "10_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.875
+    },
+    {
+      "queryId": "10_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "10_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_summarization_1",
+      "category": "summarization",
+      "official": 0.625,
+      "free": 0.5
+    },
+    {
+      "queryId": "10_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "11_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "11_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.875
+    },
+    {
+      "queryId": "11_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.3333333333333333,
+      "free": 0.3333333333333333
+    },
+    {
+      "queryId": "11_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "11_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.25,
+      "free": 0.25
+    },
+    {
+      "queryId": "11_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_summarization_0",
+      "category": "summarization",
+      "official": 0.9166666666666666,
+      "free": 0.75
+    },
+    {
+      "queryId": "11_summarization_1",
+      "category": "summarization",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "12_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "12_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "12_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.25000000000000006,
+      "free": 0.5
+    },
+    {
+      "queryId": "12_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.23273875808757555,
+      "free": 0.2848342585440324
+    },
+    {
+      "queryId": "12_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 0.9375
+    },
+    {
+      "queryId": "12_instruction_following_1",
+      "category": "instruction_following",
+      "official": 0.5,
+      "free": 0.25
+    },
+    {
+      "queryId": "12_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "12_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "12_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "12_summarization_1",
+      "category": "summarization",
+      "official": 0.375,
+      "free": 0.25
+    },
+    {
+      "queryId": "13_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "13_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "13_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "13_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "13_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0.5
+    },
+    {
+      "queryId": "13_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "13_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "13_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "13_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "14_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "14_event_ordering_0",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.6666666666666666,
+      "free": 0.6666666666666666
+    },
+    {
+      "queryId": "14_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "14_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "14_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.5,
+      "free": 0.625
+    },
+    {
+      "queryId": "14_summarization_1",
+      "category": "summarization",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "14_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "14_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "15_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "15_information_extraction_0",
+      "category": "information_extraction",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "15_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "15_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "15_summarization_1",
+      "category": "summarization",
+      "official": 0.5,
+      "free": 0.6
+    },
+    {
+      "queryId": "16_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.875
+    },
+    {
+      "queryId": "16_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.625
+    },
+    {
+      "queryId": "16_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.8333333333333335,
+      "free": 0.8333333333333333
+    },
+    {
+      "queryId": "16_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.8535533905932738,
+      "free": 1
+    },
+    {
+      "queryId": "16_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "16_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "17_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "17_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "17_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "17_event_ordering_0",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "17_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.6190476190476191,
+      "free": 0.9472135954999579
+    },
+    {
+      "queryId": "17_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "17_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "17_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 1
+    },
+    {
+      "queryId": "17_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.25,
+      "free": 0.25
+    },
+    {
+      "queryId": "17_summarization_1",
+      "category": "summarization",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "17_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "18_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "18_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.7886751345948129,
+      "free": 0.8666666666666667
+    },
+    {
+      "queryId": "18_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "18_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "18_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0,
+      "free": 0.5
+    },
+    {
+      "queryId": "18_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "19_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "19_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.7672612419124245,
+      "free": 0.5714285714285714
+    },
+    {
+      "queryId": "19_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "19_instruction_following_1",
+      "category": "instruction_following",
+      "official": 0,
+      "free": 1
+    },
+    {
+      "queryId": "19_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.5714285714285714,
+      "free": 0.5714285714285714
+    },
+    {
+      "queryId": "19_summarization_0",
+      "category": "summarization",
+      "official": 0.8333333333333334,
+      "free": 0.75
+    },
+    {
+      "queryId": "19_summarization_1",
+      "category": "summarization",
+      "official": 0.5,
+      "free": 0.375
+    },
+    {
+      "queryId": "19_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 0.75
+    },
+    {
+      "queryId": "2_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "2_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "2_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.8,
+      "free": 0.9
+    },
+    {
+      "queryId": "2_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.6666666666666666,
+      "free": 0.6666666666666666
+    },
+    {
+      "queryId": "2_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "2_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "2_summarization_1",
+      "category": "summarization",
+      "official": 0.875,
+      "free": 0.75
+    },
+    {
+      "queryId": "20_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.625,
+      "free": 0.625
+    },
+    {
+      "queryId": "20_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.6,
+      "free": 0.7333333333333334
+    },
+    {
+      "queryId": "20_event_ordering_1",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "20_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "20_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 0,
+      "free": 0.25
+    },
+    {
+      "queryId": "20_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.375,
+      "free": 0.75
+    },
+    {
+      "queryId": "20_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "3_event_ordering_0",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "3_preference_following_0",
+      "category": "preference_following",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "3_summarization_0",
+      "category": "summarization",
+      "official": 0.75,
+      "free": 0.625
+    },
+    {
+      "queryId": "3_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "4_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "4_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "4_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "4_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "4_preference_following_0",
+      "category": "preference_following",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "4_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "4_summarization_1",
+      "category": "summarization",
+      "official": 0.8,
+      "free": 0.8
+    },
+    {
+      "queryId": "4_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "5_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "5_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.8666666666666667,
+      "free": 0.8666666666666667
+    },
+    {
+      "queryId": "5_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.8999999999999999,
+      "free": 0.8
+    },
+    {
+      "queryId": "5_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "5_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "5_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "5_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "5_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "5_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "5_summarization_0",
+      "category": "summarization",
+      "official": 1,
+      "free": 0.9
+    },
+    {
+      "queryId": "5_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "6_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "6_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "6_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.375,
+      "free": 0.625
+    },
+    {
+      "queryId": "6_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.4666666666666667,
+      "free": 0.7
+    },
+    {
+      "queryId": "6_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "6_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.8333333333333334,
+      "free": 0.6666666666666666
+    },
+    {
+      "queryId": "6_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "6_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 0.2,
+      "free": 0.3
+    },
+    {
+      "queryId": "6_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 0.875
+    },
+    {
+      "queryId": "6_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "6_preference_following_1",
+      "category": "preference_following",
+      "official": 0.5,
+      "free": 0.25
+    },
+    {
+      "queryId": "6_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "7_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "7_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.816227766016838,
+      "free": 0.6
+    },
+    {
+      "queryId": "7_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 0.1,
+      "free": 0.6
+    },
+    {
+      "queryId": "7_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "7_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "8_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "8_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.75
+    },
+    {
+      "queryId": "8_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.8999999999999999,
+      "free": 0.9
+    },
+    {
+      "queryId": "8_event_ordering_1",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "8_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "8_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "8_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "8_summarization_0",
+      "category": "summarization",
+      "official": 0.875,
+      "free": 0.75
+    },
+    {
+      "queryId": "8_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "9_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.875
+    },
+    {
+      "queryId": "9_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.8,
+      "free": 0.8
+    },
+    {
+      "queryId": "9_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.21132486540518713,
+      "free": 0.8
+    },
+    {
+      "queryId": "9_information_extraction_0",
+      "category": "information_extraction",
+      "official": 0.6666666666666666,
+      "free": 0.6666666666666666
+    },
+    {
+      "queryId": "9_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "9_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 0.9
+    },
+    {
+      "queryId": "9_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "9_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "9_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 1
+    }
+  ]
+}

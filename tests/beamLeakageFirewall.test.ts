@@ -54,6 +54,14 @@ const EVAL_SIDE_GOLD_CONSUMERS = [
   "scripts/measure-return-strategies.ts",
   "scripts/measure-returnk-sweep.ts",
 ];
+/**
+ * The answer judge. Reads BEAM rubric items (gold) to grade an answer that has
+ * ALREADY been produced from already-frozen retrieval, so it cannot influence
+ * what gets retrieved — but it is gold-touching and therefore gets the same
+ * builtin-only-leaf treatment as the retrieval scorer.
+ */
+const JUDGE_MODULE = "src/eval/beamJudge.ts";
+const EVAL_SIDE_JUDGE_CONSUMERS = ["scripts/calibrate-judge.ts"];
 const RETRIEVAL_ENTRYPOINTS = [
   "scripts/amb-csm-retrieve.ts",
   "scripts/amb-csm-server.ts",
@@ -244,6 +252,38 @@ describe("BEAM gold leakage firewall (static import graph)", () => {
       );
       expect(violations, `${consumer} reaches retrieval logic`).toEqual([]);
     }
+  });
+
+  /**
+   * `src/eval/beamJudge.ts` is a SECOND gold-touching module: it reads BEAM
+   * rubric items (the judge's scoring units) to grade answers. It gets the same
+   * treatment as the retrieval scorer — builtin-only leaf, unreachable from the
+   * retrieval path — so adding a judge cannot become a back door into gold.
+   */
+  it("firewall_judge_module_is_a_node_builtin_leaf", () => {
+    const { project, external } = scanModule(JUDGE_MODULE);
+    expect(project).toEqual([]);
+    for (const spec of external) {
+      expect(spec.startsWith("node:"), `non-builtin import "${spec}"`).toBe(true);
+    }
+  });
+
+  it("firewall_retrieval_path_never_reaches_judge_module", () => {
+    for (const entry of RETRIEVAL_ENTRYPOINTS) {
+      const reach = closure(entry);
+      expect(
+        reach.has(JUDGE_MODULE),
+        `${entry} transitively imports ${JUDGE_MODULE}`,
+      ).toBe(false);
+    }
+  });
+
+  it("firewall_only_eval_side_tools_import_the_judge_module", () => {
+    const allFiles = [...listTsFiles("src"), ...listTsFiles("scripts")];
+    const importers = allFiles.filter(
+      (f) => f !== JUDGE_MODULE && scanModule(f).project.includes(JUDGE_MODULE),
+    );
+    expect(importers.sort()).toEqual([...EVAL_SIDE_JUDGE_CONSUMERS].sort());
   });
 
   it("firewall_run_payloads_are_the_only_bridge_no_module_reads_scores_back", () => {

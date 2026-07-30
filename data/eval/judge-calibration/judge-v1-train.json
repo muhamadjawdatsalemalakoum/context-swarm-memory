@@ -1,0 +1,262 @@
+{
+  "promptVersion": "v1",
+  "model": "claude-sonnet-5",
+  "split": "train",
+  "agreement": {
+    "n": 39,
+    "pearson": 0.8721086472347723,
+    "spearman": 0.8453439825331714,
+    "mae": 0.06988704039091687,
+    "rmse": 0.16014800973594714,
+    "bias": 0.04424601474989123,
+    "loa95": [
+      -0.25742641728971283,
+      0.34591844678949524
+    ],
+    "binaryAgreement": 0.9487179487179487,
+    "excluded": 1
+  },
+  "rows": [
+    {
+      "queryId": "1_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_event_ordering_0",
+      "category": "event_ordering",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.8333333333333334,
+      "free": 0.8333333333333334
+    },
+    {
+      "queryId": "1_instruction_following_1",
+      "category": "instruction_following",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "1_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_preference_following_1",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "1_temporal_reasoning_0",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "1_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "10_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.625
+    },
+    {
+      "queryId": "10_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.75,
+      "free": 0.8333333333333334
+    },
+    {
+      "queryId": "10_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_knowledge_update_1",
+      "category": "knowledge_update",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "10_summarization_1",
+      "category": "summarization",
+      "official": 0.625,
+      "free": 0.5
+    },
+    {
+      "queryId": "10_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "11_abstention_1",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.875
+    },
+    {
+      "queryId": "11_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.75,
+      "free": 0.75
+    },
+    {
+      "queryId": "11_information_extraction_0",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_information_extraction_1",
+      "category": "information_extraction",
+      "official": 0.3333333333333333,
+      "free": 0.3333333333333333
+    },
+    {
+      "queryId": "11_instruction_following_0",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_instruction_following_1",
+      "category": "instruction_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_knowledge_update_0",
+      "category": "knowledge_update",
+      "official": 0,
+      "free": 0
+    },
+    {
+      "queryId": "11_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "official": 0.25,
+      "free": 0
+    },
+    {
+      "queryId": "11_preference_following_0",
+      "category": "preference_following",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_summarization_0",
+      "category": "summarization",
+      "official": 0.9166666666666666,
+      "free": null,
+      "error": "no-json"
+    },
+    {
+      "queryId": "11_summarization_1",
+      "category": "summarization",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "11_temporal_reasoning_1",
+      "category": "temporal_reasoning",
+      "official": 0.5,
+      "free": 1
+    },
+    {
+      "queryId": "12_abstention_0",
+      "category": "abstention",
+      "official": 1,
+      "free": 1
+    },
+    {
+      "queryId": "12_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "official": 0.5,
+      "free": 0.5
+    },
+    {
+      "queryId": "12_event_ordering_0",
+      "category": "event_ordering",
+      "official": 0.25000000000000006,
+      "free": 0.5
+    },
+    {
+      "queryId": "12_event_ordering_1",
+      "category": "event_ordering",
+      "official": 0.23273875808757555,
+      "free": 0.5
+    },
+    {
+      "queryId": "12_information_extraction_1",
+      "category": "information_extraction",
+      "official": 1,
+      "free": 1
+    }
+  ]
+}
