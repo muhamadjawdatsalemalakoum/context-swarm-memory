@@ -45,3 +45,29 @@ export function resolveRecallBudget(
   if (!Number.isFinite(n) || n <= 0) return defaultTokens;
   return Math.floor(n);
 }
+
+/**
+ * `CSM_MAX_PROBE_SHARDS` / `CSM_MAX_RECALL_SHARDS` — shard-count overrides.
+ *
+ * These exist because shard SIZE and these counts are one coupled system.
+ * `CSM_VIRTUAL_SHARDS=4` cut shard size ~10x and, with these counts fixed,
+ * retrieved evidence fell 55% (58.3 -> 26.4 events) and coverage went DOWN
+ * 0.743 -> 0.620 even though the router itself got measurably better in
+ * isolation. See `docs/experiments/EXP-virtual-shards-system.md`.
+ *
+ * The pipeline conserves SHARDS; what actually matters is EVENTS. When shard
+ * size changes, these must move inversely or the harvest starves.
+ *
+ * Both default to the frozen values, so unset is byte-identical.
+ */
+export function resolveShardCount(
+  key: "CSM_MAX_PROBE_SHARDS" | "CSM_MAX_RECALL_SHARDS",
+  defaultCount: number,
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const raw = env[key];
+  if (raw === undefined) return defaultCount;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return defaultCount;
+  return Math.floor(n);
+}

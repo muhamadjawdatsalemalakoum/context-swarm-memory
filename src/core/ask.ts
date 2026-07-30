@@ -22,7 +22,11 @@ import {
   resolveCoverageRecallTokens,
 } from "./coverage.js";
 import type { MemoryShardSnapshot } from "./types.js";
-import { DEFAULT_RECALL_BUDGET, resolveRecallBudget } from "./tokenBudget.js";
+import {
+  DEFAULT_RECALL_BUDGET,
+  resolveRecallBudget,
+  resolveShardCount,
+} from "./tokenBudget.js";
 import { newRunId } from "../utils/ids.js";
 import { nowIso } from "../utils/time.js";
 
@@ -91,6 +95,18 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   // Lets the token-cut A/B run a smaller recall budget (e.g. 600) under Signals.
   const recallTokensPerShard = resolveRecallBudget(baseRecallTokens);
 
+  // Shard-COUNT overrides. Fixed counts assume a fixed shard size; when shard
+  // size changes (CSM_VIRTUAL_SHARDS) these must move inversely or the harvest
+  // starves. Both default to the frozen values, so unset is byte-identical.
+  const maxProbeShards = resolveShardCount(
+    "CSM_MAX_PROBE_SHARDS",
+    budget.maxProbeShards,
+  );
+  const maxRecallShards = resolveShardCount(
+    "CSM_MAX_RECALL_SHARDS",
+    budget.maxRecallShards,
+  );
+
   // Signals digest ranker (CSM_SIGNALS_RANKER, default OFF — when unset, every
   // recall digest below is byte-identical to the blind builder). When ON, recall
   // reorders events by query salience and uses salient intra-event truncation so
@@ -116,8 +132,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   const candidates: CandidateScore[] = opts.routerIndex
     ? await selectCandidatesHybrid({
         query, directory, index: opts.routerIndex,
-        maxCandidates: budget.maxCandidateShards })
-    : selectCandidates({ query, directory, maxCandidates: budget.maxCandidateShards });
+        maxCandidates: Math.max(maxProbeShards, budget.maxCandidateShards) })
+    : selectCandidates({ query, directory, maxCandidates: Math.max(maxProbeShards, budget.maxCandidateShards) });
 
   // Short-circuit: nothing to ask.
   if (candidates.length === 0) {
@@ -138,7 +154,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     });
   }
 
-  const probedCandidates = candidates.slice(0, budget.maxProbeShards);
+  const probedCandidates = candidates.slice(0, maxProbeShards);
   const snapshotsByCandidate = await Promise.all(
     probedCandidates.map((c) => storage.loadSnapshot(c.entry.id, c.entry.snapshotId)),
   );
@@ -184,7 +200,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   let eagerStartedOthers = 0;
   let probeOutputs: Array<{ result: ProbeResult; usage: ProviderUsage } | null>;
 
-  if (parallelProbes && budget.maxRecallShards > 0) {
+  if (parallelProbes && maxRecallShards > 0) {
     const probePromises = probeJobs.map((job) => job());
     probePromises.forEach((probePromise, ix) => {
       const cand = probedCandidates[ix];
@@ -203,7 +219,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
           // others get maxRecallShards-1).
           if (!isTop) {
             if (!probeQualifiesForRecall(o.result, recallConfidenceMin)) return null;
-            if (eagerStartedOthers >= budget.maxRecallShards - 1) return null;
+            if (eagerStartedOthers >= maxRecallShards - 1) return null;
             eagerStartedOthers++;
           }
           return recallShard({
@@ -245,7 +261,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   let recallTargets = probes
     .filter((p) => probeQualifiesForRecall(p, recallConfidenceMin))
     .sort((a, b) => scoreProbe(b) - scoreProbe(a))
-    .slice(0, budget.maxRecallShards);
+    .slice(0, maxRecallShards);
 
   // Router-trust safety net: ALWAYS recall the router's top-1 candidate, even
   // if its probe was rejected.
@@ -275,7 +291,7 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
       // we exceeded the recall budget.
       recallTargets = [topProbe, ...recallTargets].slice(
         0,
-        budget.maxRecallShards,
+        maxRecallShards,
       );
     }
   }
