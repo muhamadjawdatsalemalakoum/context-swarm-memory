@@ -65,7 +65,9 @@ const ANSWER_SYSTEM =
   "items in the order the excerpts indicate. Do not speculate beyond the " +
   "excerpts.";
 
-const CSM_ARTIFACT =
+/** Default is the 100K official rerun; --csm points at the upper tiers, whose
+ *  artifacts carry context + rubric too (500k/1m/10m, verified present). */
+const DEFAULT_CSM_ARTIFACT =
   "data/eval/runs/amb-beam-100k-official-v1/amb-outputs/beam/csm-official-rerun-100k/rag/100k.json";
 
 function arg(name: string, fallback?: string): string | undefined {
@@ -153,7 +155,7 @@ async function main(): Promise<void> {
   const perCat = Number.parseInt(arg("per-category", "0")!, 10);
   if (!hsPath) throw new Error("--hindsight <path to hindsight 100k.json[.gz]> is required");
 
-  const csm = new Map(load(CSM_ARTIFACT).map((r) => [r.query_id, r]));
+  const csm = new Map(load(arg("csm", DEFAULT_CSM_ARTIFACT)!).map((r) => [r.query_id, r]));
   const hs = new Map(load(hsPath).map((r) => [r.query_id, r]));
 
   let ids = [...csm.keys()].filter((id) => hs.has(id));
@@ -172,7 +174,7 @@ async function main(): Promise<void> {
   if (ids.length === 0) throw new Error("no shared query ids between the two artifacts");
 
   console.log(
-    `head-to-head: CSM vs Hindsight | reader=${model} judge=${JUDGE_PROMPT_VERSION} ` +
+    `head-to-head: CSM vs Hindsight [${arg("tier", "100k")}] | reader=${model} judge=${JUDGE_PROMPT_VERSION} ` +
       `paired=${ids.length} jobs=${jobs}`,
   );
   console.log(
@@ -253,7 +255,7 @@ async function main(): Promise<void> {
 
   const dir = resolve(process.cwd(), "data", "eval", "judge-calibration");
   mkdirSync(dir, { recursive: true });
-  const dest = resolve(dir, "headtohead-csm-vs-hindsight.json");
+  const dest = resolve(dir, `headtohead-csm-vs-hindsight-${arg("tier", "100k")}.json`);
   writeFileSync(
     dest,
     JSON.stringify(

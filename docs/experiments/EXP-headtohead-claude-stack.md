@@ -63,6 +63,51 @@ judge consumer in `tests/beamLeakageFirewall.test.ts` (10 cases).
 the script refuses to call any of them — they are printed for shape only, not as
 results.)*
 
+
+## 1M — the tier where CSM actually loses
+
+Same method, `--tier 1m`, CSM's official 1M artifact vs Hindsight's sha-verified
+1M artifact (`95e87a30e4e01031…`), 12 per category.
+
+| category | n | CSM | Hindsight | Δ | MDE | HS/CSM/tie | leader |
+|---|---:|---:|---:|---:|---:|---|---|
+| **instruction_following** | 12 | **0.455** | **0.819** | **+0.365** | 0.343 | **7/0/5** | **Hindsight** |
+| knowledge_update | 12 | 0.458 | 0.792 | +0.333 | 0.359 | 5/0/7 | tie |
+| preference_following | 12 | 0.556 | 0.750 | +0.194 | 0.250 | 5/0/7 | tie |
+| abstention | 12 | 0.563 | 0.458 | −0.104 | 0.316 | 2/3/7 | tie |
+| multi_session_reasoning | 12 | 0.579 | 0.660 | +0.081 | 0.273 | 5/4/3 | tie |
+| summarization | 12 | 0.464 | 0.534 | +0.070 | 0.233 | 6/5/1 | tie |
+| temporal_reasoning | 12 | 0.458 | 0.500 | +0.042 | 0.530 | 4/3/5 | tie |
+| information_extraction | 12 | 0.896 | 0.933 | +0.038 | 0.194 | 1/1/10 | tie |
+| contradiction_resolution | 12 | 0.500 | 0.521 | +0.021 | 0.269 | 6/4/2 | tie |
+| event_ordering | 12 | 0.639 | 0.627 | −0.012 | 0.110 | 6/5/1 | tie |
+| **ALL** | **120** | **0.5567** | **0.6595** | **+0.1028** | **0.1002** | 47/25/48 | **Hindsight** |
+
+**Both verdicts reproduce.** Official Gemini: tie at 100K (+0.003), Hindsight
+ahead at 1M (+0.169). This stack: tie at 100K (−0.012, MDE 0.090), Hindsight
+ahead at 1M (+0.103, MDE 0.100). Same direction at both tiers, on a different
+answer model, a different judge and a different scoring implementation.
+
+### Where the 1M loss lives
+
+`instruction_following` is the only category that clears its own MDE, and it is
+lopsided: **7 Hindsight wins, 0 CSM wins.** Two more show the same shutout shape
+just under their MDE — `knowledge_update` 5/0 and `preference_following` 5/0.
+
+Those three are not the "hard reasoning" categories. They are the ones where the
+answer is a **stated instruction, preference, or updated value** that exists
+verbatim somewhere in the conversation. CSM scores **0.90 on
+instruction_following at 100K and 0.455 at 1M** — it does not fail to reason, it
+fails to *find a stated fact once the haystack grows*.
+
+That is a retrieval-recall failure on short, specific, verbatim content — a
+different disease from the coverage/ordering problems this repo has been
+chasing, and it points at candidate generation rather than packing or ordering.
+
+**This is the sharpest actionable target the project has: three categories, a
+shutout pattern, and a mechanism that contradicts the current roadmap's
+emphasis.**
+
 ## What it establishes
 
 **At 100K the two systems are statistically tied on an independent reader.** The
@@ -80,10 +125,8 @@ gate measures the thing it claims to.
 
 ## What it does NOT establish
 
-- **Only 100K.** CSM loses at 500K (−0.052), 1M (−0.169) and 10M (−0.079). Those
-  Hindsight artifacts are published at the same public URLs and sha-listed in
-  `blob-manifest.json`; running the upper tiers is the obvious extension and the
-  only one that touches where CSM actually loses.
+- **100K and 1M only.** 500K and 10M are the same one-command extension; both
+  Hindsight artifacts are sha-listed at the same public URLs.
 - **n=120, so MDE is 0.090.** Nothing smaller than that is resolvable. The full
   400 is one flag away and cached-incremental, which takes MDE to ≈0.049.
 - **Per-category numbers are noise at n=12** and are labelled as such. The
