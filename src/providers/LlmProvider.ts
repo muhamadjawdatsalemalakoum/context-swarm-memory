@@ -96,7 +96,10 @@ export type ProviderName =
   | "ollama"
   | "llama-server"
   | "gemini"
-  | "anthropic";
+  | "anthropic"
+  /** Claude via the Claude Agent SDK sidecar (subscription-backed, iteration
+   *  only — not independently reproducible; see AgentSdkProvider). */
+  | "agent-sdk";
 
 export interface ProviderEnv {
   CSM_PROVIDER?: string;
@@ -115,6 +118,7 @@ export function selectProviderName(env: ProviderEnv = process.env as ProviderEnv
   if (
     explicit === "openai" ||
     explicit === "anthropic" ||
+    explicit === "agent-sdk" ||
     explicit === "gemini" ||
     explicit === "mock" ||
     explicit === "ollama" ||

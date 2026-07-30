@@ -1,0 +1,13 @@
+{
+  "name": "csm-claude-agent-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated sidecar exposing the Claude Agent SDK as a localhost completion endpoint for CSM. Kept out of the root package.json because the Agent SDK peer-requires zod 4 while CSM is pinned to zod 3.",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.220"
+  }
+}

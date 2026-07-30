@@ -1,3 +1,4 @@
+import { AgentSdkProvider } from "./AgentSdkProvider.js";
 import { AnthropicProvider } from "./AnthropicProvider.js";
 import { GeminiProvider } from "./GeminiProvider.js";
 export { GEMINI_DEFAULT_BASE_URL, GEMINI_DEFAULT_MODEL } from "./GeminiProvider.js";
@@ -24,6 +25,11 @@ export function createProvider(name: ProviderName = selectProviderName()): LlmPr
       return new GeminiProvider();
     case "anthropic":
       return new AnthropicProvider();
+    case "agent-sdk":
+      // Claude through the Claude Agent SDK sidecar (subscription-backed).
+      // Fast, unmetered iteration; NOT independently reproducible, so results
+      // from this path are never published evidence — confirm on gemini.
+      return new AgentSdkProvider();
     case "mock":
     default:
       return new MockProvider();
@@ -31,6 +37,7 @@ export function createProvider(name: ProviderName = selectProviderName()): LlmPr
 }
 
 export {
+  AgentSdkProvider,
   AnthropicProvider,
   GeminiProvider,
   LlamaServerProvider,
