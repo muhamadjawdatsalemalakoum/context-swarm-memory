@@ -69,6 +69,7 @@ loadLocalEnv();
 
 const PORT = Number.parseInt(process.env.CSM_AGENT_PORT ?? "8787", 10);
 const DEFAULT_MODEL = process.env.CSM_AGENT_MODEL ?? "claude-opus-5";
+const MAX_TURNS = Number.parseInt(process.env.CSM_AGENT_MAX_TURNS ?? "6", 10);
 const MAX_BODY_BYTES = 32 * 1024 * 1024;
 
 /** Instruction appended for JSON stages. CSM's `completeAndValidate` still runs
@@ -105,7 +106,11 @@ async function complete({ system, prompt, model, jsonMode }) {
     prompt,
     options: {
       systemPrompt: jsonMode ? `${system}${JSON_NUDGE}` : system,
-      maxTurns: 1,
+      // Tools are disabled, so extra turns cannot make the agent wander — this
+      // is purely headroom for the loop to finish. maxTurns:1 completed a toy
+      // prompt but failed a real recall prompt (268 events) with "Reached
+      // maximum number of turns (1)".
+      maxTurns: MAX_TURNS,
       tools: [],
       model: model || DEFAULT_MODEL,
     },

@@ -65,6 +65,15 @@ export interface RunBeamSliceOptions {
   sliceDir?: string;
   outputDir?: string;
   resume?: boolean;
+  /** Queries retrieved concurrently WITHIN a unit. Defaults to 1, which is
+   *  byte-for-byte the original serial behaviour — existing runs are
+   *  unaffected unless you pass `--jobs`. Retrieval is network-bound (each
+   *  query is an independent probe/recall/synth fan-out over the same
+   *  in-memory corpus), so raising this is close to a linear wall-clock win
+   *  until the provider rate-limits. Appends stay serialized, so
+   *  payloads.jsonl is never interleaved; row ORDER becomes completion order,
+   *  which the scorer does not depend on (it joins by queryId). */
+  jobs?: number;
   onProgress?: (line: string) => void;
 }
 
@@ -195,10 +204,14 @@ export async function runBeamSlice(
   let skipped = 0;
   let totalLatencyMs = 0;
   const startedAt = Date.now();
+  const jobs = Math.max(1, opts.jobs ?? 1);
+  /** Serializes payloads.jsonl appends across concurrent workers. */
+  let appendChain: Promise<void> = Promise.resolve();
 
   log(
     `beam-slice run ${opts.runId}: split=${opts.split} provider=${provider.name} ` +
-      `queries=${selected.length} units=${byUnit.size} k=${requestedK} categories=${categories.join(",")}`,
+      `queries=${selected.length} units=${byUnit.size} k=${requestedK} jobs=${jobs} ` +
+      `categories=${categories.join(",")}`,
   );
 
   for (const [userId, unitQueries] of byUnit) {
@@ -220,7 +233,10 @@ export async function runBeamSlice(
         `${pending.length} queries`,
     );
 
-    for (const q of pending) {
+    // Bounded worker pool over this unit's pending queries. jobs=1 walks
+    // `pending` in order and is identical to the original serial loop.
+    // Appends are chained so two workers can never interleave a JSONL line.
+    const runOne = async (q: (typeof pending)[number]): Promise<void> => {
       const t0 = Date.now();
       const payload = await executeAmbRetrieve({
         baseline,
@@ -251,12 +267,27 @@ export async function runBeamSlice(
         })),
         raw_response: payload.raw_response,
       };
-      await appendFile(payloadsPath, `${JSON.stringify(row)}\n`, "utf8");
+      appendChain = appendChain.then(() =>
+        appendFile(payloadsPath, `${JSON.stringify(row)}\n`, "utf8"),
+      );
+      await appendChain;
       queriesRun++;
       log(
         `    ${q.id} [${q.category}] docs=${payload.documents.length} ${wallMs}ms`,
       );
-    }
+    };
+
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const index = cursor++;
+        if (index >= pending.length) return;
+        await runOne(pending[index]!);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(jobs, pending.length) }, () => worker()),
+    );
   }
 
   const summary = {
@@ -342,6 +373,7 @@ function parseArgs(argv: string[]): RunBeamSliceOptions {
       opts.perCategoryLimit = Number.parseInt(take(), 10);
     else if (a === "--query-limit") opts.queryLimit = Number.parseInt(take(), 10);
     else if (a === "--k") opts.requestedK = Number.parseInt(take(), 10);
+    else if (a === "--jobs") opts.jobs = Number.parseInt(take(), 10);
     else if (a === "--seed") opts.seed = Number.parseInt(take(), 10);
     else if (a === "--slice-dir") opts.sliceDir = resolve(take());
     else if (a === "--no-resume") opts.resume = false;
@@ -349,7 +381,7 @@ function parseArgs(argv: string[]): RunBeamSliceOptions {
       process.stdout.write(
         "Usage: npx tsx scripts/run-beam-slice.ts --split 100k --run-id <id> " +
           "[--categories a,b] [--units 1,2] [--per-category-limit N] " +
-          "[--query-limit N] [--k 24] [--seed 42] [--slice-dir d] [--no-resume]\n",
+          "[--query-limit N] [--k 24] [--jobs N] [--seed 42] [--slice-dir d] [--no-resume]\n",
       );
       process.exit(0);
     } else throw new Error(`Unknown arg: ${a}. Use --help.`);
