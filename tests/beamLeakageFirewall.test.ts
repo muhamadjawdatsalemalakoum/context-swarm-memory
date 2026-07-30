@@ -64,6 +64,7 @@ const JUDGE_MODULE = "src/eval/beamJudge.ts";
 const EVAL_SIDE_JUDGE_CONSUMERS = [
   "scripts/calibrate-judge.ts",
   "scripts/judge-arms.ts",
+  "scripts/headtohead-arms.ts",
 ];
 const RETRIEVAL_ENTRYPOINTS = [
   "scripts/amb-csm-retrieve.ts",
