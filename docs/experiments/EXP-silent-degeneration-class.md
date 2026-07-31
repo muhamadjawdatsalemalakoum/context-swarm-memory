@@ -50,13 +50,54 @@ field that is byte-identical on every BEAM event**, 83 for the content head.
 Dropping uniform tags alone raises visible events from ~8 to ~11 (**+38%**) at
 no cost.
 
+
+## Instance 3 — recall digest truncation (`scopedEventDigest` blind mode)
+
+`src/core/recall.ts:123-145` → `selectEventDigest` with both salience levers
+off (the default). Events are taken in hint-priority-then-original order and
+each is **head-truncated** to a per-event char share of the digest budget.
+
+**Measured, real BEAM 1M document `13_s0_0` (47 turns; median turn 352 chars,
+p90 4,923 chars) at the default `maxRecallTokensPerShard = 1200`:**
+
+| digest spans | chars/event | turns surviving intact | median turn survives |
+|---|---:|---:|---:|
+| 47 events | 102 | **0 of 47** | 29% |
+| 24 events | 200 | 15 of 47 | 57% |
+| 12 events | 400 | 24 of 47 | 100% |
+
+At full breadth the recall model sees roughly **the first sentence of each
+turn**, and ~30 of those 102 chars are the `[Month-DD-YYYY | Turn N] User:`
+header. Head-truncation is position-blind: a fact stated mid-turn is discarded
+even when the correct shard and correct event were both selected.
+
+There is a built, tested mitigation — `salientTruncation` /
+`reorderBySalience` behind `CSM_SIGNALS_RANKER` — and it is **default-off**.
+
+## The full compounding
+
+| stage | what survives | selection rule |
+|---|---|---|
+| router | 16% of documents | alphabetical |
+| probe | 17% of turns | alphabetical |
+| recall | 29% of each turn's text | first-N chars |
+
+Each stage independently discards ~80% of what reaches it, and each does so by
+a rule unrelated to the query. This is the mechanism behind every
+"the retrieved context lacks this information" failure in the artifacts.
+
+Note the shape: **all three have a query-aware path that is switched off or
+inert, and a degenerate path that is the default.**
+
 ## They compound
 
 | stage | reaches |
 |---|---|
 | router: 8 of ~50 documents | 16.0% |
 | probe: 8 of ~47 turns | 17.0% |
-| **product** | **≈2.7% of a user's memory ever reaches an LLM** |
+| **product (selection only)** | **≈2.7% of a user's memory ever reaches an LLM** |
+
+and of what does reach it, recall forwards ~29% of each turn's text.
 
 Chosen alphabetically. This is the mechanism behind "the answer was not
 retrieved": for most queries it was never *shown* to the probe in the first
