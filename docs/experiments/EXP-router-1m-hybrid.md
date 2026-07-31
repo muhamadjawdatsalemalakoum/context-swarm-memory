@@ -82,6 +82,48 @@ Hindsight comparison answered from the frozen official contexts while these arms
 are freshly run through the slice harness. Re-running the head-to-head with this
 config is the immediate next step and the only way to claim a win.
 
+
+## HEAD-TO-HEAD: the gap against Hindsight closes 98%
+
+Same 45 queries, same reader, same judge, same render path for both CSM arms —
+**only CSM's config differs.** Hindsight's arm is byte-identical in both rows.
+
+| CSM config | CSM | Hindsight | Δ | HS/CSM/tie | verdict |
+|---|---:|---:|---:|---|---|
+| baseline | 0.4176 | 0.7898 | **+0.372** | **25 / 4 / 16** | **Hindsight wins** |
+| **desc + hybrid** | **0.7824** | 0.7898 | **+0.007** | **10 / 9 / 26** | **tie** |
+
+Per category, before → after:
+
+| category | CSM before | CSM after | Hindsight | before | after |
+|---|---:|---:|---:|---|---|
+| instruction_following | 0.475 | **0.886** | 0.800 | Hindsight (7/0) | tie, CSM ahead |
+| knowledge_update | 0.200 | **0.750** | 0.767 | Hindsight (10/0) | tie |
+| preference_following | 0.578 | 0.711 | 0.803 | tie | tie |
+
+**Two shutout losses (0–7 and 0–10) became ties**, with CSM numerically ahead on
+`instruction_following`. The aggregate went from a decisive Hindsight win to a
+dead heat.
+
+## Regression check — the categories CSM already wins
+
+1M, n=8 per category, cov@24:
+
+| category | baseline | desc+hybrid | Δ |
+|---|---:|---:|---:|
+| multi_session_reasoning | 0.597 | **0.781** | **+0.184** |
+| information_extraction | 0.920 | 0.877 | −0.043 |
+| contradiction_resolution | 0.469 | 0.406 | −0.063 |
+| temporal_reasoning | 0.771 | 0.635 | **−0.135** |
+| **MEAN** | **0.689** | **0.675** | **−0.014** |
+
+**No systematic regression** (mean −0.014, inside noise at n=8), and
+`multi_session_reasoning` — CSM's worst-collapsing category on the ladder
+(0.480 → 0.120 from 100K to 10M) — gains **+0.184**.
+
+But `temporal_reasoning` −0.135 is not dismissable at n=8. That single row is the
+reason this stays default-off: it needs a larger-n check before any default flip.
+
 ## What this does NOT yet establish
 
 - **Coverage is a proxy.** This is a which-shards lever, so the proxy is the
