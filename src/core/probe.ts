@@ -3,8 +3,9 @@ import type { MemoryEvent, MemoryShardSnapshot, ProbeResult } from "./types.js";
 import { probeResultSchema } from "./schemas.js";
 import { completeAndValidate } from "./providerJson.js";
 import { probePrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
-import { tokenize } from "./router.js";
+import { tokenize, termMatchesAnyTag } from "./router.js";
 import { estimateTokens } from "./tokenBudget.js";
+import { select } from "./selection.js";
 
 const PROBE_INDEX_CHAR_BUDGET = 1200;
 
@@ -103,13 +104,15 @@ export function compactEventIndex(
   let events: MemoryEvent[];
   if (userQuery && snapshot.events.length > 0) {
     const queryTerms = new Set(tokenize(userQuery));
-    events = [...snapshot.events]
-      .map((e) => ({ event: e, score: relevanceScore(e, queryTerms) }))
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score; // higher score first
-        return a.event.eventId < b.event.eventId ? -1 : 1; // stable tiebreak
-      })
-      .map((x) => x.event);
+    // Shared selection contract (src/core/selection.ts) instead of a fourth
+    // hand-rolled score → sort → tiebreak. `limit` is the event count, not the
+    // char budget: the char budget is applied by the packing loop below, which
+    // is a different unit and must stay a different decision.
+    events = select(snapshot.events, {
+      score: (e) => relevanceScore(e, queryTerms),
+      key: (e) => e.eventId,
+      limit: snapshot.events.length,
+    }).selected;
   } else {
     events = snapshot.events;
   }
@@ -118,7 +121,12 @@ export function compactEventIndex(
   let used = 0;
   for (const e of events) {
     const head = e.content.replace(/\s+/g, " ").slice(0, 80);
-    const tags = e.tags.length ? ` tags=[${e.tags.join(",")}]` : "";
+    // Tags are omitted when every event in the shard carries the same set:
+    // they cost ~42 of a ~145-char line (29% of the whole visibility budget)
+    // while carrying zero discriminating information. On BEAM every event is
+    // tagged [amb, beam, beam-turn, conversation:N], so dropping them raises
+    // the events the probe can see from ~8 to ~11 (+38%) at no cost.
+    const tags = e.tags.length && !uniformTags(snapshot) ? ` tags=[${e.tags.join(",")}]` : "";
     const line = `- [${e.eventId}]${tags} "${head}${e.content.length > 80 ? "…" : ""}"`;
     if (used + line.length > charBudget) {
       lines.push(`- (… ${events.length - lines.length} more events truncated)`);
@@ -130,34 +138,63 @@ export function compactEventIndex(
   return lines.join("\n") || "(no events)";
 }
 
+/** True when every event in the shard carries an identical tag set, i.e. the
+ *  tags cannot discriminate between events and are pure overhead in the index. */
+function uniformTags(snapshot: MemoryShardSnapshot): boolean {
+  if (snapshot.events.length < 2) return false;
+  const first = [...snapshot.events[0]!.tags].sort().join(",");
+  return snapshot.events.every((e) => [...e.tags].sort().join(",") === first);
+}
+
 /** Cheap relevance signal: count of query tokens present in event tags
  *  (weighted ×2) plus event content (weighted ×1). Hand-tuned: tags are a
  *  much stronger signal than content prose, so they dominate.
  */
-function relevanceScore(event: MemoryEvent, queryTerms: Set<string>): number {
+export function relevanceScore(event: MemoryEvent, queryTerms: Set<string>): number {
   let score = 0;
   for (const tag of event.tags) {
     const tagLow = tag.toLowerCase();
     if (queryTerms.has(tagLow)) {
       score += 2;
     } else {
-      // Prefix-tolerant match: "authentication" query token ↔ "auth" tag.
-      // Mirrors the relaxation used in the router.
-      for (const term of queryTerms) {
-        if (term.length >= 4 && (term.startsWith(tagLow) || tagLow.startsWith(term))) {
-          score += 2;
-          break;
-        }
-      }
+      // Reuses the router's prefix rule instead of re-implementing it. The old
+      // inline copy was commented "mirrors the relaxation used in the router"
+      // but had DIVERGED: it required the QUERY TERM to be >=4, so it matched
+      // the 3-char BEAM tag "amb" for any query word beginning "amb", whereas
+      // `prefixMatch` requires the SHORTER string to be >=4 and would not.
+      if (termMatchesAnyTag(tagLow, queryTerms)) score += 2;
     }
   }
-  // Cheap content scan: count query terms that appear as whole words in the
-  // first 200 chars of content (where titles/headings tend to live).
-  const head = event.content.slice(0, 200).toLowerCase();
+
+  // Content scan.
+  //
+  // This used to read only `content.slice(0, 200)` — "where titles/headings
+  // tend to live". That assumption is false for conversational memory: a BEAM
+  // turn opens with a `[Month-DD-YYYY | Turn N] User:` header (~30 chars) and
+  // runs to 6,000+ chars, so a preference or instruction stated mid-turn was
+  // invisible to the ranker. MEASURED consequence: for a real BEAM 1M query the
+  // set of events shown to the probe was byte-identical to passing NO QUERY AT
+  // ALL, because nothing scored and the tiebreak fell to lexicographic event id.
+  //
+  // Scoring DISTINCT terms over the full body (rather than occurrences) keeps
+  // long events from winning on length alone.
+  const body = resolveProbeFullScan() ? event.content.toLowerCase() : event.content.slice(0, 200).toLowerCase();
   for (const term of queryTerms) {
-    if (head.includes(term)) score += 1;
+    if (body.includes(term)) score += 1;
   }
   return score;
+}
+
+/**
+ * `CSM_PROBE_FULL_SCAN` — score the whole event body rather than its first 200
+ * characters. Default OFF only so the change can be gated on the answer metric
+ * like every other behaviour change in this repo; the 200-char window is not a
+ * defensible default and this is expected to become the default once measured.
+ */
+export function resolveProbeFullScan(raw = process.env.CSM_PROBE_FULL_SCAN): boolean {
+  if (raw === undefined || raw.trim().length === 0) return false;
+  const v = raw.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
 }
 
 // ─── Phase 0 mock implementation (kept inline; only used when provider.name === "mock") ──
