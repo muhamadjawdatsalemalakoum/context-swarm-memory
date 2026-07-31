@@ -317,6 +317,49 @@ is a **bug fix** — dropping an id that provably cannot resolve costs nothing a
 loses no information. The open question is only whether to flip the default, and
 on this evidence it should be flipped and the baselines re-cut.
 
+## Results — what the fixes actually cost, measured
+
+Two paired 45-query BEAM 1M arms on the Claude sidecar, calibrated judge, same
+reader. Arm H is the pre-audit code with the hardcoded vocabulary; arm I is the
+post-audit code with it removed. Both with `CSM_AMB_ID_REPAIR=1`, descriptors,
+hybrid router and the folded preference profile.
+
+| category | H (tuned vocab) | I (clean) | Δ | W/L/T | verdict |
+|---|---:|---:|---:|---|---|
+| instruction_following | 0.8917 | 0.8694 | −0.0222 | 1/2/12 | below MDE |
+| knowledge_update | 0.8000 | 0.8000 | 0.0000 | 1/1/13 | below MDE |
+| preference_following | 0.7194 | 0.7528 | +0.0333 | 5/5/5 | below MDE |
+| **ALL** | **0.8037** | **0.8074** | **+0.0037** | **7/8/30** | **below MDE** |
+
+**Removing the benchmark-tuned vocabulary cost nothing.** The two tables were
+doing no measurable work — they were pure liability. The publication-blocking
+integrity problem is gone for free, which is the best case: had it been worth
+points, the honest move would have been to remove it anyway and take the loss.
+
+**No regression from the audit refactors.** Arm I reproduces arm H at +0.0037
+with 30/45 exact ties.
+
+**A usable noise estimate, finally.** Since the only intended difference between
+H and I is worth ≈0, their pairing doubles as a near-same-config repeat: the
+aggregate delta is +0.0037 with 30/45 ties, though 15 of 45 individual queries
+moved. So run-to-run variance is real per query but small in aggregate — which
+refutes the retracted first version of F11 rather than supporting it.
+
+**The 1M arm ladder is not confounded.** Measured directly from every arm's
+payloads, unresolvable-id rate:
+
+| arm | A | B | C | D | E | F | G | H | I | HR |
+|---|---|---|---|---|---|---|---|---|---|---|
+| unresolved | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | **35.9%** |
+
+Every ladder arm already ran with ID repair on. Only my misconfigured HR run did
+not. Arm H's +0.386 and its sign flip against Hindsight stand unchanged.
+
+**The official Gemini ladder is unaffected by F12.** Those runs (2026-06-10 /
+06-18) predate the fix, but delivered 25.8 memories/query (median 25, the full
+`RETURN_K`) — the bare-id path is a Claude-sidecar phenomenon, as `859e4c6`'s
+title says. The published numbers carry no such loss.
+
 ## F7 — run manifests did not record the flags that define the arm
 
 `ECHOED_ENV_VARS` in `scripts/run-beam-slice.ts` omitted `CSM_ROUTER_HYBRID`,

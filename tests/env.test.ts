@@ -149,3 +149,25 @@ describe("every CSM boolean flag now shares one vocabulary", () => {
     expect(resolveRouterHybrid("OFF")).toBe(false);
   });
 });
+
+describe("CSM_AMB_ID_REPAIR default (audit F12)", () => {
+  /**
+   * Unresolvable ("bare") event ids occupy slots in the top-K cut and then
+   * vanish at `.filter(Boolean)`. Measured on a 45-query BEAM 1M slice with the
+   * repair off: 394 of 1,099 returned ids (35.9%) produced no document, 32 of 45
+   * queries lost evidence, and the answer score was 0.6065 against 0.8037 with
+   * it on. It is a bug fix, not a tuning lever, so it defaults ON — an opt-in
+   * correctness fix is one every future run has to remember, and one already
+   * did not.
+   */
+  it("defaults to ON when the variable is unset", () => {
+    expect(envFlag(undefined, { name: "CSM_AMB_ID_REPAIR", fallback: true })).toBe(true);
+    expect(envFlag("", { name: "CSM_AMB_ID_REPAIR", fallback: true })).toBe(true);
+  });
+
+  it("can still be turned off explicitly, for reproducing pre-fix runs", () => {
+    for (const v of ["0", "false", "off", "no"]) {
+      expect(envFlag(v, { name: "CSM_AMB_ID_REPAIR", fallback: true })).toBe(false);
+    }
+  });
+});

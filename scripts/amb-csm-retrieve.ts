@@ -288,8 +288,27 @@ export async function executeAmbRetrieve(input: {
 
   const retrievedEventIds = asStringArray(meta.csmRetrievedEventIds);
   const packedEventIds = asStringArray(meta.packedEventIds);
-  // ID-namespace repair (CSM_AMB_ID_REPAIR=1, default OFF — official defaults
-  // untouched).
+  // ID-namespace repair (`CSM_AMB_ID_REPAIR`, default **ON** since 2026-07-31).
+  //
+  // Shipped 2026-07-30 default-off so frozen baselines would not move underneath
+  // a running comparison — correct then. Flipped after the audit measured what
+  // off actually costs: on a 45-query BEAM 1M slice with repair off, **394 of
+  // 1,099 returned ids (35.9%) resolved to no document at all**, 32 of 45
+  // queries lost evidence, and the answer model saw 16.7 documents / 49K chars
+  // instead of 23.5 / 63K. Answer score 0.6065 vs 0.8037.
+  //
+  // The flag is not a tuning lever, it is a bug fix: dropping an id that
+  // provably cannot resolve against the corpus costs nothing and loses no
+  // information. Leaving a correctness fix behind an opt-in means every future
+  // run must remember it — and one already did not (see F11/F12 in
+  // docs/experiments/EXP-system-audit-2026-07.md, where a forgotten flag was
+  // briefly mistaken for a regression).
+  //
+  // Scope: bare ids come from the packet's synthesis-cited tier and were
+  // observed on the Claude sidecar path. The official Gemini ladder is NOT
+  // affected — those runs delivered 25.8 memories/query (median 25, the full
+  // RETURN_K), so the published numbers carry no such loss. Every 1M ladder arm
+  // A-H already set the flag explicitly, so the ladder is not confounded either.
   //
   // `corpus.byId` is keyed `"<docId>#<turn>"` (see buildCorpus/documentToEvents).
   // `csmRetrievedEventIds` is usually in that form, but when the packet's
@@ -314,7 +333,7 @@ export async function executeAmbRetrieve(input: {
   // already-qualified packed list.
   const idRepairActive = envFlag(process.env.CSM_AMB_ID_REPAIR, {
     name: "CSM_AMB_ID_REPAIR",
-    fallback: false,
+    fallback: true,
   });
   const baseIds = idRepairActive
     ? dedupeInOrder([
