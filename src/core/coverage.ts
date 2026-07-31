@@ -1048,21 +1048,9 @@ export function temporalRelationToClaim(rel: TemporalRelation): MemoryPacketClai
 }
 
 /**
- * DIVERGENCE, DELIBERATELY NOT UNIFIED — see the sibling in scripts/amb-csm-retrieve.ts.
- *
- * Both functions answer "what are the two sides of a `between X and Y` query?",
- * and they do it differently:
- *
- *   core/coverage.ts   extractCoverageTerms(side, 16)                  — one pass, capped at 16
- *   the AMB bridge     expandCoverageTerms(extractContentTerms(side))  — extract, then EXPAND
- *
- * So the same temporal query yields different term sets depending on which path
- * runs. This is a real behavioural difference on the `temporal_reasoning`
- * category, not a cosmetic one, which is exactly why the 2026-07-31 audit did
- * NOT quietly collapse them: picking either implementation silently changes
- * retrieval, and CSM has an unexplained −0.135 temporal_reasoning result at n=8
- * that this could bear on. Unify only behind a measured A/B.
- * See docs/experiments/EXP-system-audit-2026-07.md, finding F6.
+ * RESOLVED (audit F6): the AMB bridge used to carry a diverging copy of this
+ * (extract-then-EXPAND against a hardcoded synonym table). The bridge now routes
+ * through `extractCoverageTerms`, so both paths derive the same terms.
  */
 function extractBetweenSegmentTerms(query: string): [string[], string[]] | null {
   const normalized = query.replace(/\s+/g, " ").trim();

@@ -43,7 +43,7 @@ import {
   selectBeamQueries,
   type BeamRetrievalQuery,
 } from "../src/eval/corpus/beam.js";
-import { envPositiveInt } from "../src/utils/env.js";
+import { envFlag, envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import {
@@ -303,7 +303,10 @@ export async function runBeamSlice(
   const writeTimeModel = resolveProviderModel(provider.name);
 
   const PREF_PROMPT_VERSION = "v1";
-  const prefEnabled = /^(1|true|yes)$/i.test(process.env.CSM_AMB_PREFERENCE_PROFILE ?? "");
+  const prefEnabled = envFlag(process.env.CSM_AMB_PREFERENCE_PROFILE, {
+    name: "CSM_AMB_PREFERENCE_PROFILE",
+    fallback: false,
+  });
   const prefProfiles = new Map<string, Promise<string | undefined>>();
   const getPreferenceProfile = (
     userId: string,

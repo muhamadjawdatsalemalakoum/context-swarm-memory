@@ -148,6 +148,63 @@ path runs. This bears on `temporal_reasoning`, where CSM has an unexplained
 silently changes retrieval, so it needs an A/B, not a refactor. Both sites now
 carry a comment saying so.
 
+## F9 — hardcoded, corpus-specific vocabulary compiled into the retriever  ⚠ publication-blocking
+
+Chasing F6 into the bridge's term pipeline surfaced something larger.
+`expandCoverageTerms` is a **hand-written synonym table**:
+
+```ts
+addWhen("security",    ["auth","authentication","password","hash","csrf","flask-wtf","session","login","lockout","redis","role","https"]);
+addWhen("database",    ["sqlite","sqlalchemy","postgres","transaction","migration","table","schema","constraint","uuid","operationalerror"]);
+addWhen("weather",     ["openweather","temperature","humidity","conditions","autocomplete","cors","forecast","api","rate","cache"]);
+addWhen("performance", ["lazy","loading","load","latency","bounce","analytics","ga4","tracking"]);
+```
+
+Those expansions are the vocabulary of the benchmark's own documents — BEAM
+conversations are dev-assistant chats about building a Flask auth app, a weather
+app, a budget tracker. It ran on **five** retrieval call sites including
+`selectCapsuleCoverageEvents`, i.e. on the path that produces every BEAM answer.
+
+**Provenance.** `git log -S 'flask-wtf'` → commit `31cbef9`, 2026-05-26, titled
+*"Improve CSM AMB retrieval evidence shaping"*, body: *"Add BEAM-oriented AMB
+retrieval improvements for the CSM provider without using gold answers, rubrics,
+or query IDs in the retrieval path."* `src/eval/corpus/beam.ts` did not exist yet;
+the table went in with the BEAM bridge work.
+
+**Was it inert?** No — measured with `scripts/audit-term-expansion.ts`, zero LLM
+calls, over the real query sets:
+
+| split | queries firing a trigger | |
+|---|---:|---:|
+| 100K | 13 / 400 | 3.3% |
+| 500K | 10 / 700 | 1.4% |
+| 1M | 22 / 700 | 3.1% |
+| 10M | 10 / 200 | 5.0% |
+| **total** | **55 / 2000** | **2.75%** |
+
+by trigger: `performance`=29, `security`=11, `database`=11, `weather`=6. Each
+firing injects 9–22 terms into the coverage scorer. Example: *"Can you give me a
+comprehensive summary of how I handled the security and database challenges…"*
+fires two triggers and injects 22 terms including `flask-wtf` and
+`operationalerror`.
+
+**Assessment, stated without softening.** This is not gold leakage: no rubric,
+answer, or query id is touched, and `tests/beamLeakageFirewall.test.ts` was never
+violated in its own terms. It is still benchmark-derived vocabulary compiled into
+the retriever, and it is exactly what a reviewer would find first. A retrieval
+result carrying `openweather` as a hardcoded expansion is not defensible whatever
+the effect size turns out to be. It contradicts the principle `src/core/coverage.ts`
+states for its own expansion path — corpus-derived TF-IDF, *"zero hardcoded
+vocabulary"*.
+
+**Fix.** Deleted. The bridge's private `extractContentTerms` and its stop list
+went with it; all five call sites now route through one `queryTerms()` that
+delegates to `src/core/coverage.ts:extractCoverageTerms` — which also resolves F6,
+since that was the same divergence one layer down. `CSM_AMB_LEGACY_TERM_EXPANSION=1`
+restores the whole legacy pipeline (extractor *and* table — restoring half would
+make the A/B measure a blend and answer neither question) purely so the removal
+is measurable. It is not a supported configuration and is deleted once measured.
+
 ## F7 — run manifests did not record the flags that define the arm
 
 `ECHOED_ENV_VARS` in `scripts/run-beam-slice.ts` omitted `CSM_ROUTER_HYBRID`,

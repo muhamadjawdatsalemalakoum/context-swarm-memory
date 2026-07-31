@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  extractCoverageTerms,
   extractDatePhrases,
   parseDatePhrase,
 } from "../src/core/coverage.js";
@@ -836,8 +837,7 @@ function resolveAmbReturnMax(requestedK: number, intent: AmbQueryIntent): number
 /** CSM_AMB_COVERAGE_RERANK toggle (default OFF). When ON, the coverageFired
  *  return slice is coverage-ranked + token-budget-packed instead of count-cut. */
 function coverageRerankActive(): boolean {
-  const v = process.env.CSM_AMB_COVERAGE_RERANK;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(process.env.CSM_AMB_COVERAGE_RERANK, { name: "CSM_AMB_COVERAGE_RERANK", fallback: false });
 }
 
 /** CSM_AMB_ORDERED_CAPSULE toggle (default OFF). When ON, the evidence capsule
@@ -845,8 +845,7 @@ function coverageRerankActive(): boolean {
  *  these summarization/event_ordering queries need) instead of a date-prefixed
  *  list where BEAM's placeholder dates hide the order. */
 function orderedCapsuleActive(): boolean {
-  const v = process.env.CSM_AMB_ORDERED_CAPSULE;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(process.env.CSM_AMB_ORDERED_CAPSULE, { name: "CSM_AMB_ORDERED_CAPSULE", fallback: false });
 }
 
 /** CSM_AMB_SYNTH_MEMORY toggle (default OFF). When ON, synthesis-intent queries
@@ -854,8 +853,7 @@ function orderedCapsuleActive(): boolean {
  *  deterministic capsule (the synthesis-engine lever for summarization /
  *  event_ordering). */
 function synthMemoryActive(): boolean {
-  const v = process.env.CSM_AMB_SYNTH_MEMORY;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(process.env.CSM_AMB_SYNTH_MEMORY, { name: "CSM_AMB_SYNTH_MEMORY", fallback: false });
 }
 
 /** CSM_AMB_OBSERVE_MEMORY toggle (default OFF). When ON, the warm server builds
@@ -863,8 +861,7 @@ function synthMemoryActive(): boolean {
  *  cached per user) and the bridge returns it verbatim for summary-intent queries
  *  — the write-time organization pattern of Hindsight/RAPTOR/Honcho. */
 export function observeMemoryActive(): boolean {
-  const v = process.env.CSM_AMB_OBSERVE_MEMORY;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(process.env.CSM_AMB_OBSERVE_MEMORY, { name: "CSM_AMB_OBSERVE_MEMORY", fallback: false });
 }
 
 /** Gate for the ingestion-time Observation: fire ONLY on genuine retrospective
@@ -916,8 +913,7 @@ export function observationQueryIntent(query: string): boolean {
  *  and Zep/Graphiti, aimed at the multi-session aggregation failure mode
  *  (baseline sums STALE values; 10M multi_session_reasoning = 0.120). */
 export function factMemoryActive(): boolean {
-  const v = process.env.CSM_AMB_FACT_MEMORY;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(process.env.CSM_AMB_FACT_MEMORY, { name: "CSM_AMB_FACT_MEMORY", fallback: false });
 }
 
 /** Gate for the fact registry: cross-mention AGGREGATION questions ("how many X
@@ -986,7 +982,7 @@ function selectChronologicalCoverageIds(
     includeAllShards || seedShardIds.length === 0
       ? [...corpus.byShard.keys()].sort()
       : seedShardIds;
-  const terms = expandCoverageTerms(extractContentTerms(query));
+  const terms = queryTerms(query);
   const selected: string[] = [];
   const bucketCount = 12;
   const perBucket = 2;
@@ -1043,7 +1039,7 @@ export function buildEvidenceCapsule(args: {
     return null;
   }
 
-  const terms = expandCoverageTerms(extractContentTerms(query));
+  const terms = queryTerms(query);
   const candidateEvents = intent.broadSummary
     ? selectCapsuleCoverageEvents(corpus, ids, query)
     : ids
@@ -1134,7 +1130,7 @@ function selectCapsuleCoverageEvents(
 }
 
 function selectTopCoverageIds(corpus: Corpus, query: string, limit: number): string[] {
-  const terms = expandCoverageTerms(extractContentTerms(query));
+  const terms = queryTerms(query);
   return corpus.events
     .map((event) => ({ event, score: coverageScore(event.content, terms) }))
     .filter((item) => item.score > 0)
@@ -1356,21 +1352,10 @@ function selectTopTemporalPair(
 }
 
 /**
- * DIVERGENCE, DELIBERATELY NOT UNIFIED — see the sibling in src/core/coverage.ts.
- *
- * Both functions answer "what are the two sides of a `between X and Y` query?",
- * and they do it differently:
- *
- *   core/coverage.ts   extractCoverageTerms(side, 16)                  — one pass, capped at 16
- *   the AMB bridge     expandCoverageTerms(extractContentTerms(side))  — extract, then EXPAND
- *
- * So the same temporal query yields different term sets depending on which path
- * runs. This is a real behavioural difference on the `temporal_reasoning`
- * category, not a cosmetic one, which is exactly why the 2026-07-31 audit did
- * NOT quietly collapse them: picking either implementation silently changes
- * retrieval, and CSM has an unexplained −0.135 temporal_reasoning result at n=8
- * that this could bear on. Unify only behind a measured A/B.
- * See docs/experiments/EXP-system-audit-2026-07.md, finding F6.
+ * RESOLVED (audit F6): this used to disagree with the sibling in
+ * `src/core/coverage.ts` — a capped single pass there, extract-then-EXPAND here
+ * — so the same "between X and Y" query produced different term sets depending
+ * on which path ran. Both now go through one extractor; see `queryTerms`.
  */
 function extractBetweenSegmentTerms(query: string): [string[], string[]] | null {
   const normalized = query.replace(/\s+/g, " ").trim();
@@ -1380,8 +1365,8 @@ function extractBetweenSegmentTerms(query: string): [string[], string[]] | null 
   if (!match) return null;
   const left = match[1] ?? "";
   const right = match[2] ?? "";
-  const leftTerms = expandCoverageTerms(extractContentTerms(left));
-  const rightTerms = expandCoverageTerms(extractContentTerms(right));
+  const leftTerms = queryTerms(left);
+  const rightTerms = queryTerms(right);
   if (leftTerms.length === 0 || rightTerms.length === 0) return null;
   return [leftTerms, rightTerms];
 }
@@ -1473,14 +1458,57 @@ function highSignalWeight(term: string): number {
   return Math.min(40, normalized.length);
 }
 
-function extractContentTerms(text: string): string[] {
+/**
+ * The bridge's query-term extractor.
+ *
+ * SINGLE SOURCE OF TRUTH: delegates to `src/core/coverage.ts:extractCoverageTerms`.
+ * Two things used to live here instead, and both were defects.
+ *
+ * 1. A private `extractContentTerms` with its own grammar and stop list, so the
+ *    same "between X and Y" query produced different term sets depending on
+ *    whether the core coverage path or the bridge path ran it (audit F6).
+ *
+ * 2. `expandCoverageTerms`, a HAND-WRITTEN synonym table keyed on four triggers
+ *    — security / database / weather / performance — expanding to the vocabulary
+ *    of the benchmark's own documents ("flask-wtf", "sqlalchemy",
+ *    "operationalerror", "openweather", "ga4"). Introduced 2026-05-26 in a
+ *    commit titled "BEAM-oriented AMB retrieval improvements" (audit F9).
+ *
+ *    It touched no gold answers, rubrics, or query ids, so the leakage firewall
+ *    was never violated in its own terms. It is still corpus-tuned vocabulary
+ *    compiled into the retriever, which is not defensible in a published
+ *    retrieval result, and it was not inert: MEASURED, it fired on 55 of 2000
+ *    BEAM queries (2.75%) and injected 9-22 terms each time.
+ *
+ *    `CSM_AMB_LEGACY_TERM_EXPANSION=1` restores it, for the paired A/B that
+ *    quantifies what removing it cost. It is not a supported configuration.
+ */
+function queryTerms(text: string): string[] {
+  // The flag restores the ENTIRE legacy pipeline (its own extractor AND the
+  // synonym table), not half of it — otherwise the A/B measures a blend of two
+  // changes and answers neither question.
+  if (
+    envFlag(process.env.CSM_AMB_LEGACY_TERM_EXPANSION, {
+      name: "CSM_AMB_LEGACY_TERM_EXPANSION",
+      fallback: false,
+    })
+  ) {
+    return legacyExpandCoverageTerms(legacyExtractContentTerms(text));
+  }
+  return extractCoverageTerms(text, 16);
+}
+
+/** LEGACY, off by default. The bridge's own term grammar before audit F6 —
+ *  no minimum-length-3 rule, no trailing-punctuation strip, its own stop list.
+ *  Retained only so the removal is measurable; delete with the expander. */
+function legacyExtractContentTerms(text: string): string[] {
   const terms: string[] = [];
   const seen = new Set<string>();
   for (const match of text.matchAll(/[A-Za-z][A-Za-z0-9_.:-]{2,}/g)) {
     const raw = match[0]!;
     const term = raw.toLowerCase().replace(/'s$/g, "");
     if (term.length < 4 && raw[0] !== raw[0]?.toUpperCase()) continue;
-    if (AMB_STOP_WORDS.has(term)) continue;
+    if (LEGACY_AMB_STOP_WORDS.has(term)) continue;
     if (seen.has(term)) continue;
     seen.add(term);
     terms.push(term);
@@ -1488,7 +1516,50 @@ function extractContentTerms(text: string): string[] {
   return terms.slice(0, 16);
 }
 
-function expandCoverageTerms(terms: string[]): string[] {
+
+const LEGACY_AMB_STOP_WORDS = new Set([
+  "about",
+  "across",
+  "after",
+  "again",
+  "also",
+  "answer",
+  "before",
+  "being",
+  "between",
+  "could",
+  "different",
+  "does",
+  "from",
+  "give",
+  "handle",
+  "handled",
+  "have",
+  "into",
+  "many",
+  "mentioned",
+  "only",
+  "provide",
+  "question",
+  "related",
+  "should",
+  "state",
+  "that",
+  "their",
+  "there",
+  "this",
+  "using",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+  "would",
+]);
+
+/** LEGACY, off by default. See `queryTerms`. Retained only so the removal
+ *  can be measured as a paired A/B; delete once that is recorded. */
+function legacyExpandCoverageTerms(terms: string[]): string[] {
   const expanded = new Set(terms);
   const addWhen = (trigger: string, extra: string[]) => {
     if (expanded.has(trigger)) extra.forEach((term) => expanded.add(term));
@@ -1586,45 +1657,6 @@ function turnNumber(event: BenchEvent): number {
 
 
 
-const AMB_STOP_WORDS = new Set([
-  "about",
-  "across",
-  "after",
-  "again",
-  "also",
-  "answer",
-  "before",
-  "being",
-  "between",
-  "could",
-  "different",
-  "does",
-  "from",
-  "give",
-  "handle",
-  "handled",
-  "have",
-  "into",
-  "many",
-  "mentioned",
-  "only",
-  "provide",
-  "question",
-  "related",
-  "should",
-  "state",
-  "that",
-  "their",
-  "there",
-  "this",
-  "using",
-  "what",
-  "when",
-  "where",
-  "which",
-  "with",
-  "would",
-]);
 
 const HIGH_SIGNAL_TERMS = new Set([
   "api",
