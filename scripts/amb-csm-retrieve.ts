@@ -312,7 +312,10 @@ export async function executeAmbRetrieve(input: {
   // the top-K slice selects exactly the unresolvable ones and outDocs empties.
   // Drop unresolvable ids in place, preserving order, and top up from the
   // already-qualified packed list.
-  const idRepairActive = process.env.CSM_AMB_ID_REPAIR === "1";
+  const idRepairActive = envFlag(process.env.CSM_AMB_ID_REPAIR, {
+    name: "CSM_AMB_ID_REPAIR",
+    fallback: false,
+  });
   const baseIds = idRepairActive
     ? dedupeInOrder([
         ...retrievedEventIds.filter((id) => corpus.byId.has(id)),

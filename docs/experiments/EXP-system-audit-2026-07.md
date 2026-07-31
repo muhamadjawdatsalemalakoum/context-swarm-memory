@@ -245,55 +245,77 @@ prose word. Both tables sit behind one flag, `CSM_AMB_LEGACY_VOCAB=1`, because
 they are one defect from one commit and the question worth answering is a single
 one: what did removing benchmark-tuned vocabulary cost?
 
-## F11 — retrieval is not a pure function, and every A/B in this campaign assumed it was
+## F11 — LLM nondeterminism is real, but it is NOT the size I first claimed
 
-Trying to regression-test the audit the *right* way — compare retrieved evidence
-rather than a score that has to survive an answer model and a judge first —
-produced a result that looked alarming and turned out to be more important than
-the audit.
+**This section was rewritten after its first version was wrong. The original
+claim is preserved below because the error is instructive.**
 
-`r1mHR-audit-repro-v1` re-runs arm H's exact configuration
-(`CSM_AMB_LEGACY_VOCAB=1`, so the removed vocabulary is restored) on the
-post-audit code. **43 of 45 queries returned different documents.**
+`r1mHR-audit-repro-v1` re-ran what I believed was arm H's exact configuration on
+post-audit code. 43 of 45 queries returned different documents, and the answer
+score moved **0.8037 → 0.6065 (−0.1972)** — *clearing* the MDE of 0.1419.
 
-Splitting the pipeline into its deterministic and LLM-mediated halves settles
-what happened:
+My first conclusion was that this is the run-to-run noise floor, and that every
+A/B in this campaign therefore had an unmeasured confound. **That conclusion was
+wrong**, and I published it before finishing the diagnosis.
 
-| stage | mechanism | H vs HR |
-|---|---|---|
-| `candidateShardIds` | offline router (lexical + MiniLM) | **39/39 identical** |
-| `routerTopScore` | offline | **39/39 identical** |
-| `probedShardIds` | offline slice of the above | **43/43 identical** |
-| `probeAcceptCount` | **LLM verdict** | **differs on 10/43** |
-| `recalledShardIds` | ranked by LLM probe verdicts | differs on 20/39 |
-| returned documents | downstream of recall | differs on 43/45 |
+What is true: probe verdicts ARE nondeterministic. With `probedShardIds`
+byte-identical on 43/43 queries — the same shard list, the same event index —
+`probeAcceptCount` still differs on 10/43. No code path can do that with inputs
+held fixed. Run-to-run variance in the LLM stages is real and was never measured.
 
-The probe stage receives a byte-identical shard list and a byte-identical event
-index and accepts a different number of shards on 10 of 43 queries. No code path
-touched by this audit can do that while holding the inputs fixed. It is the
-model.
+What is false: that this explains −0.1972. It does not. The real cause:
 
-Two conclusions, and the second is the uncomfortable one.
+| | arm H | arm HR |
+|---|---:|---:|
+| returned ids per query | 22.51 | 24.42 |
+| ids that resolved to **no document** | **0.00 (0.0%)** | **8.76 (35.9%)** |
+| queries losing ≥1 id | 0 / 45 | 32 / 45 |
+| documents per query | 23.5 | 16.7 |
+| chars of evidence per query | 63,383 | 49,090 |
 
-**1. The audit refactors are clean.** Everything deterministic is byte-identical:
-same candidates, same scores, same probe targets. That is the regression check,
-and it passes exactly where a code change could have shown up.
+Arm H discarded **zero** ids across 1,013; arm HR discarded 394 of 1,099, every
+one of them a *bare* id (`turn-11`, not `10_s4_16#turn-11`). Both runs carry ~24%
+bare ids in `csmRetrievedEventIds`, so the bare ids were always present — what
+differed was whether they were filtered before the top-K cut.
 
-**2. Every arm-to-arm comparison in this campaign has an unmeasured noise floor.**
-The published MDE of 0.1436 at n=45 was derived from the official pipeline's
-*judge* self-agreement (r = 0.808). It does not include retrieval
-nondeterminism, because until now nobody had run the same configuration twice.
-Arm A → arm H differences were attributed entirely to the lever. Some fraction of
-every one of those deltas is this.
+They are filtered by `CSM_AMB_ID_REPAIR=1`, which arm H ran with and I did not.
+Under repair-off, the bare ids sort FIRST (the synthesis-cited tier leads
+retrieval order), so the top-K slice selects precisely the unresolvable ones. Zero
+discarded is what repair-on produces *by construction*; it is not a lucky draw.
 
-This does not overturn the large results — arm A → arm C is +0.365, far above any
-plausible noise floor — but it does mean **any delta near the MDE was never
-resolvable**, and results already reported as "below MDE" (notably
-`preference_following`, +0.142) are on even weaker ground than stated.
+**So: a missing flag, not a regression, and not noise.** And the reason I could
+not set it is F7 — `CSM_AMB_ID_REPAIR` was not in the manifest echo, so arm H's
+own run record could not tell me it had been on. F7 cost a 35-minute run and a
+wrong published conclusion within one hour of being written down.
 
-The correct fix is procedural, and cheap now that it is visible: **a same-config
-repeat arm is the control**, and its delta is the noise floor a lever must clear.
-`r1mHR` is the first one this campaign has ever had.
+Both flags are now echoed, and `CSM_AMB_ID_REPAIR` is a plain `envFlag`.
+
+### What this leaves standing
+
+- **The audit refactors remain clean.** Every deterministic stage is
+  byte-identical between H and HR: router candidates 39/39, router top score
+  39/39, probed shards 43/43. That is where a code regression would appear.
+- **LLM nondeterminism is real but unquantified.** The 10/43 probe-accept
+  divergence proves it exists; the −0.1972 does not measure it, because that pair
+  differed in configuration. A genuine same-config repeat is still owed.
+- **A same-config control arm should be standard practice** regardless — the
+  point survives even though the number that motivated it did not.
+
+## F12 — `CSM_AMB_ID_REPAIR` is a correctness fix worth ~0.20, shipped default-off
+
+Falling into F11's trap measured the flag by accident, and the effect is large.
+
+With repair off, **35.9% of retrieved evidence is silently discarded** — ids that
+cannot resolve against the corpus are carried through selection, occupy slots in
+the top-K cut, and then vanish at `.filter(Boolean)`. The answer model receives
+16.7 documents instead of 23.5, and 49K characters instead of 63K.
+
+It was shipped 2026-07-30 (`859e4c6`) as "default off — official defaults
+untouched", which was correct then: it changes retrieval, and frozen baselines
+should not move underneath a running comparison. But it is not a tuning lever, it
+is a **bug fix** — dropping an id that provably cannot resolve costs nothing and
+loses no information. The open question is only whether to flip the default, and
+on this evidence it should be flipped and the baselines re-cut.
 
 ## F7 — run manifests did not record the flags that define the arm
 
@@ -351,7 +373,15 @@ firewall failure.
 
 ## Verification
 
-- `npm run lint` (tsc) clean; **468 tests pass** (was 442).
+- `npm run lint` (tsc) clean, `npm run build` clean; **468 tests pass** (was 442).
+- `npm run eval` (smoke eval, MockProvider, offline): `router_recall@3 = 100.0%`,
+  `packet_keyword_coverage = 100.0%` — unchanged from the documented baseline.
+  Note it must be run as `CSM_PROVIDER=mock npm run eval`; the bare form picks up
+  `.env` and goes to Gemini.
+- **Behavioural regression check** (`scripts/diff-run-payloads.ts`,
+  `r1mH-preffold-v1` vs `r1mHR-audit-repro-v1`): every deterministic stage is
+  byte-identical — router candidates 39/39, router top score 39/39, probed shards
+  43/43. Divergence downstream of that is the probe LLM, not the code; see F11.
 - 26 new tests: `tests/env.test.ts` (14), the write-side namespace guards in
   `tests/providerModelNamespace.test.ts` (+8), hybrid degradation accounting in
   `tests/routerEmbed.test.ts` (+4).
