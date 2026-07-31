@@ -16,7 +16,12 @@ import {
   selectCandidatesHybrid,
   type RouterIndex,
 } from "./routerEmbed.js";
-import { probeShard, probeShardsBatched } from "./probe.js";
+import {
+  compactEventIndex,
+  probeShard,
+  probeShardsBatched,
+  resolveProbeIndexChars,
+} from "./probe.js";
 import { recallShard } from "./recall.js";
 import { resolveSignalsRanker } from "./digestSelection.js";
 import { synthesizeMemoryPacket, packetFromSingleRecall, emptyPacket } from "./synthesize.js";
@@ -33,7 +38,7 @@ import {
   resolveShardCount,
 } from "./tokenBudget.js";
 import { select } from "./selection.js";
-import { envFlag } from "../utils/env.js";
+import { envFlag, envInt } from "../utils/env.js";
 import { newRunId } from "../utils/ids.js";
 import { nowIso } from "../utils/time.js";
 
@@ -58,6 +63,18 @@ export interface AskOptions {
    *  local-embedding centroids). When absent/null, candidate selection is
    *  byte-identical to Phase 0. */
   routerIndex?: RouterIndex | null;
+  /** Local probe pre-gate (token plan L3, arm B): a CHEAP scorer (cross-encoder
+   *  / embeddings, zero LLM tokens) over (query, shard-digest) pairs. It may
+   *  only SKIP witnesses, never answer for them — shards it keeps still get the
+   *  full LLM probe, and the router's top-1 is always kept (the router-trust
+   *  net and the speculative recall depend on it). Scores are returned in the
+   *  same order as the given shards. Injected like `routerIndex` so src/core
+   *  never imports eval-side model plumbing. Active only when
+   *  `CSM_PROBE_LOCAL_KEEP` > 0. */
+  localProbeGate?: (
+    query: string,
+    shards: Array<{ shardId: string; digest: string }>,
+  ) => Promise<number[]>;
 }
 
 /** ask — the full read-only query path.
@@ -184,10 +201,39 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
       );
     }
   }
-  const probedCandidates = candidates.slice(0, probeBudget);
-  const snapshotsByCandidate = await Promise.all(
+  let probedCandidates = candidates.slice(0, probeBudget);
+  let snapshotsByCandidate = await Promise.all(
     probedCandidates.map((c) => storage.loadSnapshot(c.entry.id, c.entry.snapshotId)),
   );
+
+  // Local probe pre-gate (token plan L3, arm B). The cheap scorer sees the SAME
+  // digest text the LLM probe would (compactEventIndex over the same budget),
+  // so the A/B asks exactly: can a local model make the skip decision the LLM
+  // makes on identical input? Constraints, in order:
+  //  - candidate 0 is ALWAYS kept (router-trust net + speculative recall);
+  //  - the kept set keeps ROUTER ORDER (insertion order downstream carries
+  //    router rank — the same invariant as the batched-probe reconciliation);
+  //  - shards it skips get NO probe and NO recall — that is the lever.
+  const localKeep = resolveProbeLocalKeep();
+  if (opts.localProbeGate && localKeep > 0 && localKeep < probedCandidates.length) {
+    const digests = probedCandidates.map((c, ix) => {
+      const snap = snapshotsByCandidate[ix];
+      return {
+        shardId: c.entry.id,
+        digest: snap ? compactEventIndex(snap, resolveProbeIndexChars(), query) : "",
+      };
+    });
+    const scores = await opts.localProbeGate(query, digests);
+    const keepSet = new Set<number>([0]);
+    const ranked = probedCandidates
+      .map((_, ix) => ix)
+      .slice(1)
+      .sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0) || a - b);
+    for (const ix of ranked.slice(0, Math.max(0, localKeep - 1))) keepSet.add(ix);
+    const keptIx = probedCandidates.map((_, ix) => ix).filter((ix) => keepSet.has(ix));
+    probedCandidates = keptIx.map((ix) => probedCandidates[ix]!);
+    snapshotsByCandidate = keptIx.map((ix) => snapshotsByCandidate[ix]!);
+  }
 
   // Thunks (not promises): the work starts only when runJobs calls each one, so
   // serial mode genuinely runs one probe at a time. (Previously `.map()` created
@@ -612,6 +658,15 @@ export function resolveProbeShrink(raw = process.env.CSM_PROBE_SHRINK): boolean 
  *  ~349-token probe scaffold once instead of N−1 times. */
 export function resolveProbeBatch(raw = process.env.CSM_PROBE_BATCH): boolean {
   return envFlag(raw, { name: "CSM_PROBE_BATCH", fallback: false });
+}
+
+/** Local probe pre-gate keep-count (token plan L3). 0 = off. When N > 0 and a
+ *  `localProbeGate` scorer is injected, only the router top-1 plus the N−1
+ *  highest-scoring other candidates receive LLM probes. */
+export function resolveProbeLocalKeep(
+  raw = process.env.CSM_PROBE_LOCAL_KEEP,
+): number {
+  return envInt(raw, { name: "CSM_PROBE_LOCAL_KEEP", fallback: 0, min: 0 });
 }
 
 export function resolveEagerRecalls(raw = process.env.CSM_EAGER_RECALLS): boolean {

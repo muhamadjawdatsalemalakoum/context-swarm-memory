@@ -1,4 +1,4 @@
-import { ask } from "../../core/ask.js";
+import { ask, resolveProbeLocalKeep } from "../../core/ask.js";
 import { envFlag } from "../../utils/env.js";
 import { dedupeInOrder } from "../../core/selection.js";
 import { escapeRegExp } from "../../utils/text.js";
@@ -26,6 +26,7 @@ import type {
 import type { LlmProvider } from "../../providers/LlmProvider.js";
 import type { StorageReader } from "../../storage/jsonlStorage.js";
 import { buildPrompt, parseAnswer } from "../answer.js";
+import { rerank } from "../rerank.js";
 import { callLlmCached } from "../cachedLlm.js";
 import type { BenchEvent, Corpus } from "../corpus.js";
 import { embed, EMBED_MODEL_NAME, topKCosine } from "../embed.js";
@@ -1084,6 +1085,20 @@ export class CsmBaseline implements BaselineRunner {
       query: query.question,
       skipQueryLog: true,
       routerIndex,
+      // Local probe pre-gate (token plan L3, arm B): a 22M cross-encoder
+      // scores (query, shard-digest) pairs on CPU — zero LLM tokens — and
+      // `ask()` LLM-probes only the router top-1 plus the best N−1 of the
+      // rest (CSM_PROBE_LOCAL_KEEP; 0 = off). Injected here, like
+      // routerIndex, so src/core never imports eval-side model plumbing.
+      localProbeGate:
+        resolveProbeLocalKeep() > 0
+          ? async (q, shards) => {
+              const ranked = await rerank(q, shards.map((s) => s.digest));
+              const scores = new Array<number>(shards.length).fill(0);
+              for (const { index, score } of ranked) scores[index] = score;
+              return scores;
+            }
+          : undefined,
       // Parallel probes/recalls for hosted providers; serial for local
       // single-GPU servers (Ollama/llama-server) where concurrent fetches
       // tripped Undici's connection pool. See resolveParallelProbes.
