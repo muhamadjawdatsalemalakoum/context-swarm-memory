@@ -23,7 +23,7 @@ import {
   resolveProviderModel,
   selectProviderName,
 } from "../src/providers/LlmProvider.js";
-import { envFlag, envPositiveInt } from "../src/utils/env.js";
+import { envFlag, envInt, envPositiveInt } from "../src/utils/env.js";
 import { escapeRegExp } from "../src/utils/text.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 
@@ -417,16 +417,20 @@ export async function executeAmbRetrieve(input: {
         : dedupeInOrder(orderedBaseIds).slice(0, resolveAmbReturnMax(request.k ?? 10, intent))
       : selectAmbEvidenceIds(baseIds, corpus, request.query, intent, request.k ?? 10);
 
-  const outDocs = ids
-    .map((id) => corpus.byId.get(id))
-    .filter((event): event is BenchEvent => Boolean(event))
-    .map((event) => ({
-      id: event.id,
-      content: event.content,
-      user_id: request.user_id ?? null,
-      timestamp: event.timestamp ?? null,
-      context: `CSM retrieved from shard ${event.shardId}`,
-    }));
+  const lean = resolveLeanReturn();
+  const outDocs = buildLeanDocs(
+    ids
+      .map((id) => corpus.byId.get(id))
+      .filter((event): event is BenchEvent => Boolean(event)),
+    request.query,
+    lean,
+  ).map((event) => ({
+    id: event.id,
+    content: event.content,
+    user_id: request.user_id ?? null,
+    timestamp: event.timestamp ?? null,
+    context: `CSM retrieved from shard ${event.shardId}`,
+  }));
   // Synthesis engine (CSM_AMB_SYNTH_MEMORY=1, default OFF): for synthesis-heavy
   // intents, replace the weak deterministic capsule with an LLM-organized
   // chronological "organized memory" — the pre-digested view that lets the
@@ -1429,6 +1433,95 @@ function formatEvidenceSnippet(event: BenchEvent, terms: string[]): string {
   const datePrefix = dates.length ? ` dates=${dedupeInOrder(dates).slice(0, 3).join(", ")};` : "";
   const anchorPrefix = anchors.length ? ` anchors=${anchors.slice(0, 5).join(", ")};` : "";
   return `[${event.id}] ${turn} ${role}:${datePrefix}${anchorPrefix} ${snippet}`;
+}
+
+/** Options for the lean-return payload transform. All default OFF. */
+export interface LeanReturnOptions {
+  /** Cap on RAW-TURN documents returned (the capsule is not counted). 0 = off. */
+  k: number;
+  /** When > 0, each raw turn's BODY is a query-centred excerpt of this many
+   *  chars instead of the full turn text. 0 = full text. */
+  excerptChars: number;
+  /** Emit each distinct `Context:` profile preamble ONCE (on its first doc)
+   *  instead of on every doc. */
+  profileDedupe: boolean;
+}
+
+export function resolveLeanReturn(env: NodeJS.ProcessEnv = process.env): LeanReturnOptions {
+  return {
+    k: envInt(env.CSM_AMB_LEAN_K, { name: "CSM_AMB_LEAN_K", fallback: 0, min: 0 }),
+    excerptChars: envInt(env.CSM_AMB_LEAN_EXCERPT_CHARS, {
+      name: "CSM_AMB_LEAN_EXCERPT_CHARS",
+      fallback: 0,
+      min: 0,
+    }),
+    profileDedupe: envFlag(env.CSM_AMB_LEAN_PROFILE_DEDUPE, {
+      name: "CSM_AMB_LEAN_PROFILE_DEDUPE",
+      fallback: false,
+    }),
+  };
+}
+
+/** Split the `Context: …\n\n` preamble `documentToEvents` prefixes onto every
+ *  turn event from the turn's own text. Null when the content carries none. */
+export function splitContextPrefix(
+  content: string,
+): { prefix: string; body: string } | null {
+  if (!content.startsWith("Context: ")) return null;
+  const cut = content.indexOf("\n\n");
+  if (cut === -1) return null;
+  return { prefix: content.slice(0, cut + 2), body: content.slice(cut + 2) };
+}
+
+/**
+ * Lean-return transform (token plan L1) — the SAME function serves the
+ * production bridge and the token-free sweep, so what is measured is what
+ * ships.
+ *
+ * Motivation, measured on the official 1M artifact (700 rows): the
+ * answer-visible payload averages 125K chars, of which
+ *   - 22.6% is the SAME ~1.1K-char user-profile preamble repeated on every one
+ *     of ~24.8 returned turns (`documentToEvents` prefixes `Context: …` onto
+ *     each event so retrieval can match profile terms — right for retrieval,
+ *     pure duplication in the RETURN payload), and
+ *   - 93.4% of capsule snippets appear verbatim inside the returned raw turns
+ *     (event_ordering: 100%) — the payload pays for the distillation and the
+ *     transcript it was distilled from.
+ * Result: CSM is the most token-expensive system on the ladder (~28.2K
+ * answer-visible at 1M vs Hindsight 17.9K, whose blocks average 572 chars of
+ * distilled fact vs CSM's 4,819-char whole turns).
+ *
+ * This transform touches RENDERING only — which events are selected is
+ * unchanged. `k` caps the raw-turn count (ids arrive in retrieval/coverage
+ * order, so the cut keeps the best-ranked); `profileDedupe` keeps each distinct
+ * preamble on its first doc only; `excerptChars` swaps each full BODY for the
+ * query-centred excerpt the capsule already uses (the kept preamble is never
+ * excerpted — excerpting operates on the turn text). Defaults are
+ * byte-identical to the legacy payload.
+ */
+export function buildLeanDocs(
+  events: BenchEvent[],
+  query: string,
+  opts: LeanReturnOptions,
+): Array<Pick<BenchEvent, "id" | "content" | "timestamp" | "shardId">> {
+  const capped = opts.k > 0 ? events.slice(0, opts.k) : events;
+  if (!opts.profileDedupe && opts.excerptChars <= 0) return capped;
+
+  const terms = opts.excerptChars > 0 ? queryTerms(query) : [];
+  const seenPrefixes = new Set<string>();
+  return capped.map((event) => {
+    const split = splitContextPrefix(event.content);
+    let prefix = split?.prefix ?? "";
+    const body = split?.body ?? event.content;
+    if (opts.profileDedupe && prefix) {
+      if (seenPrefixes.has(prefix)) prefix = "";
+      else seenPrefixes.add(prefix);
+    }
+    const renderedBody =
+      opts.excerptChars > 0 ? relevantExcerpt(body, terms, opts.excerptChars) : body;
+    const content = `${prefix}${renderedBody}`;
+    return content === event.content ? event : { ...event, content };
+  });
 }
 
 function relevantExcerpt(content: string, terms: string[], maxChars: number): string {

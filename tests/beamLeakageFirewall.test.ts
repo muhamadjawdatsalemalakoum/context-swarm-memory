@@ -53,6 +53,11 @@ const EVAL_SIDE_GOLD_CONSUMERS = [
   EVAL_CLI,
   "scripts/measure-return-strategies.ts",
   "scripts/measure-returnk-sweep.ts",
+  // Lean-return sweep, gold half. Its retrieval half
+  // (scripts/lean-return-render.ts) renders texts WITHOUT gold and hands them
+  // over via <run>/lean-render.jsonl — same one-way file split as
+  // answer-arms/judge-arms.
+  "scripts/lean-return-score.ts",
 ];
 /**
  * The answer judge. Reads BEAM rubric items (gold) to grade an answer that has
