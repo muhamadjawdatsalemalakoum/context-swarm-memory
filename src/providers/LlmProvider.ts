@@ -151,31 +151,61 @@ export interface StageModels {
   synth?: string;
 }
 
-export function resolveStageModels(
-  overrides: StageModels = {},
-  env: NodeJS.ProcessEnv = process.env,
+/**
+ * THE SINGLE SOURCE OF TRUTH for "which model does this provider use?".
+ *
+ * Model ids are namespaced by provider, and CSM reads them from a shared,
+ * auto-loaded `.env`. So a value that is correct for one provider is *invalid*
+ * for another, and passing one across the boundary produces a confusing runtime
+ * failure rather than a type error. This has now bitten three times:
+ *
+ *   1. An Ollama benchmark 404'd on "gemini-3.5-flash" inherited from
+ *      `CSM_GEMINI_MODEL`.
+ *   2. `agent-sdk` fell through the generic tail and handed the same Gemini id
+ *      to the Claude sidecar.
+ *   3. The write-time preference extractor was called with `bridgeOpts.model`
+ *      (`CSM_AMB_MODEL`, default "gemini-3.5-flash") and the Claude sidecar
+ *      answered "There's an issue with the selected model (gemini-3.5-flash)".
+ *
+ * Cases 1 and 2 were fixed inside `resolveStageModels`. Case 3 happened anyway,
+ * because that function only ever covered three NAMED stages — probe, recall and
+ * synth — so any new call site had to *remember* the rule. That is the root
+ * cause: the rule existed, but it was not reachable as a primitive.
+ *
+ * It is one now. Every site that needs a model for the active provider calls
+ * this; `resolveStageModels` is a thin consumer of it.
+ *
+ * Returns `undefined` when the provider has no configured model, which is the
+ * correct signal to let the provider apply its own built-in default rather than
+ * borrowing someone else's id.
+ */
+export function resolveProviderModel(
   providerName?: string,
-): StageModels {
-  // Provider-scoped fallback. Since the CLI auto-loads the gitignored .env,
-  // a Gemini setup (CSM_GEMINI_MODEL=gemini-3.5-flash) must not leak model
-  // ids into runs on another provider — an Ollama benchmark was 404ing on
-  // "gemini-3.5-flash" exactly this way. When the active provider is known,
-  // only ITS model var participates; CSM_MODEL stays the generic fallback.
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
   const providerDefault =
     providerName === "gemini"
       ? env.CSM_GEMINI_MODEL
       : providerName === "agent-sdk"
-        ? // Claude model ids only. Without this branch agent-sdk fell through to
-          // the generic tail below and inherited CSM_GEMINI_MODEL from the root
-          // .env, handing "gemini-3.5-flash" to the Claude sidecar — the same
-          // cross-provider leak that 404'd an Ollama benchmark.
+        ? // Claude model ids only — never the generic tail.
           env.CSM_AGENT_MODEL
         : providerName === "openai" ||
             providerName === "ollama" ||
             providerName === "llama-server"
           ? env.CSM_OPENAI_MODEL
-          : env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
-  const fallback = providerDefault || env.CSM_MODEL;
+          : providerName === "mock"
+            ? undefined
+            : // Provider unknown: keep the historical permissive tail.
+              env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
+  return providerDefault || env.CSM_MODEL;
+}
+
+export function resolveStageModels(
+  overrides: StageModels = {},
+  env: NodeJS.ProcessEnv = process.env,
+  providerName?: string,
+): StageModels {
+  const fallback = resolveProviderModel(providerName, env);
   return {
     probe: overrides.probe ?? env.CSM_PROBE_MODEL ?? fallback,
     recall: overrides.recall ?? env.CSM_RECALL_MODEL ?? fallback,

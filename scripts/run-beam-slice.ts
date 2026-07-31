@@ -43,6 +43,7 @@ import {
   type BeamRetrievalQuery,
 } from "../src/eval/corpus/beam.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
+import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import {
   buildCorpus,
   createBridgeProvider,
@@ -262,17 +263,14 @@ export async function runBeamSlice(
    * `bridgeOpts.model` is CSM_AMB_MODEL — a model id for the RETRIEVAL stages,
    * defaulting to `gemini-3.5-flash`. Write-time extractors call
    * `provider.completeText` directly, so handing them that id sends a Gemini
-   * model name to whatever provider is actually active. Against the Claude
-   * sidecar that returns
-   *   "There's an issue with the selected model (gemini-3.5-flash)"
-   * and the build fails.
+   * model name to whatever provider is actually active.
    *
-   * Same cross-provider model-leak class that `selectProviderName` already
-   * guards for the stage models; this call site bypassed it by passing a model
-   * explicitly. Passing `undefined` lets each provider fall back to its own
-   * configured default (agent-sdk: CSM_AGENT_MODEL).
+   * `resolveProviderModel` is the single source of truth for provider-scoped
+   * model resolution (src/providers/LlmProvider.ts). Undefined means "this
+   * provider has no configured model", which correctly lets the provider apply
+   * its own default instead of borrowing another provider's id.
    */
-  const writeTimeModel = provider.name === "agent-sdk" ? undefined : bridgeOpts.model;
+  const writeTimeModel = resolveProviderModel(provider.name);
 
   const prefEnabled = /^(1|true|yes)$/i.test(process.env.CSM_AMB_PREFERENCE_PROFILE ?? "");
   const prefProfiles = new Map<string, Promise<string | undefined>>();
