@@ -49,6 +49,7 @@ import {
   type DirectoryEntryWithDescriptors,
 } from "./descriptors.js";
 import { bestUnitScore } from "./retrievalUnit.js";
+import { select } from "./selection.js";
 
 /** Local text embedder. `src/eval/embed.ts#embed` satisfies this; tests
  *  inject deterministic fakes. Declared here so core never imports eval. */
@@ -367,15 +368,49 @@ export async function selectCandidatesHybrid(
     return { entry, score: hybrid, reasons, lexTotal };
   });
 
-  return scored
-    .filter((c) => c.score > 0 || c.entry.status === "active")
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if (b.lexTotal !== a.lexTotal) return b.lexTotal - a.lexTotal;
-      return a.entry.id < b.entry.id ? -1 : a.entry.id > b.entry.id ? 1 : 0;
-    })
-    .slice(0, maxCandidates)
-    .map(({ entry, score, reasons }) => ({ entry, score, reasons }));
+  // Score → sort → cut goes through `select()` like every other ranking in the
+  // repo (src/core/selection.ts — this function was the last hand-rolled
+  // `.sort().slice()` on the production path, an open item from the 2026-07
+  // audit). The scoring itself is unchanged; ties break on lexTotal then
+  // shardId exactly as before, expressed as a composite key so the policy is
+  // stated rather than inherited from sort mechanics.
+  //
+  // The degeneracy report is not discarded: `lastHybridSelection` records
+  // whether the ranking discriminated, and `routeConfidence` consumers (the
+  // probe-shrink gate) must refuse to shrink when it did not — shrinking on an
+  // arbitrary ranking is how the original router bug becomes a probe bug.
+  const result = select(
+    scored.filter((c) => c.score > 0 || c.entry.status === "active"),
+    {
+      score: (c) => c.score,
+      // Composite tiebreak: higher lexTotal first, then shardId ascending.
+      // (1e9 - lexTotal) inverts the numeric order inside a lexicographic key;
+      // lexTotal is a small bounded count, so the padding is safe.
+      key: (c) =>
+        `${String(1e9 - c.lexTotal).padStart(12, "0")}:${c.entry.id}`,
+      limit: maxCandidates,
+    },
+  );
+  lastHybridSelection = {
+    discriminated: result.discriminated,
+    degenerateReason: result.degenerateReason,
+    signalRatio: result.signalRatio,
+  };
+  return result.selected.map(({ entry, score, reasons }) => ({ entry, score, reasons }));
+}
+
+/** Degeneracy report of the most recent `selectCandidatesHybrid` cut, for the
+ *  probe-shrink gate. Same process-local pattern as `hybridRouterStats`. */
+export interface HybridSelectionReport {
+  discriminated: boolean;
+  degenerateReason?: string;
+  signalRatio: number;
+}
+
+let lastHybridSelection: HybridSelectionReport | null = null;
+
+export function lastHybridSelectionReport(): HybridSelectionReport | null {
+  return lastHybridSelection ? { ...lastHybridSelection } : null;
 }
 
 // ─── Route confidence (analysis output; default behavior unchanged) ─────────

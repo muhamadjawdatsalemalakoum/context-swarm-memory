@@ -10,7 +10,12 @@ import type {
   RecallResult,
 } from "./types.js";
 import { selectCandidates } from "./router.js";
-import { selectCandidatesHybrid, type RouterIndex } from "./routerEmbed.js";
+import {
+  lastHybridSelectionReport,
+  routeConfidence,
+  selectCandidatesHybrid,
+  type RouterIndex,
+} from "./routerEmbed.js";
 import { probeShard } from "./probe.js";
 import { recallShard } from "./recall.js";
 import { resolveSignalsRanker } from "./digestSelection.js";
@@ -158,7 +163,28 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     });
   }
 
-  const probedCandidates = candidates.slice(0, maxProbeShards);
+  // Probe-shrink gate (CSM_PROBE_SHRINK, default OFF — token plan L2a). The
+  // probe stage is ~72% of pipeline input, and the official telemetry shows a
+  // fixed 8 probes per query at every tier. When the hybrid router's ranking is
+  // WELL-SEPARATED, probing every candidate re-asks a question the router
+  // already answered; `routeConfidence` keeps every candidate within 0.35 of
+  // top-1 (floor 4). Two hard guards:
+  //   1. hybrid ranking only (`opts.routerIndex`) — the lexical ranking is
+  //      degenerate on uniform-tag corpora and must never justify a shrink;
+  //   2. the cut must have DISCRIMINATED (`lastHybridSelectionReport`) —
+  //      shrinking on an arbitrary ranking would turn the original router bug
+  //      into a probe bug.
+  let probeBudget = maxProbeShards;
+  if (resolveProbeShrink() && opts.routerIndex) {
+    const cutReport = lastHybridSelectionReport();
+    if (cutReport?.discriminated) {
+      probeBudget = Math.min(
+        maxProbeShards,
+        routeConfidence(candidates).recommendedProbeCount,
+      );
+    }
+  }
+  const probedCandidates = candidates.slice(0, probeBudget);
   const snapshotsByCandidate = await Promise.all(
     probedCandidates.map((c) => storage.loadSnapshot(c.entry.id, c.entry.snapshotId)),
   );
@@ -533,6 +559,12 @@ export function probeQualifiesForRecall(
 /** Tier-2 eager recalls are opt-in until the discard-rate is measured at the
  *  30-query scale (the tier-1 top-1 speculation is always on — it is provably
  *  schedule-only). */
+/** Probe-shrink gate (token plan L2a). Default OFF; see the guarded block in
+ *  `ask()` — it can only ever act on a DISCRIMINATED hybrid ranking. */
+export function resolveProbeShrink(raw = process.env.CSM_PROBE_SHRINK): boolean {
+  return envFlag(raw, { name: "CSM_PROBE_SHRINK", fallback: false });
+}
+
 export function resolveEagerRecalls(raw = process.env.CSM_EAGER_RECALLS): boolean {
   return envFlag(raw, { name: "CSM_EAGER_RECALLS", fallback: false });
 }

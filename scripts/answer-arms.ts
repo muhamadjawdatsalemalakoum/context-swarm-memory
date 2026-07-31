@@ -268,8 +268,8 @@ async function main(): Promise<void> {
       const rb = B.get(id)!;
       try {
         const [answerA, answerB] = await Promise.all([
-          answer(`Memory excerpts:\n\n${render(ra)}\n\nQuestion: ${q}\n\nAnswer:`, model),
-          answer(`Memory excerpts:\n\n${render(rb)}\n\nQuestion: ${q}\n\nAnswer:`, model),
+          answer(`Memory excerpts:\n\n${render(runA!, ra)}\n\nQuestion: ${q}\n\nAnswer:`, model),
+          answer(`Memory excerpts:\n\n${render(runB!, rb)}\n\nQuestion: ${q}\n\nAnswer:`, model),
         ]);
         out.push({
           queryId: id,
