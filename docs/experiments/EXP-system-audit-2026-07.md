@@ -205,6 +205,42 @@ restores the whole legacy pipeline (extractor *and* table — restoring half wou
 make the A/B measure a blend and answer neither question) purely so the removal
 is measurable. It is not a supported configuration and is deleted once measured.
 
+## F10 — a second hardcoded vocabulary table, steering what the reader sees
+
+Sweeping for F9's siblings found `HIGH_SIGNAL_TERMS` — same file, same
+2026-05-26 commit (`git log -S 'pbkdf2'` → `31cbef9`):
+
+```ts
+const HIGH_SIGNAL_TERMS = new Set([
+  "api", "api key", "csrf", "flask-wtf", "ga4", "lockout", "operationalerror",
+  "pbkdf2", "redis", "sha256", "unique", "constraint", "uuid", "wireframe",
+]);
+```
+
+`highSignalWeight` returned **100** for a member against a generic ceiling of
+**40**, and that weight drives two things in `formatEvidenceSnippet`:
+
+1. which terms are printed as `anchors=…` in each snippet header, and
+2. **where the 360-char excerpt is centred** (`relevantExcerpt` picks the
+   highest-weighted match as the centre).
+
+This is a more direct steer than F9. F9 changed which events were *scored*; F10
+changes which words the answer model actually *reads* inside the event it got.
+
+**Fix.** The intent — identifiers and dates anchor an excerpt better than prose
+words do — is kept but expressed **structurally**, so it generalises to any
+corpus and names none:
+
+```ts
+if (/\d/.test(t) || /[-_.]/.test(t)) return 60;   // clears the >= 50 anchor bar
+```
+
+`sha256`, `flask-wtf`, `postgres-17`, `ga4` still score high — by shape, not by
+membership. `lockout`, `redis`, `wireframe` now compete on length like any other
+prose word. Both tables sit behind one flag, `CSM_AMB_LEGACY_VOCAB=1`, because
+they are one defect from one commit and the question worth answering is a single
+one: what did removing benchmark-tuned vocabulary cost?
+
 ## F7 — run manifests did not record the flags that define the arm
 
 `ECHOED_ENV_VARS` in `scripts/run-beam-slice.ts` omitted `CSM_ROUTER_HYBRID`,

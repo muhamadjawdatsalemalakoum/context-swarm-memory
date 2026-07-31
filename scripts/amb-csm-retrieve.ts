@@ -1446,15 +1446,35 @@ function matchedHighSignalTerms(content: string, terms: string[]): string[] {
   );
 }
 
+/**
+ * How strongly a term should anchor an evidence excerpt.
+ *
+ * AUDIT F10. This used to consult `HIGH_SIGNAL_TERMS`, a second hardcoded table
+ * from the same 2026-05-26 commit as F9's expansion table — `flask-wtf`, `ga4`,
+ * `operationalerror`, `pbkdf2`, `csrf`, `lockout`, `wireframe`. Those tokens
+ * scored 100 against a generic ceiling of 40, so benchmark-specific vocabulary
+ * decided both which terms are printed as `anchors=` in a snippet header AND
+ * where the 360-char excerpt is centred. That is a more direct steer than F9's:
+ * it chooses the words the answer model actually reads.
+ *
+ * The replacement keeps the INTENT — identifiers and dates anchor better than
+ * prose words — expressed structurally, so it generalises to any corpus and
+ * names none. "sha256", "flask-wtf", "postgres-17" and "ga4" all still score
+ * high, by shape rather than by membership; "lockout", "redis" and "wireframe"
+ * now compete on length like every other prose word.
+ */
 function highSignalWeight(term: string): number {
   const normalized = term.toLowerCase();
-  if (HIGH_SIGNAL_TERMS.has(normalized)) return 100;
+  if (legacyVocabActive() && LEGACY_HIGH_SIGNAL_TERMS.has(normalized)) return 100;
   if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return 80;
   if (
     /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(normalized)
   ) {
     return 80;
   }
+  // Identifier shape: carries a digit, or an internal hyphen/underscore/dot.
+  // Clears the >= 50 anchor threshold in `matchedHighSignalTerms`.
+  if (/\d/.test(normalized) || /[-_.]/.test(normalized)) return 60;
   return Math.min(40, normalized.length);
 }
 
@@ -1480,19 +1500,23 @@ function highSignalWeight(term: string): number {
  *    retrieval result, and it was not inert: MEASURED, it fired on 55 of 2000
  *    BEAM queries (2.75%) and injected 9-22 terms each time.
  *
- *    `CSM_AMB_LEGACY_TERM_EXPANSION=1` restores it, for the paired A/B that
+ *    `CSM_AMB_LEGACY_VOCAB=1` restores it, for the paired A/B that
  *    quantifies what removing it cost. It is not a supported configuration.
  */
+/** Restores BOTH hardcoded-vocabulary tables (audit F9 and F10). Off by default;
+ *  exists only so their removal is measurable as one paired arm. */
+function legacyVocabActive(): boolean {
+  return envFlag(process.env.CSM_AMB_LEGACY_VOCAB, {
+    name: "CSM_AMB_LEGACY_VOCAB",
+    fallback: false,
+  });
+}
+
 function queryTerms(text: string): string[] {
   // The flag restores the ENTIRE legacy pipeline (its own extractor AND the
   // synonym table), not half of it — otherwise the A/B measures a blend of two
   // changes and answers neither question.
-  if (
-    envFlag(process.env.CSM_AMB_LEGACY_TERM_EXPANSION, {
-      name: "CSM_AMB_LEGACY_TERM_EXPANSION",
-      fallback: false,
-    })
-  ) {
+  if (legacyVocabActive()) {
     return legacyExpandCoverageTerms(legacyExtractContentTerms(text));
   }
   return extractCoverageTerms(text, 16);
@@ -1658,7 +1682,8 @@ function turnNumber(event: BenchEvent): number {
 
 
 
-const HIGH_SIGNAL_TERMS = new Set([
+/** LEGACY, off by default. See `highSignalWeight` / audit F10. */
+const LEGACY_HIGH_SIGNAL_TERMS = new Set([
   "api",
   "api key",
   "csrf",
