@@ -244,6 +244,61 @@ export async function runBeamSlice(
   // already-loaded documents, so the only cost of holding several at once is
   // memory, bounded by the number of distinct units in flight (<= jobs). The
   // check-then-set is safe without a lock because it contains no await.
+  /**
+   * ALWAYS-ON standing preference profile, built once per unit and memoized.
+   * `CSM_AMB_PREFERENCE_PROFILE=1` enables it. Unlike the Observation and fact
+   * registry it is not gated on query intent: preference_following /
+   * instruction_following queries never mention the preference they test, so
+   * there is nothing for a gate to match on. See
+   * docs/experiments/EXP-preference-write-time.md.
+   *
+   * The build is an LLM pass over the unit, so it is amortised across every
+   * query for that unit — the same exactly-once contract the other write-time
+   * levers use.
+   */
+  const prefEnabled = /^(1|true|yes)$/i.test(process.env.CSM_AMB_PREFERENCE_PROFILE ?? "");
+  const prefProfiles = new Map<string, Promise<string | undefined>>();
+  const getPreferenceProfile = (
+    userId: string,
+    corpus: ReturnType<typeof buildCorpus>,
+  ): Promise<string | undefined> => {
+    if (!prefEnabled) return Promise.resolve(undefined);
+    const hit = prefProfiles.get(userId);
+    if (hit) return hit;
+    const built = baseline
+      .organizePreferencesScaled({
+        eventContents: corpus.events.map((e) => e.content),
+        model: bridgeOpts.model,
+        // The 600K-token defaults are a Gemini-era setting; a 1M-tier unit is
+        // ~1.6M tokens, so those produce 600K-token prompts that the sidecar
+        // rejects outright. Size the map step to something any provider can
+        // actually accept, and let it be tuned per stack.
+        chunkTokens: parsePositiveInt(process.env.CSM_AMB_PREF_CHUNK_TOKENS, 100_000),
+        singlePassTokens: parsePositiveInt(process.env.CSM_AMB_PREF_SINGLE_PASS_TOKENS, 120_000),
+        chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_PREF_CHUNK_OUTPUT, 2000),
+        finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_PREF_MAX_OUTPUT, 2000),
+        mapConcurrency: parsePositiveInt(process.env.CSM_AMB_PREF_MAP_CONCURRENCY, 4),
+        onProgress: (msg) => process.stdout.write(`    [pref] unit ${userId} ${msg}
+`),
+      })
+      .then((r) => {
+        process.stdout.write(
+          `    [pref] unit ${userId} profile ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))
+`,
+        );
+        return r.text;
+      })
+      .catch((err) => {
+        // A failed profile must not fail the query — it degrades to no profile,
+        // and the omission is visible in the log rather than silent.
+        process.stdout.write(`    [pref] unit ${userId} FAILED: ${String(err).slice(0, 120)}
+`);
+        return undefined;
+      });
+    prefProfiles.set(userId, built);
+    return built;
+  };
+
   const corpora = new Map<string, ReturnType<typeof buildCorpus>>();
   const getCorpus = (userId: string): ReturnType<typeof buildCorpus> => {
     const cached = corpora.get(userId);
@@ -261,12 +316,14 @@ export async function runBeamSlice(
       const q = task.query;
       const corpus = getCorpus(task.userId);
       const t0 = Date.now();
+      const preferenceProfile = await getPreferenceProfile(q.userId, corpus);
       const payload = await executeAmbRetrieve({
         baseline,
         providerName: provider.name,
         corpus,
         request: { query: q.question, k: requestedK, user_id: q.userId },
         opts: bridgeOpts,
+        preferenceProfile,
       });
       const wallMs = Date.now() - t0;
       totalLatencyMs += wallMs;

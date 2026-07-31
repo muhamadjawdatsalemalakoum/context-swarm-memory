@@ -157,6 +157,13 @@ export async function executeAmbRetrieve(input: {
    *  for this user scope. The warm server passes it only for aggregation-intent
    *  queries. Same contract as `observation`. */
   factRegistry?: string;
+  /** Pre-built write-time STANDING PREFERENCE PROFILE for this user scope.
+   *  Unlike `observation` and `factRegistry` this is ALWAYS-ON — it is passed
+   *  for every query, not for a gated intent, because the queries it serves
+   *  (preference_following / instruction_following) never mention the
+   *  preference they test, so no query-conditioned gate or retrieval can find
+   *  it. See docs/experiments/EXP-preference-write-time.md. */
+  preferenceProfile?: string;
   /** Build cost of the fact registry — same exactly-once attribution contract
    *  as observationBuildCost. */
   factBuildCost?: {
@@ -176,6 +183,7 @@ export async function executeAmbRetrieve(input: {
     observationBuildCost,
     factRegistry,
     factBuildCost,
+    preferenceProfile,
   } = input;
   const query: FreeFormQuery = {
     kind: "free-form",
@@ -426,7 +434,34 @@ export async function executeAmbRetrieve(input: {
       userId: request.user_id ?? null,
     });
   }
-  const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
+  // ALWAYS-ON standing preference profile. Prepended as its own document rather
+  // than replacing the capsule: the coverage chronicle supplies most of the
+  // answer-visible evidence, so displacing it would be destructive. This costs
+  // exactly one of the ~24 returned slots on every query — a real, deliberate
+  // cost that the calibrated answer gate is there to price.
+  const prefDoc: AmbDocument | null =
+    typeof preferenceProfile === "string" && preferenceProfile.trim().length > 0
+      ? {
+          id: "csm-preference-profile",
+          content:
+            "CSM standing preference profile — what this user has durably said they prefer, " +
+            "how they want things done, and the constraints they work under, gathered across " +
+            "the whole conversation at write time (source-derived; no gold answers or rubric " +
+            "used). Where a preference was revised, the CURRENT one is marked. Apply these " +
+            "when recommending or formatting anything, even if the question does not mention " +
+            "them. The retrieved events follow.\n\n" +
+            preferenceProfile,
+          user_id: request.user_id ?? null,
+          timestamp: null,
+          context: "CSM standing preference profile",
+        }
+      : null;
+
+  const responseDocuments = [
+    ...(prefDoc ? [prefDoc] : []),
+    ...(capsule ? [capsule] : []),
+    ...outDocs,
+  ];
 
   return {
     documents: responseDocuments,

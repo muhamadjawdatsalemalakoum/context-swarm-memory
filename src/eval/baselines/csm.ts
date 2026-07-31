@@ -630,6 +630,192 @@ export class CsmBaseline implements BaselineRunner {
     };
   }
 
+  /**
+   * Write-time STANDING PREFERENCE PROFILE — the third write-time extractor,
+   * alongside `organizeMemoryScaled` (narrative) and `organizeFactsScaled`
+   * (metric histories).
+   *
+   * WHY IT EXISTS, and why it is ALWAYS-ON rather than gated:
+   *
+   * `preference_following` and `instruction_following` queries never mention the
+   * thing they are testing. Real BEAM examples:
+   *
+   *   "I'm planning to build a text generation pipeline. Which transformer
+   *    model would you suggest I start with?"
+   *   "I'm applying for a job in the UK. How should I format it?"
+   *
+   * The gold is a standing preference stated much earlier, in different words,
+   * about a different immediate topic. Because the query does not describe the
+   * target, NO query-conditioned retrieval can find it — which is why four
+   * separate selection-side fixes (router descriptors+hybrid, signals ranker,
+   * probe full-scan, best-passage retrieval units) each repaired a real measured
+   * defect and each left this category flat.
+   *
+   * A lexical gate was attempted over all 2,000 BEAM queries and abandoned: the
+   * best safe variant reached 50.5% recall while still firing 27 times on
+   * `multi_session_reasoning`, a category CSM wins. So the profile is retrieved
+   * by USER, not by query match — the same shape as Hindsight's `[world]`
+   * memories.
+   *
+   * Being always-on makes the cost explicit and measurable rather than hidden
+   * behind a gate: it spends one of the ~24 returned slots on every query, and
+   * that displacement is exactly what the calibrated answer gate is for. Keep
+   * the output SMALL for that reason.
+   */
+  async organizePreferencesScaled(args: {
+    eventContents: string[];
+    model: string;
+    chunkTokens?: number;
+    singlePassTokens?: number;
+    chunkOutputTokens?: number;
+    finalOutputTokens?: number;
+    mapConcurrency?: number;
+    onProgress?: (msg: string) => void;
+  }): Promise<{
+    text: string;
+    inputTokens: number;
+    outputTokens: number;
+    latencyMs: number;
+    chunks: number;
+  }> {
+    const {
+      eventContents,
+      model,
+      chunkTokens = 600_000,
+      singlePassTokens = 700_000,
+      chunkOutputTokens = 3000,
+      // Deliberately smaller than the fact registry's 12k: this is injected on
+      // EVERY query, so it competes for a return slot every time.
+      finalOutputTokens = 2500,
+      mapConcurrency = 4,
+      onProgress,
+    } = args;
+
+    const totalTokens = eventContents.reduce((sum, c) => sum + estimateTokens(c), 0);
+    const chunks =
+      totalTokens <= singlePassTokens
+        ? [eventContents]
+        : chunkByTokenBudget(eventContents, chunkTokens);
+    onProgress?.(`pref map start: ${chunks.length} chunks, concurrency=${mapConcurrency}`);
+
+    let mapDone = 0;
+    const mapped = await mapWithConcurrency(chunks, mapConcurrency, async (chunkEvents, i) => {
+      const r = await this.extractPreferencesSegment({
+        segmentIndex: i,
+        segmentCount: chunks.length,
+        eventContents: chunkEvents,
+        model,
+        maxOutputTokens: chunkOutputTokens,
+      });
+      mapDone += 1;
+      onProgress?.(`pref map ${mapDone}/${chunks.length} done (${Math.round(r.latencyMs)}ms)`);
+      return r;
+    });
+
+    const merged = await this.mergePreferenceSegments({
+      segmentPrefs: mapped.map((m) => m.text),
+      model,
+      maxOutputTokens: finalOutputTokens,
+    });
+    onProgress?.(`pref reduce done (${Math.round(merged.latencyMs)}ms)`);
+
+    return {
+      text: merged.text,
+      inputTokens: mapped.reduce((s, m) => s + m.inputTokens, 0) + merged.inputTokens,
+      outputTokens: mapped.reduce((s, m) => s + m.outputTokens, 0) + merged.outputTokens,
+      latencyMs:
+        (mapped.length ? Math.max(...mapped.map((m) => m.latencyMs)) : 0) + merged.latencyMs,
+      chunks: chunks.length,
+    };
+  }
+
+  /** Map step: pull standing preferences/instructions out of ONE segment. */
+  private async extractPreferencesSegment(args: {
+    segmentIndex: number;
+    segmentCount: number;
+    eventContents: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { segmentIndex, segmentCount, eventContents, model, maxOutputTokens } = args;
+    const events = eventContents.map((c, i) => `[${i + 1}] ${c}`).join("\n\n");
+    const system =
+      "You extract STANDING PREFERENCES and STANDING INSTRUCTIONS from one segment of a long " +
+      "user conversation, faithfully. Use ONLY the provided events. Do not add outside " +
+      "knowledge, do not answer any question, do not invent anything.";
+    const prompt =
+      `This is segment ${segmentIndex + 1} of ${segmentCount} of one long conversation, in ` +
+      "CHRONOLOGICAL ORDER (earliest first).\n\n" +
+      "List the working instructions the user gave the assistant that are still in force — " +
+      "the ones a later reply on a DIFFERENT topic should still follow. In scope: the " +
+      "languages, frameworks, libraries and versions they said to use or avoid; code and " +
+      "writing style rules they asked for; output and formatting conventions they requested; " +
+      "approaches they said they did not want; and technical constraints they told the " +
+      "assistant to design within.\n" +
+      "Rules:\n" +
+      "- One line each: PREF | <area> | <the instruction, in the user's own words> | <turn ref if visible>\n" +
+      "- Only what the USER asked for, not what the assistant proposed, unless the user " +
+      "explicitly agreed to it.\n" +
+      "- When the user CHANGED an instruction, output the new one as its own line in order — " +
+      "do NOT collapse the change; later lines supersede earlier ones.\n" +
+      "- Skip one-off task details that carry no forward implication.\n" +
+      "- Nothing about the person themselves — only how they asked for the work to be done.\n" +
+      "- No commentary, no answers.\n\n" +
+      `EVENTS (chronological):\n${events}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
+  /** Reduce step: dedupe into a compact profile with CURRENT markers. */
+  private async mergePreferenceSegments(args: {
+    segmentPrefs: string[];
+    model: string;
+    maxOutputTokens: number;
+  }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
+    const { segmentPrefs, model, maxOutputTokens } = args;
+    const joined = segmentPrefs.map((t, i) => `--- segment ${i + 1} ---\n${t}`).join("\n\n");
+    const system =
+      "You consolidate extracted preference lines into one compact standing-preference " +
+      "profile. Use ONLY the provided lines. Do not invent, do not answer questions.";
+    const prompt =
+      "Below are PREF lines extracted from consecutive segments of ONE user's conversation, " +
+      "in chronological order.\n\n" +
+      "Produce a SHORT profile of what this user durably prefers, grouped by area. Rules:\n" +
+      "- Group by area (e.g. Languages & frameworks, Style, Tooling, Constraints, Workflow).\n" +
+      "- One bullet per distinct preference, in the user's own terms.\n" +
+      "- When a preference was REVISED, keep only the latest and mark it: " +
+      "`X (CURRENT; previously Y)`.\n" +
+      "- Drop anything that is a one-off task detail rather than a standing preference.\n" +
+      "- Be concise. This profile is shown on EVERY query, so every line must earn its place. " +
+      "Aim for at most 25 bullets.\n" +
+      "- Output the profile only. No preamble, no commentary.\n\n" +
+      `EXTRACTED LINES:\n${joined}`;
+    const res = await this.opts.provider.completeText({
+      system,
+      prompt,
+      model,
+      maxOutputTokens,
+      temperature: 0,
+    });
+    return {
+      text: res.data,
+      inputTokens: res.usage.inputTokensEstimate,
+      outputTokens: res.usage.outputTokensEstimate,
+      latencyMs: res.usage.latencyMs,
+    };
+  }
+
   /** Map step: extract every quantitative/stateful fact from ONE segment. */
   private async extractFactsSegment(args: {
     segmentIndex: number;
