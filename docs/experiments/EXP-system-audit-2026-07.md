@@ -133,7 +133,7 @@ entire measured win — the descriptor leg alone was flat. So a transient
 the winning configuration for the losing one, mid-run, per query, while the run
 manifest still says the hybrid router was enabled.
 
-## F6 — one duplicate pair has already diverged  *(documented, deliberately not unified)*
+## F6 — one duplicate pair had already diverged  *(resolved by F9's fix)*
 
 `extractBetweenSegmentTerms` exists twice and the two disagree:
 
@@ -144,9 +144,13 @@ manifest still says the hybrid router was enabled.
 
 The same temporal query therefore yields different term sets depending on which
 path runs. This bears on `temporal_reasoning`, where CSM has an unexplained
-−0.135 result at n=8. **Not unified in this pass**: choosing either implementation
-silently changes retrieval, so it needs an A/B, not a refactor. Both sites now
-carry a comment saying so.
+−0.135 result at n=8.
+
+Initially left alone — choosing either implementation silently changes retrieval,
+so it looked like it needed an A/B rather than a refactor. Chasing *why* the
+bridge's version expanded led straight to F9, which made the decision for us: the
+expansion step was benchmark-tuned vocabulary and had to go regardless. Both
+paths now share `extractCoverageTerms`, and the A/B that matters is F9's.
 
 ## F9 — hardcoded, corpus-specific vocabulary compiled into the retriever  ⚠ publication-blocking
 
@@ -200,7 +204,7 @@ vocabulary"*.
 **Fix.** Deleted. The bridge's private `extractContentTerms` and its stop list
 went with it; all five call sites now route through one `queryTerms()` that
 delegates to `src/core/coverage.ts:extractCoverageTerms` — which also resolves F6,
-since that was the same divergence one layer down. `CSM_AMB_LEGACY_TERM_EXPANSION=1`
+since that was the same divergence one layer down. `CSM_AMB_LEGACY_VOCAB=1`
 restores the whole legacy pipeline (extractor *and* table — restoring half would
 make the A/B measure a blend and answer neither question) purely so the removal
 is measurable. It is not a supported configuration and is deleted once measured.

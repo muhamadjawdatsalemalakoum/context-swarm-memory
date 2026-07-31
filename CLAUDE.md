@@ -12,6 +12,9 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - Durable memory changes only through `appendEventAndSnapshot` (initiated by the user via `csm remember`) or `applyCommitDecision` (Committer).
 - Shard snapshots are immutable and versioned (`S001`, `S002`, …). The storage layer refuses overwrites.
 - Summaries are indexes, not sources of truth.
+- A component that cannot discriminate must SAY so, not guess quietly — ranking goes through `src/core/selection.ts:select()`, which reports degeneracy, never a bare `.sort().slice()`.
+- An unrecognised configuration value is an error, never a default — all `CSM_*` reads go through `src/utils/env.ts`.
+- NO corpus-specific vocabulary in the retrieval path. Expansion and term weighting must be corpus-derived or structural; see `docs/experiments/EXP-system-audit-2026-07.md` F9/F10 for two tables that violated this and were removed.
 - Recall must cite shard ID, snapshot ID, and event IDs.
 - `query-runs.jsonl` is the only file the read-only `csm ask` path is allowed to append to. `tests/mutationSafety.test.ts` enforces this with SHA-256 file hashes — if you change anything in the read path, run that test.
 
@@ -27,7 +30,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - `src/storage/jsonlStorage.ts` — JSON / JSONL filesystem layer (refuses snapshot overwrites)
 - `src/providers/` — `LlmProvider`, `MockProvider`, `GeminiProvider` (native Gemini API — the default for real API AI usage, see **Provider configuration & secrets**), `OpenAIProvider` (real fetch, also backs Ollama via OpenAI-compat endpoint), `OllamaProvider` (thin wrapper with Gemma-4090 defaults), `LlamaServerProvider` (llama.cpp `llama-server`), `AnthropicProvider` (stub)
 - `src/cli/index.ts` — the `csm` CLI; `src/cli/args.ts` — tiny argv parser
-- `src/utils/` — `ids.ts`, `json.ts` (incl. `extractJson`, `stableStringify`), `time.ts`, `loadEnv.ts` (auto-loads the root `.env` on CLI startup)
+- `src/utils/` — `ids.ts`, `json.ts` (incl. `extractJson`, `stableStringify`), `time.ts`, `loadEnv.ts` (auto-loads the root `.env` on CLI startup), **`env.ts` (THE single source of truth for reading `CSM_*` config — `envFlag`/`envInt`/`envPositiveInt`; an unrecognised value THROWS rather than silently defaulting, which is what let `CSM_ROUTER_HYBRID=off` turn the router ON. Never hand-parse an env var)**, `text.ts` (`escapeRegExp`, `truncate`)
 - `src/eval/` — full benchmark harness:
   - `mcq.ts` — `Query` discriminated union (`McqQuery | FreeFormQuery`), `Answer` union, prompt formatters, output parsers, type guards
   - `answer.ts` — `buildPrompt` + `parseAnswer` dispatchers used by every baseline
