@@ -29,9 +29,10 @@
  *     [--seed 42] [--slice-dir <dir>] [--no-resume]
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
@@ -272,6 +273,7 @@ export async function runBeamSlice(
    */
   const writeTimeModel = resolveProviderModel(provider.name);
 
+  const PREF_PROMPT_VERSION = "v1";
   const prefEnabled = /^(1|true|yes)$/i.test(process.env.CSM_AMB_PREFERENCE_PROFILE ?? "");
   const prefProfiles = new Map<string, Promise<string | undefined>>();
   const getPreferenceProfile = (
@@ -281,6 +283,25 @@ export async function runBeamSlice(
     if (!prefEnabled) return Promise.resolve(undefined);
     const hit = prefProfiles.get(userId);
     if (hit) return hit;
+    // Disk cache. The profile is a WRITE-TIME artifact: it depends only on the
+    // unit's content and the extractor, not on the query, so it is identical
+    // across every arm that uses the same unit. Rebuilding it per arm cost ~180
+    // large LLM calls and tripped a 429 on the subscription path. Keyed by
+    // split + unit + model + prompt version so a prompt change re-derives.
+    const cacheDir = resolve(process.cwd(), "data", "eval", "preference-profiles");
+    const cacheKey = createHash("sha256")
+      .update(`${opts.split}|${userId}|${writeTimeModel ?? "default"}|${PREF_PROMPT_VERSION}`)
+      .digest("hex")
+      .slice(0, 16);
+    const cachePath = join(cacheDir, `${opts.split}-u${userId}-${cacheKey}.txt`);
+    if (existsSync(cachePath)) {
+      const cached = Promise.resolve(readFileSync(cachePath, "utf8"));
+      prefProfiles.set(userId, cached);
+      process.stdout.write(`    [pref] unit ${userId} profile from cache
+`);
+      return cached;
+    }
+
     const built = baseline
       .organizePreferencesScaled({
         eventContents: corpus.events.map((e) => e.content),
@@ -302,6 +323,12 @@ export async function runBeamSlice(
           `    [pref] unit ${userId} profile ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))
 `,
         );
+        try {
+          mkdirSync(cacheDir, { recursive: true });
+          writeFileSync(cachePath, r.text, "utf8");
+        } catch {
+          // A cache write failure must never fail the run.
+        }
         return r.text;
       })
       .catch((err) => {

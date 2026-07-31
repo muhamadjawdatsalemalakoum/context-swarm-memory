@@ -439,29 +439,47 @@ export async function executeAmbRetrieve(input: {
   // answer-visible evidence, so displacing it would be destructive. This costs
   // exactly one of the ~24 returned slots on every query — a real, deliberate
   // cost that the calibrated answer gate is there to price.
-  const prefDoc: AmbDocument | null =
-    typeof preferenceProfile === "string" && preferenceProfile.trim().length > 0
-      ? {
-          id: "csm-preference-profile",
-          content:
-            "CSM standing preference profile — what this user has durably said they prefer, " +
-            "how they want things done, and the constraints they work under, gathered across " +
-            "the whole conversation at write time (source-derived; no gold answers or rubric " +
-            "used). Where a preference was revised, the CURRENT one is marked. Apply these " +
-            "when recommending or formatting anything, even if the question does not mention " +
-            "them. The retrieved events follow.\n\n" +
-            preferenceProfile,
-          user_id: request.user_id ?? null,
-          timestamp: null,
-          context: "CSM standing preference profile",
-        }
-      : null;
+  // STANDING PREFERENCE PROFILE — folded INTO the capsule, not added beside it.
+  //
+  // The previous version emitted this as its own document. Measured (arm G,
+  // BEAM 1M, 40 paired queries): preference_following moved +0.015 with 4 wins
+  // against 7 losses, i.e. nothing, and the arm scored WORSE overall than the
+  // router fix alone (0.735 vs 0.782).
+  //
+  // The reason is displacement, not the content. `RETURN_K` is 24 and the
+  // coverage capsule already supplies ~20 of those slots, so an added document
+  // evicts evidence that was working. This repo has now measured that cost four
+  // separate times. Folding the profile into the capsule's own text keeps the
+  // document COUNT identical, so the profile is free in slot terms and only
+  // costs the tokens it occupies.
+  const prefHeader =
+    "STANDING PREFERENCES AND INSTRUCTIONS FROM THIS USER (gathered at write " +
+    "time over the whole conversation; source-derived, no gold answers or " +
+    "rubric used). Where an instruction was revised, the CURRENT one is " +
+    "marked. Apply these when recommending, choosing or formatting anything, " +
+    "even when the question does not mention them.\n\n";
+  const hasPref =
+    typeof preferenceProfile === "string" && preferenceProfile.trim().length > 0;
 
-  const responseDocuments = [
-    ...(prefDoc ? [prefDoc] : []),
-    ...(capsule ? [capsule] : []),
-    ...outDocs,
-  ];
+  if (hasPref && capsule) {
+    capsule = {
+      ...capsule,
+      content: `${prefHeader}${preferenceProfile}\n\n---\n\n${capsule.content}`,
+    };
+  } else if (hasPref) {
+    // No capsule on this path (coverage did not fire and no write-time lever is
+    // active). Emitting a document here does add one, but there is nothing to
+    // fold into and the alternative is dropping the profile entirely.
+    capsule = {
+      id: "csm-preference-profile",
+      content: prefHeader + preferenceProfile,
+      user_id: request.user_id ?? null,
+      timestamp: null,
+      context: "CSM standing preference profile",
+    };
+  }
+
+  const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
 
   return {
     documents: responseDocuments,
