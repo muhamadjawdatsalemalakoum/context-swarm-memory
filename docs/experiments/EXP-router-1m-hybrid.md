@@ -50,6 +50,38 @@ a focused topic. A real 1M shard is a ~50-turn document spanning many topics, so
 its top-24 terms are diluted and stop discriminating. **Descriptor quality
 depends on shard homogeneity; the embedding centroid degrades more gracefully.**
 
+
+## IT CONVERTS — the answer gate agrees
+
+Same 45 paired queries through `answer-arms` + `judge-arms` (the calibrated
+judge, holdout ρ 0.864 vs the official Gemini judge):
+
+| category | n | baseline | desc+hybrid | Δ | CI95 | MDE | W/L/T | verdict |
+|---|---:|---:|---:|---:|---|---:|---|---|
+| instruction_following | 15 | 0.475 | **0.886** | **+0.411** | [0.183, 0.639] | 0.334 | 8/1/6 | **WINS** |
+| knowledge_update | 15 | 0.200 | **0.750** | **+0.550** | [0.183, 0.867] | 0.522 | 11/2/2 | **WINS** |
+| preference_following | 15 | 0.578 | 0.711 | +0.133 | [−0.114, 0.378] | 0.364 | 7/2/6 | below MDE |
+| **ALL** | **45** | **0.418** | **0.782** | **+0.365** | **[0.192, 0.530]** | 0.245 | **26/5/14** | **WINS** |
+
+**This is the first lever in the project to convert on the answer metric.** Two
+categories clear their own MDE independently, the aggregate clears by a wide
+margin, and the CI excludes zero.
+
+It is the same gate that killed the coverage reranker (−0.058, 4W/13L) and
+virtual sharding (−0.123). The instrument is not biased toward saying yes.
+
+### Against Hindsight's 1M numbers
+
+From the head-to-head on the same judge, Hindsight scored `instruction_following`
+0.819, `knowledge_update` 0.792, `preference_following` 0.750. CSM with this
+config reaches **0.886 / 0.750 / 0.711** — ahead on instruction_following, at
+parity on knowledge_update, still behind on preference_following.
+
+Stated carefully: those are not a like-for-like head-to-head, because the
+Hindsight comparison answered from the frozen official contexts while these arms
+are freshly run through the slice harness. Re-running the head-to-head with this
+config is the immediate next step and the only way to claim a win.
+
 ## What this does NOT yet establish
 
 - **Coverage is a proxy.** This is a which-shards lever, so the proxy is the
@@ -69,7 +101,7 @@ depends on shard homogeneity; the embedding centroid degrades more gracefully.**
 
 ## Next
 
-1. Answer-gate arm C against arm A on the calibrated judge.
+1. ~~Answer-gate arm C~~ DONE — converts, +0.365 aggregate.
 2. Run `hybrid` alone to isolate the leg.
 3. Re-run the CSM-vs-Hindsight head-to-head at 1M with the winning config.
 4. `preference_following` needs write-time extraction of standing preferences —
