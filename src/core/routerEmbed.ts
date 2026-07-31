@@ -48,6 +48,7 @@ import {
   decodeCentroid,
   type DirectoryEntryWithDescriptors,
 } from "./descriptors.js";
+import { bestUnitScore } from "./retrievalUnit.js";
 
 /** Local text embedder. `src/eval/embed.ts#embed` satisfies this; tests
  *  inject deterministic fakes. Declared here so core never imports eval. */
@@ -58,6 +59,21 @@ export interface RouterIndexShard {
   terms: string[];
   /** L2-normalized shard centroid, or null when unavailable. */
   centroid: Float32Array | null;
+  /**
+   * Optional per-retrieval-unit centroids (see `src/core/retrievalUnit.ts`).
+   * When present the embedding leg scores the shard by its BEST unit rather
+   * than by the whole-shard mean.
+   *
+   * Why: a stated preference is a small span inside a document about something
+   * else, and `centroidOf` over the whole document mean-pools it into noise.
+   * Measured at BEAM 1M, `preference_following` loses 13.5 points of gold-fact
+   * coverage at the routing step alone for exactly this reason.
+   *
+   * Ranking-time only — shards keep their size, so every downstream budget
+   * keeps the meaning it was tuned for. That is the difference between this and
+   * `CSM_VIRTUAL_SHARDS`, which shrank shards and starved the harvest 55%.
+   */
+  unitCentroids?: Float32Array[];
 }
 
 export interface RouterIndex {
@@ -266,13 +282,21 @@ export async function selectCandidatesHybrid(
 
     const lexTotal = lex.score + termOverlap * weights.termWeight;
 
-    // Embedding leg.
+    // Embedding leg. Best-unit pooling when unit centroids are available,
+    // whole-shard mean otherwise (byte-identical to the legacy path).
     let emb = 0;
-    if (shard?.centroid && shard.centroid.length === queryVec!.length) {
+    const cos = (v: Float32Array): number => {
       let dot = 0;
-      for (let i = 0; i < queryVec!.length; i++) {
-        dot += queryVec![i]! * shard.centroid[i]!;
-      }
+      for (let i = 0; i < queryVec!.length; i++) dot += queryVec![i]! * v[i]!;
+      return dot;
+    };
+    const units = shard?.unitCentroids;
+    if (units && units.length > 0 && units[0]!.length === queryVec!.length) {
+      const best = bestUnitScore(units.map(cos));
+      emb = Math.max(0, best);
+      reasons.push(`embedSim(best-of-${units.length}-units)=${best.toFixed(3)}`);
+    } else if (shard?.centroid && shard.centroid.length === queryVec!.length) {
+      const dot = cos(shard.centroid);
       emb = Math.max(0, dot);
       reasons.push(`embedSim=${dot.toFixed(3)}`);
     }

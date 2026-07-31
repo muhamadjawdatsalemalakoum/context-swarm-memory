@@ -1,6 +1,7 @@
 import { ask } from "../../core/ask.js";
 import { collectTimelineEventIds } from "../../core/coverage.js";
 import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
+import { partitionIntoUnits, resolveUnitSize } from "../../core/retrievalUnit.js";
 import {
   buildRouterIndex,
   hybridEquivalentOfLexScore,
@@ -1333,15 +1334,29 @@ export class CsmBaseline implements BaselineRunner {
       );
       const vecByEventId = new Map<string, Float32Array>();
       corpus.events.forEach((e, i) => vecByEventId.set(e.id, allVecs[i]!));
-      const shards = [...corpus.byShard.entries()].map(([shardId, events]) => ({
-        shardId,
-        terms: descriptors.get(shardId)?.terms ?? [],
-        centroid: centroidOf(
-          events
-            .map((e) => vecByEventId.get(e.id))
-            .filter((v): v is Float32Array => Boolean(v)),
-        ),
-      }));
+      // Retrieval units (CSM_RETRIEVAL_UNITS, default 0 = off = legacy
+      // whole-shard centroid). When on, the router scores a shard by its BEST
+      // passage instead of its mean, so a preference stated in one span of an
+      // otherwise-unrelated document is no longer averaged into noise.
+      // Shards themselves are untouched, so all downstream budgets keep their
+      // meaning — see src/core/retrievalUnit.ts for why that matters.
+      const unitSize = resolveUnitSize();
+      const shards = [...corpus.byShard.entries()].map(([shardId, events]) => {
+        const vecs = events
+          .map((e) => vecByEventId.get(e.id))
+          .filter((v): v is Float32Array => Boolean(v));
+        const base = {
+          shardId,
+          terms: descriptors.get(shardId)?.terms ?? [],
+          centroid: centroidOf(vecs),
+        };
+        if (unitSize <= 0 || vecs.length === 0) return base;
+        const units = partitionIntoUnits(shardId, vecs.length, { targetSize: unitSize });
+        const unitCentroids = units
+          .map((u) => centroidOf(vecs.slice(u.start, u.end)))
+          .filter((v): v is Float32Array => Boolean(v));
+        return unitCentroids.length > 0 ? { ...base, unitCentroids } : base;
+      });
       return buildRouterIndex({
         shards,
         embed: (texts) => embed(texts, EMBED_MODEL_NAME),
