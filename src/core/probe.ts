@@ -1,8 +1,8 @@
 import type { LlmProvider, ProviderUsage } from "../providers/LlmProvider.js";
 import type { MemoryEvent, MemoryShardSnapshot, ProbeResult } from "./types.js";
-import { probeResultSchema } from "./schemas.js";
+import { batchedProbeSchema, probeResultSchema } from "./schemas.js";
 import { completeAndValidate } from "./providerJson.js";
-import { probePrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
+import { batchedProbePrompt, probePrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
 import { tokenize, termMatchesAnyTag } from "./router.js";
 import { estimateTokens } from "./tokenBudget.js";
 import { select } from "./selection.js";
@@ -104,6 +104,124 @@ ${eventIndex}`;
     },
     usage,
   };
+}
+
+/**
+ * Batched probe (token plan L2b): classify N shards in ONE completeJson call.
+ *
+ * Pays the ~349-token fixed scaffold once instead of N times (28% of pipeline
+ * input at N=8 on official 1M telemetry). The caller decides the split policy —
+ * `ask()` keeps the router's top-1 as its own solo call so the speculative
+ * top-1 recall (worth ~1.2s on 94% of 1M queries) still launches the moment
+ * that small call resolves, and batches the rest.
+ *
+ * RECONCILIATION IS MANDATORY, never trusting the model's list shape:
+ *  - verdicts come back keyed by echoed `shard_id`; first occurrence wins;
+ *  - hallucinated ids are dropped;
+ *  - missing shards are padded with an explicit knows:false verdict, so the
+ *    probe COUNT is stable (telemetry compares `csm_probe_count` across runs)
+ *    and the router-trust net can always find its shard;
+ *  - results return in the REQUESTED order — downstream recall selection uses
+ *    `tieBreak: "stable"` precisely because insertion order carries router
+ *    rank, and model output order must never replace it;
+ *  - `relevant_event_ids` are filtered to the shard's OWN event ids (a batched
+ *    prompt can bleed ids across shard blocks; a wrong-shard hint would poison
+ *    the recall digest and the packet's foothold list).
+ */
+export async function probeShardsBatched(args: {
+  provider: LlmProvider;
+  userQuery: string;
+  snapshots: MemoryShardSnapshot[];
+  model?: string;
+}): Promise<{ results: ProbeResult[]; usage: ProviderUsage }> {
+  const { provider, userQuery, snapshots, model } = args;
+  if (snapshots.length === 0) {
+    return {
+      results: [],
+      usage: { inputTokensEstimate: 0, outputTokensEstimate: 0, estimatedUsd: 0, latencyMs: 0 },
+    };
+  }
+  const isMock = provider.name === "mock";
+  const indexChars = resolveProbeIndexChars();
+
+  // Same per-shard block as the solo probe, stacked. SHARD_SYSTEM_PROMPT stays
+  // the literal first bytes (prefix-cache contract assertion 1 still holds; the
+  // per-shard `[Shard X@Y]` extended-prefix assertion is solo-mode-only —
+  // tests/prefixCacheContract.test.ts documents the batched variant).
+  const shardBlocks = snapshots
+    .map(
+      (snap) => `[Shard ${snap.shardId}@${snap.snapshotId}]
+Summary:
+${snap.summary}
+
+Available events (id + tags + first chars):
+${compactEventIndex(snap, indexChars, userQuery)}`,
+    )
+    .join("\n\n");
+  const system = `${SHARD_SYSTEM_PROMPT}\n\n${shardBlocks}`;
+
+  let promptSuffix = "";
+  if (isMock) {
+    const baked = {
+      verdicts: snapshots.map((snap) => ({
+        shard_id: snap.shardId,
+        ...mockProbe(userQuery, snap),
+      })),
+    };
+    promptSuffix = `\n\n<<MOCK_RESULT>>${JSON.stringify(baked)}<</MOCK_RESULT>>`;
+  }
+
+  const { data, usage } = await completeAndValidate(
+    provider,
+    {
+      system,
+      prompt: batchedProbePrompt(userQuery, snapshots.map((s) => s.shardId)) + promptSuffix,
+      schemaName: "BatchedProbeResult",
+      // ~100-200 output tokens per verdict; headroom for the largest batch.
+      maxOutputTokens: 2048,
+      temperature: 0,
+      model,
+      disableThinking: true,
+    },
+    batchedProbeSchema,
+  );
+
+  const byShardId = new Map<string, (typeof data.verdicts)[number]>();
+  for (const v of data.verdicts) {
+    if (!byShardId.has(v.shard_id)) byShardId.set(v.shard_id, v); // first wins; dupes dropped
+  }
+
+  const results: ProbeResult[] = snapshots.map((snap) => {
+    const v = byShardId.get(snap.shardId);
+    if (!v) {
+      // Padded rejection: the shard was asked about and got no verdict. An
+      // explicit knows:false keeps the probe count stable and is the
+      // conservative reading (an unmentioned shard did not impress the model).
+      return {
+        shardId: snap.shardId,
+        snapshotId: snap.snapshotId,
+        knows: false,
+        confidence: 0,
+        memoryType: "none",
+        estimatedAnswerValue: "none",
+        needsFullRecall: false,
+        relevantEventIds: [],
+      };
+    }
+    const ownEventIds = new Set(snap.events.map((e) => e.eventId));
+    return {
+      shardId: snap.shardId,
+      snapshotId: snap.snapshotId,
+      knows: v.knows,
+      confidence: v.confidence,
+      memoryType: v.memory_type,
+      estimatedAnswerValue: v.estimated_answer_value,
+      needsFullRecall: v.needs_full_recall,
+      relevantEventIds: v.relevant_event_ids.filter((id) => ownEventIds.has(id)),
+    };
+  });
+
+  return { results, usage };
 }
 
 export function compactEventIndex(

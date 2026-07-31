@@ -32,6 +32,27 @@ export const probeResultSchema = z.object({
 });
 export type ProbeResultJson = z.infer<typeof probeResultSchema>;
 
+/**
+ * Batched probe (token plan L2b): one call classifies several shards. Each
+ * verdict echoes `shard_id` so the caller can reconcile against the requested
+ * set — the model may omit, duplicate, or hallucinate shards, and every one of
+ * those cases must be handled explicitly (see `reconcileBatchedVerdicts`).
+ *
+ * OBJECT WRAPPER, DELIBERATELY NEVER A TOP-LEVEL ARRAY: `completeAndValidate`
+ * carries a salvage branch that, on validation failure of an array value,
+ * returns the first element that parses individually. Under a top-level array
+ * schema a partially-malformed batch would silently collapse to ONE verdict.
+ * The wrapper makes that branch unreachable for this schema.
+ */
+export const batchedProbeSchema = z.object({
+  verdicts: z.array(
+    probeResultSchema.extend({
+      shard_id: z.string(),
+    }),
+  ),
+});
+export type BatchedProbeJson = z.infer<typeof batchedProbeSchema>;
+
 /** Strict per-claim shape — used inside the tolerant array below. */
 const claimSchema = z.object({
   claim: z.string(),

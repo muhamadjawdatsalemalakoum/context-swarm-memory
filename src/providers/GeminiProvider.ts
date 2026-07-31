@@ -718,6 +718,44 @@ const CSM_JSON_SCHEMAS: Record<string, unknown> = {
       "relevant_event_ids",
     ],
   },
+  // Batched probe (token plan L2b): one call, one verdict per shard, each
+  // echoing its shard_id for caller-side reconciliation.
+  BatchedProbeResult: {
+    type: "object",
+    properties: {
+      verdicts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            shard_id: { type: "string" },
+            knows: { type: "boolean" },
+            confidence: { type: "number" },
+            memory_type: {
+              type: "string",
+              enum: ["direct", "adjacent", "conflicting", "vague", "none"],
+            },
+            estimated_answer_value: {
+              type: "string",
+              enum: ["none", "low", "medium", "high"],
+            },
+            needs_full_recall: { type: "boolean" },
+            relevant_event_ids: stringArray,
+          },
+          required: [
+            "shard_id",
+            "knows",
+            "confidence",
+            "memory_type",
+            "estimated_answer_value",
+            "needs_full_recall",
+            "relevant_event_ids",
+          ],
+        },
+      },
+    },
+    required: ["verdicts"],
+  },
   RecallResult: {
     type: "object",
     properties: {

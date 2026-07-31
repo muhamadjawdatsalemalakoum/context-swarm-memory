@@ -37,6 +37,52 @@ Guidance:
 Do not answer the user question yet.`;
 }
 
+/**
+ * Batched probe (token plan L2b): classify several shards in ONE call.
+ *
+ * Token motivation, measured on official 1M telemetry: the per-shard probe pays
+ * ~349 tokens of fixed scaffold (system prompt + these instructions) per call,
+ * ×8 calls = 2,792 tokens/query — 28% of pipeline input — for byte-identical
+ * text. Batching pays it once.
+ *
+ * "Assess each shard INDEPENDENTLY" is the accuracy-critical line: a batched
+ * prompt invites comparative judgement ("which shard is best"), but the recall
+ * gate needs the same independent "does this shard know?" verdicts the
+ * per-shard probe produces. The A/B's first check is whether the acceptance
+ * rate shifts.
+ */
+export function batchedProbePrompt(userQuery: string, shardIds: string[]): string {
+  return `Question:
+${userQuery}
+
+You are being asked whether EACH of the ${shardIds.length} memory shards above is relevant.
+Assess each shard INDEPENDENTLY, as if you saw only that shard — do not rank
+them against each other, and do not let one shard's relevance lower another's.
+Return JSON only:
+{
+  "verdicts": [
+    {
+      "shard_id": string,   // exactly one entry per shard id listed below
+      "knows": boolean,
+      "confidence": number between 0 and 1,
+      "memory_type": "direct" | "adjacent" | "conflicting" | "vague" | "none",
+      "estimated_answer_value": "none" | "low" | "medium" | "high",
+      "needs_full_recall": boolean,
+      "relevant_event_ids": string[]
+    }
+  ]
+}
+
+Shard ids, in order: ${shardIds.join(", ")}
+
+Guidance:
+- "knows" should be true whenever any event in that shard is even partially relevant.
+- "needs_full_recall" should be true whenever knows=true AND estimated_answer_value is "low", "medium", or "high".
+- "relevant_event_ids" must be picked from that shard's OWN listed event IDs.
+
+Do not answer the user question yet.`;
+}
+
 export function recallPrompt(args: {
   userQuery: string;
   shardId: string;

@@ -79,6 +79,20 @@ class CapturingProvider implements LlmProvider {
         unknowns: [],
         conflicts: [],
       };
+    } else if (input.schemaName === "BatchedProbeResult") {
+      data = {
+        verdicts: [
+          {
+            shard_id: "s-stub",
+            knows: true,
+            confidence: 0.8,
+            memory_type: "direct",
+            estimated_answer_value: "high",
+            needs_full_recall: true,
+            relevant_event_ids: ["e_001"],
+          },
+        ],
+      };
     } else {
       data = {};
     }
@@ -171,3 +185,29 @@ describe("prefix-cache contract", () => {
 // Use the imports so eslint/tsc doesn't complain (re-exported types).
 type _Used = ProbeResult | RecallResult;
 type _Test = ReturnType<typeof compactEventIndex>;
+
+describe("prefix-cache contract — batched probe (L2b)", () => {
+  /**
+   * The batched call CANNOT satisfy the per-shard extended-prefix assertion
+   * above (it has no single `[Shard X@Y]` header — it stacks one block per
+   * shard). That is accepted, not an oversight: the extended-prefix payoff is
+   * Ollama slot-KV reuse (~50ms/query under OLLAMA_NUM_PARALLEL=1), and the
+   * batched mode targets the HOSTED path where per-call scaffold tokens, not
+   * local KV reuse, are the cost. Assertion 1 — SHARD_SYSTEM_PROMPT is the
+   * literal first bytes — still holds and is pinned here, so a provider-side
+   * implicit prefix cache can still hit on the shared constant.
+   */
+  it("batched probe system prompt still starts with SHARD_SYSTEM_PROMPT verbatim", async () => {
+    const provider = new CapturingProvider();
+    const a = makeSnapshot();
+    const b = { ...makeSnapshot(), shardId: "s-other" };
+    const { probeShardsBatched } = await import("../src/core/probe.js");
+    await probeShardsBatched({ provider, userQuery: "anything", snapshots: [a, b] });
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0]!.system.startsWith(SHARD_SYSTEM_PROMPT)).toBe(true);
+    // Both shards' blocks are present, in order.
+    const sys = provider.calls[0]!.system;
+    expect(sys.indexOf(`[Shard ${a.shardId}@`)).toBeGreaterThan(-1);
+    expect(sys.indexOf(`[Shard ${b.shardId}@`)).toBeGreaterThan(sys.indexOf(`[Shard ${a.shardId}@`));
+  });
+});

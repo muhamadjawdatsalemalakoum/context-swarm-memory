@@ -16,7 +16,7 @@ import {
   selectCandidatesHybrid,
   type RouterIndex,
 } from "./routerEmbed.js";
-import { probeShard } from "./probe.js";
+import { probeShard, probeShardsBatched } from "./probe.js";
 import { recallShard } from "./recall.js";
 import { resolveSignalsRanker } from "./digestSelection.js";
 import { synthesizeMemoryPacket, packetFromSingleRecall, emptyPacket } from "./synthesize.js";
@@ -200,6 +200,44 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     );
   });
 
+  // Batched probe (CSM_PROBE_BATCH, L2b): candidate 0 solo + ONE call for the
+  // rest, exposed as per-candidate PROMISE VIEWS over the shared batch so the
+  // eager-recall handlers below attach unchanged. Usage is accumulated once,
+  // directly — the views carry zero usage so the shared call is never counted
+  // per view. Batch mode implies the parallel path (it is at most two calls).
+  const useBatchedProbe = resolveProbeBatch() && probedCandidates.length > 2;
+  const startBatchedProbePromises = (): Array<
+    Promise<{ result: ProbeResult; usage: ProviderUsage } | null>
+  > => {
+    const zeroUsage: ProviderUsage = {
+      inputTokensEstimate: 0,
+      outputTokensEstimate: 0,
+      estimatedUsd: 0,
+      latencyMs: 0,
+    };
+    const solo = probeJobs[0]!();
+    const restSnaps = snapshotsByCandidate
+      .slice(1)
+      .filter((sn): sn is MemoryShardSnapshot => Boolean(sn));
+    const batch = probeShardsBatched({
+      provider,
+      userQuery: query,
+      snapshots: restSnaps,
+      model: stageModels.probe,
+    });
+    void batch.then(({ usage }) => accumulate(usage)).catch(() => {
+      /* rejection surfaces through every view below; nothing to accumulate */
+    });
+    const views = probedCandidates.slice(1).map((cand, j) =>
+      batch.then(({ results }) => {
+        if (!snapshotsByCandidate[j + 1]) return null;
+        const result = results.find((r) => r.shardId === cand.entry.id);
+        return result ? { result, usage: zeroUsage } : null;
+      }),
+    );
+    return [solo, ...views];
+  };
+
   // Eager recalls (parallel mode only). Two tiers:
   //
   // 1. The router's top candidate is ALWAYS recalled (router-trust safety net
@@ -230,8 +268,10 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   let eagerStartedOthers = 0;
   let probeOutputs: Array<{ result: ProbeResult; usage: ProviderUsage } | null>;
 
-  if (parallelProbes && maxRecallShards > 0) {
-    const probePromises = probeJobs.map((job) => job());
+  if ((parallelProbes || useBatchedProbe) && maxRecallShards > 0) {
+    const probePromises = useBatchedProbe
+      ? startBatchedProbePromises()
+      : probeJobs.map((job) => job());
     probePromises.forEach((probePromise, ix) => {
       const cand = probedCandidates[ix];
       const snap = snapshotsByCandidate[ix];
@@ -563,6 +603,15 @@ export function probeQualifiesForRecall(
  *  `ask()` — it can only ever act on a DISCRIMINATED hybrid ranking. */
 export function resolveProbeShrink(raw = process.env.CSM_PROBE_SHRINK): boolean {
   return envFlag(raw, { name: "CSM_PROBE_SHRINK", fallback: false });
+}
+
+/** Batched probe (token plan L2b). Default OFF. When ON, the router's top-1
+ *  keeps its own SOLO call — the speculative top-1 recall launches the moment
+ *  that small call resolves, worth ~1.2s on the 94% of 1M queries that are
+ *  single-recall — and shards 2..N are classified in ONE call, paying the
+ *  ~349-token probe scaffold once instead of N−1 times. */
+export function resolveProbeBatch(raw = process.env.CSM_PROBE_BATCH): boolean {
+  return envFlag(raw, { name: "CSM_PROBE_BATCH", fallback: false });
 }
 
 export function resolveEagerRecalls(raw = process.env.CSM_EAGER_RECALLS): boolean {
