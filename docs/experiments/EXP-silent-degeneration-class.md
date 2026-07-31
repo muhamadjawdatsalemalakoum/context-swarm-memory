@@ -120,3 +120,39 @@ missing distinction, and every downstream stage is entitled to assume the former
 
 The proper fix is therefore a contract change at the selector boundary, not a
 guard at each site — see the refactor design.
+
+
+## Fixing one stage vs all three (BEAM 1M, 45 paired queries)
+
+| config | coverage cov@24 | answer score | vs Hindsight |
+|---|---:|---:|---:|
+| A — baseline | 0.544 | 0.4176 | +0.372 behind (25/4) |
+| C — router fix (descriptors + hybrid) | 0.720 | **0.7824** | +0.007, tie (10/9) |
+| D — all three (+ `CSM_SIGNALS_RANKER`) | **0.780** | 0.7519 | +0.038, tie (13/10) |
+| oracle | 0.956 | — | — |
+
+Both fixes clear the baseline decisively on the answer metric (+0.365 and
++0.334, 26W/5L and 24W/9L). **C and D are indistinguishable from each other**
+(the difference is far inside the n=45 MDE of ~0.23).
+
+### The coverage/answer divergence is predicted
+
+D captures more coverage (82% of oracle vs 75%) and scores slightly *lower* on
+answers. That is the pattern this repo already established: `CSM_SIGNALS_RANKER`
+bundles two different levers —
+
+- `salientTruncation` — keeps the query-relevant span of an event instead of the
+  first N chars. A **content-preservation** fix; directly addresses instance 3.
+- `reorderBySalience` — changes the ORDER events appear in the digest. An
+  **order-changing** lever, and `EXP-coverage-rerank-conversion.md` established
+  that gold-facet coverage is anti-correlated with the score for exactly that
+  class.
+
+They are behind a single flag, so the good half cannot be shipped without the
+risky half. **Separating them is a required part of the refactor**, and until
+they are separated neither can be evaluated honestly.
+
+### Decision
+
+Ship the router fix. `CSM_SIGNALS_RANKER` stays off pending flag separation and
+a re-test of `salientTruncation` alone.
