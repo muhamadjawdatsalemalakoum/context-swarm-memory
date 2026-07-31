@@ -256,6 +256,24 @@ export async function runBeamSlice(
    * query for that unit — the same exactly-once contract the other write-time
    * levers use.
    */
+  /**
+   * Model for WRITE-TIME extractors.
+   *
+   * `bridgeOpts.model` is CSM_AMB_MODEL — a model id for the RETRIEVAL stages,
+   * defaulting to `gemini-3.5-flash`. Write-time extractors call
+   * `provider.completeText` directly, so handing them that id sends a Gemini
+   * model name to whatever provider is actually active. Against the Claude
+   * sidecar that returns
+   *   "There's an issue with the selected model (gemini-3.5-flash)"
+   * and the build fails.
+   *
+   * Same cross-provider model-leak class that `selectProviderName` already
+   * guards for the stage models; this call site bypassed it by passing a model
+   * explicitly. Passing `undefined` lets each provider fall back to its own
+   * configured default (agent-sdk: CSM_AGENT_MODEL).
+   */
+  const writeTimeModel = provider.name === "agent-sdk" ? undefined : bridgeOpts.model;
+
   const prefEnabled = /^(1|true|yes)$/i.test(process.env.CSM_AMB_PREFERENCE_PROFILE ?? "");
   const prefProfiles = new Map<string, Promise<string | undefined>>();
   const getPreferenceProfile = (
@@ -268,7 +286,7 @@ export async function runBeamSlice(
     const built = baseline
       .organizePreferencesScaled({
         eventContents: corpus.events.map((e) => e.content),
-        model: bridgeOpts.model,
+        model: writeTimeModel as string,
         // The 600K-token defaults are a Gemini-era setting; a 1M-tier unit is
         // ~1.6M tokens, so those produce 600K-token prompts that the sidecar
         // rejects outright. Size the map step to something any provider can
