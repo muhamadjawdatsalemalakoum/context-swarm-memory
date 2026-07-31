@@ -245,6 +245,56 @@ prose word. Both tables sit behind one flag, `CSM_AMB_LEGACY_VOCAB=1`, because
 they are one defect from one commit and the question worth answering is a single
 one: what did removing benchmark-tuned vocabulary cost?
 
+## F11 — retrieval is not a pure function, and every A/B in this campaign assumed it was
+
+Trying to regression-test the audit the *right* way — compare retrieved evidence
+rather than a score that has to survive an answer model and a judge first —
+produced a result that looked alarming and turned out to be more important than
+the audit.
+
+`r1mHR-audit-repro-v1` re-runs arm H's exact configuration
+(`CSM_AMB_LEGACY_VOCAB=1`, so the removed vocabulary is restored) on the
+post-audit code. **43 of 45 queries returned different documents.**
+
+Splitting the pipeline into its deterministic and LLM-mediated halves settles
+what happened:
+
+| stage | mechanism | H vs HR |
+|---|---|---|
+| `candidateShardIds` | offline router (lexical + MiniLM) | **39/39 identical** |
+| `routerTopScore` | offline | **39/39 identical** |
+| `probedShardIds` | offline slice of the above | **43/43 identical** |
+| `probeAcceptCount` | **LLM verdict** | **differs on 10/43** |
+| `recalledShardIds` | ranked by LLM probe verdicts | differs on 20/39 |
+| returned documents | downstream of recall | differs on 43/45 |
+
+The probe stage receives a byte-identical shard list and a byte-identical event
+index and accepts a different number of shards on 10 of 43 queries. No code path
+touched by this audit can do that while holding the inputs fixed. It is the
+model.
+
+Two conclusions, and the second is the uncomfortable one.
+
+**1. The audit refactors are clean.** Everything deterministic is byte-identical:
+same candidates, same scores, same probe targets. That is the regression check,
+and it passes exactly where a code change could have shown up.
+
+**2. Every arm-to-arm comparison in this campaign has an unmeasured noise floor.**
+The published MDE of 0.1436 at n=45 was derived from the official pipeline's
+*judge* self-agreement (r = 0.808). It does not include retrieval
+nondeterminism, because until now nobody had run the same configuration twice.
+Arm A → arm H differences were attributed entirely to the lever. Some fraction of
+every one of those deltas is this.
+
+This does not overturn the large results — arm A → arm C is +0.365, far above any
+plausible noise floor — but it does mean **any delta near the MDE was never
+resolvable**, and results already reported as "below MDE" (notably
+`preference_following`, +0.142) are on even weaker ground than stated.
+
+The correct fix is procedural, and cheap now that it is visible: **a same-config
+repeat arm is the control**, and its delta is the noise floor a lever must clear.
+`r1mHR` is the first one this campaign has ever had.
+
 ## F7 — run manifests did not record the flags that define the arm
 
 `ECHOED_ENV_VARS` in `scripts/run-beam-slice.ts` omitted `CSM_ROUTER_HYBRID`,
