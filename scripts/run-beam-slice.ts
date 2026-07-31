@@ -183,6 +183,9 @@ export async function runBeamSlice(
     opts.outputDir ?? resolve(process.cwd(), "data", "eval", "runs", opts.runId);
   await mkdir(runDir, { recursive: true });
   const payloadsPath = join(runDir, "payloads.jsonl");
+  /** Text of CSM's synthesised (`csm-*`) documents, which no corpus can supply.
+   *  Written alongside payloads.jsonl; consumed by scripts/answer-arms.ts. */
+  const synthDocsPath = join(runDir, "synthesized-docs.jsonl");
   const configPath = join(runDir, "config.json");
 
   const doneIds = resume ? await readDoneQueryIds(payloadsPath) : new Set<string>();
@@ -424,9 +427,37 @@ export async function runBeamSlice(
         })),
         raw_response: payload.raw_response,
       };
-      appendChain = appendChain.then(() =>
-        appendFile(payloadsPath, `${JSON.stringify(row)}\n`, "utf8"),
-      );
+      // Persist EXACTLY what cannot be reconstructed.
+      //
+      // A payload row stores ids, not text, because a real event's text is
+      // recoverable from the corpus by id. CSM's SYNTHESISED documents — the
+      // evidence capsule, the organized memory, the preference profile — have
+      // ids (`csm-*`) that exist in no corpus, so their text was recoverable
+      // from nowhere and was simply lost.
+      //
+      // The consequence was silent and total: `scripts/answer-arms.ts` renders
+      // a document by looking its id up in the corpus and falls back to the
+      // string `(id <x> unavailable)`. MEASURED over every arm on disk, 414
+      // synthesised documents were rendered as that placeholder — 3.4%-9.5% of
+      // each arm's answer-visible characters, and 100% of any lever that lives
+      // inside the capsule. It also manufactured the "fold, never append"
+      // result: arm G burned 1.35 unrenderable slots per query against arm H's
+      // 1.00, so arm H simply carried ~0.35 more real evidence documents.
+      //
+      // See docs/experiments/EXP-capsule-render-gap.md.
+      const synth = payload.documents.filter((d) => d.id.startsWith("csm-"));
+      appendChain = appendChain.then(async () => {
+        if (synth.length > 0) {
+          await appendFile(
+            synthDocsPath,
+            synth
+              .map((d) => `${JSON.stringify({ queryId: q.id, id: d.id, content: d.content })}\n`)
+              .join(""),
+            "utf8",
+          );
+        }
+        await appendFile(payloadsPath, `${JSON.stringify(row)}\n`, "utf8");
+      });
       await appendChain;
       queriesRun++;
       log(

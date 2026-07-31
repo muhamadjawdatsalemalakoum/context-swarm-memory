@@ -21,6 +21,7 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 
 import { buildCorpus } from "./amb-csm-retrieve.js";
@@ -48,6 +49,84 @@ function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   const v = i >= 0 ? process.argv[i + 1] : undefined;
   return v && !v.startsWith("--") ? v : fallback;
+}
+
+/**
+ * Text of a run's SYNTHESISED documents, keyed `queryId::docId`.
+ *
+ * CSM emits documents whose ids (`csm-evidence-capsule`, `csm-organized-memory`,
+ * `csm-preference-profile`) belong to no corpus, so their text is recoverable
+ * only from the run that produced it — and it differs per query AND per run,
+ * which is why this cannot be a shared corpus-keyed map.
+ *
+ * Absent file → empty map, and `render` then fails loudly on the first
+ * unresolvable id. That is deliberate: an arm produced before the slice harness
+ * wrote this file CANNOT be answered faithfully and must be re-run.
+ */
+function readSynthDocs(runId: string): Map<string, string> {
+  const p = resolve(process.cwd(), "data", "eval", "runs", runId, "synthesized-docs.jsonl");
+  const out = new Map<string, string>();
+  if (!existsSync(p)) return out;
+  for (const line of readFileSync(p, "utf8").trim().split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const r = JSON.parse(line) as { queryId: string; id: string; content: string };
+      out.set(synthKey(r.queryId, r.id), r.content);
+    } catch {
+      /* torn tail line from an interrupted run */
+    }
+  }
+  return out;
+}
+
+/** Key for `readSynthDocs`. Synthesised text varies per query AND per run. */
+export function synthKey(queryId: string, docId: string): string {
+  // "::" never occurs in a BEAM query id (`10_knowledge_update_1`) or a bridge
+  // document id (`10_s4_16#turn-11`, `csm-evidence-capsule`), so it cannot
+  // create a collision between two different (query, doc) pairs.
+  return `${queryId}::${docId}`;
+}
+
+/**
+ * Render a run's documents into the answer prompt's excerpt list.
+ *
+ * A document with no resolvable text is a HARD ERROR, never a placeholder.
+ *
+ * This used to fall back to the string `(id <x> unavailable)`. Text is resolved
+ * by id through the corpus, and CSM's SYNTHESISED documents
+ * (`csm-evidence-capsule`, `csm-organized-memory`, `csm-preference-profile`)
+ * exist in no corpus — so every arm ever measured through this gate answered
+ * without its evidence capsule. Measured across the arms on disk: 414
+ * synthesised documents rendered as that placeholder, 3.4%–9.5% of
+ * answer-visible characters per arm, and 100% of any lever whose effect lives
+ * inside the capsule. It also manufactured a result: arm G burned 1.35
+ * unrenderable slots per query against arm H's 1.00, so arm H simply carried
+ * ~0.35 more real evidence documents — which was read as "folding beats
+ * appending".
+ *
+ * A gate that quietly drops part of the thing under test is worse than no gate,
+ * because it still produces a number. Fail the arm instead.
+ */
+export function renderExcerpts(
+  label: string,
+  documents: ReadonlyArray<{ id: string }>,
+  resolveText: (id: string) => string | undefined,
+  maxChars = 120_000,
+): string {
+  const missing = documents.map((d) => d.id).filter((id) => resolveText(id) === undefined);
+  if (missing.length > 0) {
+    throw new Error(
+      `${label}: ${missing.length} document(s) have no text: ` +
+        `${missing.slice(0, 5).join(", ")}${missing.length > 5 ? ", …" : ""}. ` +
+        `Synthesised (csm-*) ids come from <run>/synthesized-docs.jsonl — re-run the ` +
+        `slice with a build that writes it, or the answer would be graded on a ` +
+        `context this arm never actually returned.`,
+    );
+  }
+  return documents
+    .map((d, i) => `[excerpt ${i + 1}]\n${resolveText(d.id)!}`)
+    .join("\n\n")
+    .slice(0, maxChars);
 }
 
 function readPayloads(runId: string): Map<string, PayloadRow> {
@@ -159,11 +238,15 @@ async function main(): Promise<void> {
       `paired=${shared.length} jobs=${jobs}`,
   );
 
-  const render = (row: PayloadRow): string =>
-    row.documents
-      .map((d, i) => `[excerpt ${i + 1}]\n${text.get(d.id) ?? `(id ${d.id} unavailable)`}`)
-      .join("\n\n")
-      .slice(0, 120_000);
+  const synthA = readSynthDocs(runA);
+  const synthB = readSynthDocs(runB);
+  const resolve1 = (runId: string, queryId: string, id: string): string | undefined =>
+    (runId === runA ? synthA : synthB).get(synthKey(queryId, id)) ?? text.get(id);
+
+  const render = (runId: string, row: PayloadRow): string =>
+    renderExcerpts(`${runId}/${row.harness.queryId}`, row.documents, (id) =>
+      resolve1(runId, row.harness.queryId, id),
+    );
 
   const out: Array<{
     queryId: string;
@@ -222,7 +305,12 @@ async function main(): Promise<void> {
   console.log(`\nnext: npx tsx scripts/judge-arms.ts --run ${runB} --split ${split}`);
 }
 
-main().catch((err) => {
-  console.error(`answer-arms failed: ${String((err as Error).message ?? err)}`);
-  process.exit(1);
-});
+// Entry-point guard, matching scripts/amb-csm-retrieve.ts. Without it, merely
+// IMPORTING this module (to test `renderExcerpts`, or to reuse it) runs the whole
+// answer stage and exits the process.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error(`answer-arms failed: ${String((err as Error).message ?? err)}`);
+    process.exitCode = 1;
+  });
+}
