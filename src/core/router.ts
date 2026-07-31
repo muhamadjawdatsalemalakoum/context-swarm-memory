@@ -1,6 +1,8 @@
 import type { CandidateScore, MemoryDirectory, MemoryDirectoryEntry } from "./types.js";
 import { ageDays } from "../utils/time.js";
 
+import { select, type SelectionResult } from "./selection.js";
+
 export interface RouteOptions {
   query: string;
   directory: MemoryDirectory;
@@ -151,7 +153,24 @@ export function scoreEntryLexical(
  *           - stalenessPenalty - fullnessPenalty - statusPenalty
  *  Each component is documented as a `reason` string so the CLI can show
  *  why a candidate ranked where it did. */
-export function selectCandidates(opts: RouteOptions): CandidateScore[] {
+/**
+ * Route a query to candidate shards.
+ *
+ * Delegates ranking to the shared `select()` contract (`src/core/selection.ts`)
+ * rather than hand-rolling score → sort → cut. That is not cosmetic: the old
+ * inline version ended with `.sort(...).slice(...)` and, when every entry scored
+ * ~0 (the BEAM case — identical tags, boilerplate summaries), the sort was a
+ * no-op and the cut silently returned the alphabetically-first N **for every
+ * query**. Measured at BEAM 1M: 14 of 15 users received the identical 8 shards
+ * regardless of the question, so CSM read a fixed 16% of memory.
+ *
+ * `selectCandidatesDetailed` exposes whether the ranking actually discriminated.
+ * `selectCandidates` keeps the original array-returning signature so existing
+ * callers are unaffected.
+ */
+export function selectCandidatesDetailed(
+  opts: RouteOptions,
+): SelectionResult<CandidateScore> {
   const { query, directory, maxCandidates = 8 } = opts;
   const queryTerms = new Set(tokenize(query));
   const ref = new Date();
@@ -161,8 +180,19 @@ export function selectCandidates(opts: RouteOptions): CandidateScore[] {
     return { entry, score, reasons };
   });
 
-  return scored
-    .filter((c) => c.score > 0 || c.entry.status === "active")
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxCandidates);
+  // The `status === "active"` passthrough is preserved: low-signal directories
+  // still probe up to the cap rather than returning nothing.
+  const eligible = scored.filter((c) => c.score > 0 || c.entry.status === "active");
+
+  return select(eligible, {
+    score: (c) => c.score,
+    // Explicit, documented tiebreak. Previously this fell to sort stability,
+    // i.e. directory order, i.e. `shardIds.sort()` — lexicographic by accident.
+    key: (c) => c.entry.id,
+    limit: maxCandidates,
+  });
+}
+
+export function selectCandidates(opts: RouteOptions): CandidateScore[] {
+  return selectCandidatesDetailed(opts).selected;
 }
