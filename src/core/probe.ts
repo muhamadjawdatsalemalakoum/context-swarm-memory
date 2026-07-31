@@ -6,6 +6,7 @@ import { probePrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
 import { tokenize, termMatchesAnyTag } from "./router.js";
 import { estimateTokens } from "./tokenBudget.js";
 import { select } from "./selection.js";
+import { envFlag } from "../utils/env.js";
 
 const PROBE_INDEX_CHAR_BUDGET = 1200;
 
@@ -192,9 +193,7 @@ export function relevanceScore(event: MemoryEvent, queryTerms: Set<string>): num
  * defensible default and this is expected to become the default once measured.
  */
 export function resolveProbeFullScan(raw = process.env.CSM_PROBE_FULL_SCAN): boolean {
-  if (raw === undefined || raw.trim().length === 0) return false;
-  const v = raw.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
+  return envFlag(raw, { name: "CSM_PROBE_FULL_SCAN", fallback: false });
 }
 
 // ─── Phase 0 mock implementation (kept inline; only used when provider.name === "mock") ──

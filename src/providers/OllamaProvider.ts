@@ -1,6 +1,7 @@
 import { Agent, setGlobalDispatcher } from "undici";
 
 import { OpenAIProvider, type OpenAIProviderOptions } from "./OpenAIProvider.js";
+import { envIntOptional } from "../utils/env.js";
 
 /**
  * Node's bundled fetch (Undici) has its own per-request `headersTimeout`
@@ -89,9 +90,10 @@ const OLLAMA_DEFAULT_TIMEOUT_MS = 600_000;
 
 export class OllamaProvider extends OpenAIProvider {
   constructor(opts: OllamaProviderOptions = {}) {
-    const envTimeout = process.env.CSM_OLLAMA_TIMEOUT_MS
-      ? Number.parseInt(process.env.CSM_OLLAMA_TIMEOUT_MS, 10)
-      : undefined;
+    const envTimeout = envIntOptional(process.env.CSM_OLLAMA_TIMEOUT_MS, {
+      name: "CSM_OLLAMA_TIMEOUT_MS",
+      min: 1,
+    });
     const effectiveTimeout =
       opts.timeoutMs ?? envTimeout ?? OLLAMA_DEFAULT_TIMEOUT_MS;
     ensureLongTimeoutDispatcher(effectiveTimeout);

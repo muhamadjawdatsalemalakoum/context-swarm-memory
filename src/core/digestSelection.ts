@@ -1,5 +1,7 @@
 import { tokenize } from "./router.js";
 import { estimateTokens } from "./tokenBudget.js";
+import { envFlag } from "../utils/env.js";
+import { truncate } from "../utils/text.js";
 
 /**
  * Minimal event shape the digest builder needs. `MemoryEvent` (src/core/types.ts)
@@ -210,11 +212,6 @@ function fragmentScore(frag: string, qTerms: Set<string>): number {
   return score;
 }
 
-/** Hard character cap with an ellipsis. Matches the legacy recall helper. */
-export function truncate(s: string, n: number): string {
-  if (s.length <= n) return s;
-  return s.slice(0, n - 1) + "…";
-}
 
 /**
  * Resolve the Signals-ranker toggle (`CSM_SIGNALS_RANKER`). Default OFF — when
@@ -226,6 +223,12 @@ export function truncate(s: string, n: number): string {
 export function resolveSignalsRanker(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
-  const v = env.CSM_SIGNALS_RANKER;
-  return v === "1" || (typeof v === "string" && v.toLowerCase() === "true");
+  return envFlag(env.CSM_SIGNALS_RANKER, {
+    name: "CSM_SIGNALS_RANKER",
+    fallback: false,
+  });
 }
+
+/** Re-exported for existing importers; the implementation is shared and lives
+ *  in `src/utils/text.ts`. */
+export { truncate };

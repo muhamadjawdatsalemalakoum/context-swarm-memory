@@ -43,12 +43,16 @@ import {
   selectBeamQueries,
   type BeamRetrievalQuery,
 } from "../src/eval/corpus/beam.js";
+import { envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import {
   buildCorpus,
   createBridgeProvider,
+  DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS,
+  DEFAULT_BRIDGE_MODEL_CONTEXT,
   executeAmbRetrieve,
+  resolveBridgeModel,
   scopeDocuments,
   type AmbBridgeOptions,
   type AmbDocument,
@@ -116,6 +120,26 @@ const ECHOED_ENV_VARS = [
   "CSM_PARALLEL_PROBES",
   "CSM_PROBE_MODEL",
   "CSM_GEMINI_THINKING",
+  // Arm-defining levers. Absent from the echo until 2026-07-31, which is why
+  // reading an old manifest could not distinguish "flag was off" from "flag was
+  // never recorded" — see docs/experiments/EXP-system-audit-2026-07.md.
+  "CSM_AGENT_MODEL",
+  "CSM_ROUTER_HYBRID",
+  "CSM_SHARD_DESCRIPTORS",
+  "CSM_SIGNALS_RANKER",
+  "CSM_PROBE_FULL_SCAN",
+  "CSM_COVERAGE",
+  "CSM_RETRIEVAL_UNITS",
+  "CSM_VIRTUAL_SHARDS",
+  "CSM_RECALL_BUDGET",
+  "CSM_MAX_PROBE_SHARDS",
+  "CSM_MAX_RECALL_SHARDS",
+  "CSM_AMB_PREFERENCE_PROFILE",
+  "CSM_AMB_OBSERVE_MEMORY",
+  "CSM_AMB_FACT_MEMORY",
+  "CSM_AMB_SYNTH_MEMORY",
+  "CSM_AMB_COVERAGE_RERANK",
+  "CSM_AMB_ORDERED_CAPSULE",
 ];
 
 export async function runBeamSlice(
@@ -129,10 +153,15 @@ export async function runBeamSlice(
 
   const provider = createBridgeProvider();
   const bridgeOpts: AmbBridgeOptions = {
-    model:
-      process.env.CSM_AMB_MODEL ?? process.env.CSM_MODEL ?? "gemini-3.5-flash",
-    modelContext: parsePositiveInt(process.env.CSM_AMB_MODEL_CONTEXT, 8192),
-    maxOutputTokens: parsePositiveInt(process.env.CSM_AMB_MAX_OUTPUT_TOKENS, 512),
+    model: resolveBridgeModel(),
+    modelContext: envPositiveInt(process.env.CSM_AMB_MODEL_CONTEXT, {
+      name: "CSM_AMB_MODEL_CONTEXT",
+      fallback: DEFAULT_BRIDGE_MODEL_CONTEXT,
+    }),
+    maxOutputTokens: envPositiveInt(process.env.CSM_AMB_MAX_OUTPUT_TOKENS, {
+      name: "CSM_AMB_MAX_OUTPUT_TOKENS",
+      fallback: DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS,
+    }),
     withInternalAnswer: false,
   };
 
@@ -310,11 +339,11 @@ export async function runBeamSlice(
         // ~1.6M tokens, so those produce 600K-token prompts that the sidecar
         // rejects outright. Size the map step to something any provider can
         // actually accept, and let it be tuned per stack.
-        chunkTokens: parsePositiveInt(process.env.CSM_AMB_PREF_CHUNK_TOKENS, 100_000),
-        singlePassTokens: parsePositiveInt(process.env.CSM_AMB_PREF_SINGLE_PASS_TOKENS, 120_000),
-        chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_PREF_CHUNK_OUTPUT, 2000),
-        finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_PREF_MAX_OUTPUT, 2000),
-        mapConcurrency: parsePositiveInt(process.env.CSM_AMB_PREF_MAP_CONCURRENCY, 4),
+        chunkTokens: envPositiveInt(process.env.CSM_AMB_PREF_CHUNK_TOKENS, { name: "CSM_AMB_PREF_CHUNK_TOKENS", fallback: 100_000 }),
+        singlePassTokens: envPositiveInt(process.env.CSM_AMB_PREF_SINGLE_PASS_TOKENS, { name: "CSM_AMB_PREF_SINGLE_PASS_TOKENS", fallback: 120_000 }),
+        chunkOutputTokens: envPositiveInt(process.env.CSM_AMB_PREF_CHUNK_OUTPUT, { name: "CSM_AMB_PREF_CHUNK_OUTPUT", fallback: 2000 }),
+        finalOutputTokens: envPositiveInt(process.env.CSM_AMB_PREF_MAX_OUTPUT, { name: "CSM_AMB_PREF_MAX_OUTPUT", fallback: 2000 }),
+        mapConcurrency: envPositiveInt(process.env.CSM_AMB_PREF_MAP_CONCURRENCY, { name: "CSM_AMB_PREF_MAP_CONCURRENCY", fallback: 4 }),
         onProgress: (msg) => process.stdout.write(`    [pref] unit ${userId} ${msg}
 `),
       })
@@ -461,12 +490,6 @@ async function readDoneQueryIds(payloadsPath: string): Promise<Set<string>> {
     }
   }
   return done;
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 // ─── CLI ────────────────────────────────────────────────────────────────────

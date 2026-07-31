@@ -8,6 +8,7 @@ import type {
   ProviderResponse,
   ProviderUsage,
 } from "./LlmProvider.js";
+import { envIntOptional } from "../utils/env.js";
 
 export const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
@@ -181,24 +182,24 @@ export class GeminiProvider implements LlmProvider {
     this.fetchImpl = opts.fetchImpl ?? globalThis.fetch.bind(globalThis);
     this.timeoutMs =
       opts.timeoutMs ??
-      parsePositiveInt(process.env.CSM_GEMINI_TIMEOUT_MS) ??
+      envIntOptional(process.env.CSM_GEMINI_TIMEOUT_MS, { name: "CSM_GEMINI_TIMEOUT_MS", min: 1 }) ??
       DEFAULT_TIMEOUT_MS;
     this.maxRetries =
       opts.maxRetries ??
-      parseNonNegativeInt(process.env.CSM_GEMINI_MAX_RETRIES) ??
+      envIntOptional(process.env.CSM_GEMINI_MAX_RETRIES, { name: "CSM_GEMINI_MAX_RETRIES", min: 0 }) ??
       DEFAULT_MAX_RETRIES;
     this.retryBaseDelayMs =
       opts.retryBaseDelayMs ??
-      parseNonNegativeInt(process.env.CSM_GEMINI_RETRY_BASE_DELAY_MS) ??
+      envIntOptional(process.env.CSM_GEMINI_RETRY_BASE_DELAY_MS, { name: "CSM_GEMINI_RETRY_BASE_DELAY_MS", min: 0 }) ??
       DEFAULT_RETRY_BASE_DELAY_MS;
     this.cacheModeOverride = opts.cacheMode;
     this.cacheTtlSeconds =
       opts.cacheTtlSeconds ??
-      parsePositiveInt(process.env.CSM_GEMINI_CACHE_TTL_S) ??
+      envIntOptional(process.env.CSM_GEMINI_CACHE_TTL_S, { name: "CSM_GEMINI_CACHE_TTL_S", min: 1 }) ??
       GEMINI_CACHE_TTL_S_DEFAULT;
     this.cacheMinTokens =
       opts.cacheMinTokens ??
-      parsePositiveInt(process.env.CSM_GEMINI_CACHE_MIN_TOKENS) ??
+      envIntOptional(process.env.CSM_GEMINI_CACHE_MIN_TOKENS, { name: "CSM_GEMINI_CACHE_MIN_TOKENS", min: 1 }) ??
       GEMINI_EXPLICIT_CACHE_MIN_TOKENS_DEFAULT;
     this.usageLogPathOverride = opts.usageLogPath;
     this.now = opts.now ?? Date.now;
@@ -578,17 +579,7 @@ export class GeminiProvider implements LlmProvider {
   }
 }
 
-function parsePositiveInt(raw: string | undefined): number | undefined {
-  if (!raw) return undefined;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-}
 
-function parseNonNegativeInt(raw: string | undefined): number | undefined {
-  if (!raw) return undefined;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
-}
 
 function isAbortLikeError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;

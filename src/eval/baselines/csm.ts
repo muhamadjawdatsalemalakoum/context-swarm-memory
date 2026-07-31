@@ -1,4 +1,7 @@
 import { ask } from "../../core/ask.js";
+import { envFlag } from "../../utils/env.js";
+import { dedupeInOrder } from "../../core/selection.js";
+import { escapeRegExp } from "../../utils/text.js";
 import { collectTimelineEventIds } from "../../core/coverage.js";
 import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
 import { partitionIntoUnits, resolveUnitSize } from "../../core/retrievalUnit.js";
@@ -305,11 +308,31 @@ export function resolveParallelProbes(
   providerName: string,
   raw = process.env.CSM_PARALLEL_PROBES,
 ): boolean {
-  if (raw !== undefined && raw.trim().length > 0) {
-    const v = raw.trim().toLowerCase();
-    return !(v === "0" || v === "false" || v === "no");
+  return envFlag(raw, {
+    name: "CSM_PARALLEL_PROBES",
+    fallback: providerName !== "ollama" && providerName !== "llama-server",
+  });
+}
+
+/**
+ * `CSM_SHARD_DESCRIPTORS` — write TF-IDF-derived terms into directory entries so
+ * the lexical router has query signal. Default OFF: at 100K the router selects
+ * 8 of 8.5 shards, so this cannot help there and must not perturb the frozen
+ * baseline. See `docs/experiments/EXP-router-component-bench.md`.
+ */
+export function resolveShardDescriptors(
+  raw = process.env.CSM_SHARD_DESCRIPTORS,
+): boolean {
+  return envFlag(raw, { name: "CSM_SHARD_DESCRIPTORS", fallback: false });
+}
+
+/** Leading `[Month-DD-YYYY | Turn N]` header, as a "Mar-15-2024. " prefix. */
+function firstDatedHeader(events: Array<{ content: string }>): string | null {
+  for (const e of events) {
+    const m = /\[([A-Z][a-z]+-\d{1,2}-\d{4})\s*\|/.exec(e.content ?? "");
+    if (m) return `${m[1]!}. `;
   }
-  return providerName !== "ollama" && providerName !== "llama-server";
+  return null;
 }
 
 /**
@@ -322,36 +345,17 @@ export function resolveParallelProbes(
  * decisive where routing actually starves (BEAM-shaped corpora, Discovery A
  * in docs/RD_PORTFOLIO_2026_06.md), so the default flips after the T3
  * BEAM-slice recall@k A/B confirms it on real BEAM data.
+ *
+ * HISTORY: this docblock used to sit above `resolveShardDescriptors` — a
+ * copy-paste slip that left the inverted parsing below it undocumented. That
+ * parsing was `!(0|false|no)` on a DEFAULT-OFF flag, so `CSM_ROUTER_HYBRID=off`
+ * turned the hybrid router **on**. See `src/utils/env.ts` for why every flag now
+ * shares one vocabulary and rejects anything outside it.
  */
-/**
- * `CSM_SHARD_DESCRIPTORS` — write TF-IDF-derived terms into directory entries so
- * the lexical router has query signal. Default OFF: at 100K the router selects
- * 8 of 8.5 shards, so this cannot help there and must not perturb the frozen
- * baseline. See `docs/experiments/EXP-router-component-bench.md`.
- */
-export function resolveShardDescriptors(
-  raw = process.env.CSM_SHARD_DESCRIPTORS,
-): boolean {
-  if (raw === undefined || raw.trim().length === 0) return false;
-  const v = raw.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
-}
-
-/** Leading `[Month-DD-YYYY | Turn N]` header, as a "Mar-15-2024. " prefix. */
-function firstDatedHeader(events: Array<{ content: string }>): string | null {
-  for (const e of events) {
-    const m = /\[([A-Z][a-z]+-\d{1,2}-\d{4})\s*\|/.exec(e.content ?? "");
-    if (m) return `${m[1]!}. `;
-  }
-  return null;
-}
-
 export function resolveRouterHybrid(
   raw = process.env.CSM_ROUTER_HYBRID,
 ): boolean {
-  if (raw === undefined || raw.trim().length === 0) return false;
-  const v = raw.trim().toLowerCase();
-  return !(v === "0" || v === "false" || v === "no");
+  return envFlag(raw, { name: "CSM_ROUTER_HYBRID", fallback: false });
 }
 
 /** Everything `answer()` needs from the retrieval half of the baseline, and
@@ -1848,16 +1852,6 @@ function collectRecalledEventIds(
   return dedupeInOrder(out);
 }
 
-function dedupeInOrder(items: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const x of items) {
-    if (seen.has(x)) continue;
-    seen.add(x);
-    out.push(x);
-  }
-  return out;
-}
 
 const BRIDGE_STOP_WORDS = new Set([
   "about",
@@ -1911,9 +1905,6 @@ function bridgeScore(content: string, terms: string[]): number {
   return score;
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function round2(x: number): number {
   return Math.round(x * 100) / 100;

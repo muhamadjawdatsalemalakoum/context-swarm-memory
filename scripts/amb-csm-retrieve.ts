@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  extractDatePhrases,
+  parseDatePhrase,
+} from "../src/core/coverage.js";
+import { dedupeInOrder } from "../src/core/selection.js";
 import { estimateTokens } from "../src/core/tokenBudget.js";
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
 import {
@@ -12,6 +17,13 @@ import {
 import type { BenchEvent, Corpus } from "../src/eval/corpus.js";
 import type { FreeFormQuery } from "../src/eval/mcq.js";
 import { createProvider } from "../src/providers/index.js";
+import {
+  providerModelEnvVar,
+  resolveProviderModel,
+  selectProviderName,
+} from "../src/providers/LlmProvider.js";
+import { envFlag, envPositiveInt } from "../src/utils/env.js";
+import { escapeRegExp } from "../src/utils/text.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 
 export interface AmbDocument {
@@ -30,7 +42,7 @@ export interface AmbRetrieveRequest {
 }
 
 export interface AmbBridgeOptions {
-  model: string;
+  model: string | undefined;
   modelContext: number;
   maxOutputTokens: number;
   withInternalAnswer: boolean;
@@ -60,7 +72,7 @@ interface TemporalDateAnchor {
 interface Args {
   storeDir: string;
   requestPath: string;
-  model: string;
+  model: string | undefined;
   modelContext: number;
   maxOutputTokens: number;
   /** A/B switch: run the legacy path that also computes CSM's internal final
@@ -77,7 +89,7 @@ async function main(): Promise<void> {
   // the output, and the hard guard in createBridgeProvider).
   loadLocalEnv();
   const args = parseArgs(process.argv.slice(2));
-  if (!process.env.CSM_MODEL) process.env.CSM_MODEL = args.model;
+  publishBridgeModel(args.model);
 
   const [documents, request] = await Promise.all([
     readDocumentsJsonl(join(args.storeDir, "documents.jsonl")),
@@ -108,6 +120,49 @@ export function scopeDocuments(
   return userId ? documents.filter((doc) => doc.user_id === userId) : documents;
 }
 
+/** Bridge option defaults, shared by BOTH entry points (this one-shot script and
+ *  `scripts/amb-csm-server.ts`). They used to be written out twice, and had
+ *  drifted: `maxOutputTokens` defaulted to 8 here and 512 in the warm server —
+ *  a 64× difference in the same knob, enough to truncate any answer produced
+ *  through the one-shot path with `--with-internal-answer`. */
+export const DEFAULT_BRIDGE_MODEL_CONTEXT = 8192;
+export const DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS = 512;
+
+/**
+ * The model the bridge should use, resolved WITHOUT crossing provider
+ * namespaces.
+ *
+ * Precedence: explicit `--model` → `CSM_AMB_MODEL` → whatever the active
+ * provider has configured (`resolveProviderModel`, the primitive). When nothing
+ * is configured the answer is `undefined`, which means "let the provider apply
+ * its own built-in default" — deliberately NOT a hardcoded id. The previous
+ * literal fallback here was `"gemini-3.5-flash"`, which is a valid id for
+ * exactly one of the six providers.
+ */
+export function resolveBridgeModel(explicit?: string): string | undefined {
+  return explicit ?? process.env.CSM_AMB_MODEL ?? resolveProviderModel(selectProviderName());
+}
+
+/**
+ * Publish the bridge's model so downstream provider construction sees it.
+ *
+ * Writes to the ACTIVE PROVIDER'S env var, never to the generic `CSM_MODEL`.
+ * Writing the generic slot is what let a Gemini id reach the Claude sidecar:
+ * `resolveProviderModel` falls back to `CSM_MODEL` for every provider, so one
+ * assignment here silently reconfigured all of them. Existing configuration
+ * always wins — this only fills an empty slot.
+ */
+export function publishBridgeModel(
+  model: string | undefined,
+  providerName: string = selectProviderName(),
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  if (!model) return;
+  const varName = providerModelEnvVar(providerName);
+  if (!varName) return; // mock / unknown provider: nothing to configure.
+  if (!env[varName]) env[varName] = model;
+}
+
 export function emptyAmbPayload(reason: string): AmbRetrievePayload {
   return { documents: [], raw_response: { reason } };
 }
@@ -118,7 +173,7 @@ export function emptyAmbPayload(reason: string): AmbRetrievePayload {
  *  plumbing smokes via CSM_AMB_ALLOW_MOCK=1. */
 export function createBridgeProvider(): ReturnType<typeof createProvider> {
   const provider = createProvider();
-  if (provider.name === "mock" && !isTruthyEnv(process.env.CSM_AMB_ALLOW_MOCK)) {
+  if (provider.name === "mock" && !envFlag(process.env.CSM_AMB_ALLOW_MOCK, { name: "CSM_AMB_ALLOW_MOCK", fallback: false })) {
     throw new Error(
       "AMB bridge resolved the mock provider (no CSM_PROVIDER/API key in env or .env). " +
         "Refusing to produce benchmark rows from mock retrieval. Set CSM_AMB_ALLOW_MOCK=1 to override for plumbing tests.",
@@ -314,7 +369,7 @@ export async function executeAmbRetrieve(input: {
   // its own selection logic that may depend on retrieval order.
   const rerankParams = resolveRerankParams({
     reasoning: intent.temporal || intent.contradiction,
-    budgetTokens: parsePositiveInt(process.env.CSM_AMB_RETURN_TOKENS, 16000),
+    budgetTokens: envPositiveInt(process.env.CSM_AMB_RETURN_TOKENS, { name: "CSM_AMB_RETURN_TOKENS", fallback: 16000 }),
   });
   const orderedBaseIds = coverageRerankActive()
     ? greedyCoverageOrder(
@@ -327,7 +382,7 @@ export async function executeAmbRetrieve(input: {
     : baseIds;
 
   const ids = synthActive || obsActive || factActive
-    ? dedupeInOrder(orderedBaseIds).slice(0, parsePositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, 10))
+    ? dedupeInOrder(orderedBaseIds).slice(0, envPositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, { name: "CSM_AMB_SYNTH_RAW_DOCS", fallback: 10 }))
     : coverageFired
       ? coverageRerankActive()
         ? coverageRerankAndPack(
@@ -764,16 +819,16 @@ function selectAmbEvidenceIds(
 
 function resolveAmbReturnMax(requestedK: number, intent: AmbQueryIntent): number {
   if (intent.broadSummary) {
-    return parsePositiveInt(
-      process.env.CSM_AMB_SUMMARY_RETURN_K,
-      Math.max(requestedK, 24),
-    );
+    return envPositiveInt(process.env.CSM_AMB_SUMMARY_RETURN_K, {
+      name: "CSM_AMB_SUMMARY_RETURN_K",
+      fallback: Math.max(requestedK, 24),
+    });
   }
   if (intent.temporal || intent.contradiction) {
-    return parsePositiveInt(
-      process.env.CSM_AMB_REASONING_RETURN_K,
-      Math.max(requestedK, 32),
-    );
+    return envPositiveInt(process.env.CSM_AMB_REASONING_RETURN_K, {
+      name: "CSM_AMB_REASONING_RETURN_K",
+      fallback: Math.max(requestedK, 32),
+    });
   }
   return requestedK;
 }
@@ -887,7 +942,10 @@ export function aggregationQueryIntent(query: string): boolean {
 
 function resolveAmbNeighborWindow(intent: AmbQueryIntent): number {
   const fallback = intent.temporal || intent.contradiction ? 1 : 0;
-  return parsePositiveInt(process.env.CSM_AMB_NEIGHBOR_WINDOW, fallback);
+  return envPositiveInt(process.env.CSM_AMB_NEIGHBOR_WINDOW, {
+    name: "CSM_AMB_NEIGHBOR_WINDOW",
+    fallback,
+  });
 }
 
 function expandChronologicalNeighbors(
@@ -1055,13 +1113,13 @@ function selectCapsuleCoverageEvents(
     corpus,
     seedIds,
     query,
-    parsePositiveInt(process.env.CSM_AMB_CAPSULE_COVERAGE_K, 36),
+    envPositiveInt(process.env.CSM_AMB_CAPSULE_COVERAGE_K, { name: "CSM_AMB_CAPSULE_COVERAGE_K", fallback: 36 }),
     true,
   );
   const topIds = selectTopCoverageIds(
     corpus,
     query,
-    parsePositiveInt(process.env.CSM_AMB_CAPSULE_TOP_K, 24),
+    envPositiveInt(process.env.CSM_AMB_CAPSULE_TOP_K, { name: "CSM_AMB_CAPSULE_TOP_K", fallback: 24 }),
   );
   return ids
     .concat(topIds)
@@ -1092,12 +1150,12 @@ function selectTopCoverageIds(corpus: Corpus, query: string, limit: number): str
 
 function capsuleSnippetLimit(intent: AmbQueryIntent): number {
   if (intent.broadSummary) {
-    return parsePositiveInt(process.env.CSM_AMB_CAPSULE_SUMMARY_SNIPPETS, 24);
+    return envPositiveInt(process.env.CSM_AMB_CAPSULE_SUMMARY_SNIPPETS, { name: "CSM_AMB_CAPSULE_SUMMARY_SNIPPETS", fallback: 24 });
   }
   if (intent.temporal || intent.contradiction) {
-    return parsePositiveInt(process.env.CSM_AMB_CAPSULE_REASONING_SNIPPETS, 10);
+    return envPositiveInt(process.env.CSM_AMB_CAPSULE_REASONING_SNIPPETS, { name: "CSM_AMB_CAPSULE_REASONING_SNIPPETS", fallback: 10 });
   }
-  return parsePositiveInt(process.env.CSM_AMB_CAPSULE_DEFAULT_SNIPPETS, 8);
+  return envPositiveInt(process.env.CSM_AMB_CAPSULE_DEFAULT_SNIPPETS, { name: "CSM_AMB_CAPSULE_DEFAULT_SNIPPETS", fallback: 8 });
 }
 
 function spreadAcrossTimeline(events: BenchEvent[], limit: number): BenchEvent[] {
@@ -1137,7 +1195,7 @@ function selectBroadSummaryEvidence(
 ): BenchEvent[] {
   if (events.length <= limit) return events;
   const pinnedLimit = Math.min(
-    parsePositiveInt(process.env.CSM_AMB_CAPSULE_PINNED_SNIPPETS, 8),
+    envPositiveInt(process.env.CSM_AMB_CAPSULE_PINNED_SNIPPETS, { name: "CSM_AMB_CAPSULE_PINNED_SNIPPETS", fallback: 8 }),
     Math.max(0, limit),
   );
   const pinned = [...events]
@@ -1297,6 +1355,23 @@ function selectTopTemporalPair(
   return null;
 }
 
+/**
+ * DIVERGENCE, DELIBERATELY NOT UNIFIED — see the sibling in src/core/coverage.ts.
+ *
+ * Both functions answer "what are the two sides of a `between X and Y` query?",
+ * and they do it differently:
+ *
+ *   core/coverage.ts   extractCoverageTerms(side, 16)                  — one pass, capped at 16
+ *   the AMB bridge     expandCoverageTerms(extractContentTerms(side))  — extract, then EXPAND
+ *
+ * So the same temporal query yields different term sets depending on which path
+ * runs. This is a real behavioural difference on the `temporal_reasoning`
+ * category, not a cosmetic one, which is exactly why the 2026-07-31 audit did
+ * NOT quietly collapse them: picking either implementation silently changes
+ * retrieval, and CSM has an unexplained −0.135 temporal_reasoning result at n=8
+ * that this could bear on. Unify only behind a measured A/B.
+ * See docs/experiments/EXP-system-audit-2026-07.md, finding F6.
+ */
 function extractBetweenSegmentTerms(query: string): [string[], string[]] | null {
   const normalized = query.replace(/\s+/g, " ").trim();
   const match = normalized.match(
@@ -1309,33 +1384,6 @@ function extractBetweenSegmentTerms(query: string): [string[], string[]] | null 
   const rightTerms = expandCoverageTerms(extractContentTerms(right));
   if (leftTerms.length === 0 || rightTerms.length === 0) return null;
   return [leftTerms, rightTerms];
-}
-
-function parseDatePhrase(dateText: string): number {
-  const iso = dateText.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (iso) {
-    return Date.UTC(
-      Number.parseInt(iso[1]!, 10),
-      Number.parseInt(iso[2]!, 10) - 1,
-      Number.parseInt(iso[3]!, 10),
-    );
-  }
-
-  const month = dateText
-    .replaceAll("-", " ")
-    .replace(/,/g, "")
-    .match(/\b([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})\b/);
-  const monthIndex = month ? MONTH_INDEX.get(month[1]!.slice(0, 3).toLowerCase()) : undefined;
-  if (month && monthIndex !== undefined) {
-    return Date.UTC(
-      Number.parseInt(month[3]!, 10),
-      monthIndex,
-      Number.parseInt(month[2]!, 10),
-    );
-  }
-
-  const parsed = Date.parse(dateText);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
 function dateCenteredExcerpt(
@@ -1535,33 +1583,8 @@ function turnNumber(event: BenchEvent): number {
   return fromId ? Number.parseInt(fromId, 10) : Number.MAX_SAFE_INTEGER;
 }
 
-function extractDatePhrases(content: string): string[] {
-  const dates: string[] = [];
-  for (const match of content.matchAll(
-    /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[\s-]+\d{1,2},?[\s-]+\d{4}\b/g,
-  )) {
-    dates.push(match[0]!.replaceAll("-", " "));
-  }
-  for (const match of content.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)) {
-    dates.push(match[0]!);
-  }
-  return dates.slice(0, 8);
-}
 
-function dedupeInOrder<T>(items: T[]): T[] {
-  const seen = new Set<T>();
-  const out: T[] = [];
-  for (const item of items) {
-    if (seen.has(item)) continue;
-    seen.add(item);
-    out.push(item);
-  }
-  return out;
-}
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 const AMB_STOP_WORDS = new Set([
   "about",
@@ -1667,35 +1690,22 @@ function parseArgs(argv: string[]): Args {
   return {
     storeDir,
     requestPath,
-    model:
-      raw.get("model") ??
-      process.env.CSM_AMB_MODEL ??
-      process.env.CSM_MODEL ??
-      "gemini-3.5-flash",
-    modelContext: parsePositiveInt(
+    model: resolveBridgeModel(raw.get("model")),
+    modelContext: envPositiveInt(
       raw.get("model-context") ?? process.env.CSM_AMB_MODEL_CONTEXT,
-      8192,
+      { name: "CSM_AMB_MODEL_CONTEXT", fallback: DEFAULT_BRIDGE_MODEL_CONTEXT },
     ),
-    maxOutputTokens: parsePositiveInt(
+    maxOutputTokens: envPositiveInt(
       raw.get("max-output-tokens") ?? process.env.CSM_AMB_MAX_OUTPUT_TOKENS,
-      8,
+      { name: "CSM_AMB_MAX_OUTPUT_TOKENS", fallback: DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS },
     ),
     withInternalAnswer:
       raw.has("with-internal-answer") ||
-      isTruthyEnv(process.env.CSM_AMB_WITH_INTERNAL_ANSWER),
+      envFlag(process.env.CSM_AMB_WITH_INTERNAL_ANSWER, {
+        name: "CSM_AMB_WITH_INTERNAL_ANSWER",
+        fallback: false,
+      }),
   };
-}
-
-function isTruthyEnv(value: string | undefined): boolean {
-  if (!value) return false;
-  const v = value.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function writeJson(value: unknown): void {

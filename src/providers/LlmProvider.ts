@@ -183,21 +183,47 @@ export function resolveProviderModel(
   providerName?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
-  const providerDefault =
-    providerName === "gemini"
-      ? env.CSM_GEMINI_MODEL
-      : providerName === "agent-sdk"
-        ? // Claude model ids only — never the generic tail.
-          env.CSM_AGENT_MODEL
-        : providerName === "openai" ||
-            providerName === "ollama" ||
-            providerName === "llama-server"
-          ? env.CSM_OPENAI_MODEL
-          : providerName === "mock"
-            ? undefined
-            : // Provider unknown: keep the historical permissive tail.
-              env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
+  const varName = providerModelEnvVar(providerName);
+  const providerDefault = varName
+    ? env[varName]
+    : providerName === "mock"
+      ? undefined
+      : // Provider unknown: keep the historical permissive tail.
+        env.CSM_OPENAI_MODEL || env.CSM_GEMINI_MODEL;
   return providerDefault || env.CSM_MODEL;
+}
+
+/**
+ * Which env var holds this provider's model id — the WRITE side of the same
+ * table `resolveProviderModel` reads.
+ *
+ * Exists because a read-side fix is only half a fix. `scripts/amb-csm-retrieve.ts`
+ * used to publish its `--model` argument by assigning it to the GENERIC
+ * `CSM_MODEL`, whose default was the literal `"gemini-3.5-flash"`. Since
+ * `resolveProviderModel` falls back to `CSM_MODEL` for every provider, merely
+ * starting the bridge under `CSM_PROVIDER=agent-sdk` (with no `CSM_AGENT_MODEL`)
+ * handed a Gemini id to the Claude sidecar — the exact failure the primitive was
+ * introduced to prevent, arriving through the writer instead of the reader.
+ *
+ * Anything that needs to PUBLISH a model id for the active provider writes to
+ * `providerModelEnvVar(name)`, never to `CSM_MODEL`. Returns `undefined` for
+ * providers with no configurable model (`mock`) or an unknown name — callers
+ * must then not write at all rather than pick a slot.
+ */
+export function providerModelEnvVar(providerName?: string): string | undefined {
+  switch (providerName) {
+    case "gemini":
+      return "CSM_GEMINI_MODEL";
+    // Claude model ids only — never the generic tail.
+    case "agent-sdk":
+      return "CSM_AGENT_MODEL";
+    case "openai":
+    case "ollama":
+    case "llama-server":
+      return "CSM_OPENAI_MODEL";
+    default:
+      return undefined;
+  }
 }
 
 export function resolveStageModels(

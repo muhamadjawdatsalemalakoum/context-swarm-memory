@@ -37,6 +37,9 @@ import type {
   QueryIntentFacets,
 } from "./types.js";
 import { estimateTokens } from "./tokenBudget.js";
+import { envFlag } from "../utils/env.js";
+import { dedupeInOrder } from "./selection.js";
+import { escapeRegExp } from "../utils/text.js";
 
 // ─── Intent classification ──────────────────────────────────────────────────
 
@@ -1044,6 +1047,23 @@ export function temporalRelationToClaim(rel: TemporalRelation): MemoryPacketClai
   return { claim: rel.claim, sources: [rel.fromRef, rel.toRef], confidence: 0.95 };
 }
 
+/**
+ * DIVERGENCE, DELIBERATELY NOT UNIFIED — see the sibling in scripts/amb-csm-retrieve.ts.
+ *
+ * Both functions answer "what are the two sides of a `between X and Y` query?",
+ * and they do it differently:
+ *
+ *   core/coverage.ts   extractCoverageTerms(side, 16)                  — one pass, capped at 16
+ *   the AMB bridge     expandCoverageTerms(extractContentTerms(side))  — extract, then EXPAND
+ *
+ * So the same temporal query yields different term sets depending on which path
+ * runs. This is a real behavioural difference on the `temporal_reasoning`
+ * category, not a cosmetic one, which is exactly why the 2026-07-31 audit did
+ * NOT quietly collapse them: picking either implementation silently changes
+ * retrieval, and CSM has an unexplained −0.135 temporal_reasoning result at n=8
+ * that this could bear on. Unify only behind a measured A/B.
+ * See docs/experiments/EXP-system-audit-2026-07.md, finding F6.
+ */
 function extractBetweenSegmentTerms(query: string): [string[], string[]] | null {
   const normalized = query.replace(/\s+/g, " ").trim();
   const match = normalized.match(
@@ -1162,9 +1182,7 @@ export const DEFAULT_TIMELINE_TOKENS = 1400;
  *  non-overlapping) and returned cov@24 +0.184 on event_ordering once the
  *  bridge consumed the chronicle. */
 export function resolveCoverageMode(raw = process.env.CSM_COVERAGE): boolean {
-  if (raw === undefined || raw.trim().length === 0) return true;
-  const v = raw.trim().toLowerCase();
-  return !(v === "0" || v === "false" || v === "no");
+  return envFlag(raw, { name: "CSM_COVERAGE", fallback: true });
 }
 
 /** Intent-conditional recall digest budget. Point lookups keep `base`
@@ -1261,20 +1279,7 @@ export function resolveCoverageStarvationFloor(
 
 // ─── small helpers ───────────────────────────────────────────────────────────
 
-function dedupeInOrder<T>(items: T[]): T[] {
-  const seen = new Set<T>();
-  const out: T[] = [];
-  for (const item of items) {
-    if (seen.has(item)) continue;
-    seen.add(item);
-    out.push(item);
-  }
-  return out;
-}
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;

@@ -22,7 +22,12 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { resolveProviderModel, resolveStageModels } from "../src/providers/LlmProvider.js";
+import {
+  providerModelEnvVar,
+  resolveProviderModel,
+  resolveStageModels,
+} from "../src/providers/LlmProvider.js";
+import { publishBridgeModel, resolveBridgeModel } from "../scripts/amb-csm-retrieve.js";
 
 /** A .env with EVERY provider's model set — the real-world hazard. */
 const CROWDED_ENV = {
@@ -75,6 +80,80 @@ describe("resolveProviderModel — namespace isolation", () => {
       CSM_AGENT_MODEL: "claude-sonnet-5",
     } as NodeJS.ProcessEnv;
     expect(resolveProviderModel("agent-sdk", env)).toBe("claude-sonnet-5");
+  });
+});
+
+describe("providerModelEnvVar — the WRITE side of the same table", () => {
+  it("maps each provider to its own slot", () => {
+    expect(providerModelEnvVar("gemini")).toBe("CSM_GEMINI_MODEL");
+    expect(providerModelEnvVar("agent-sdk")).toBe("CSM_AGENT_MODEL");
+    expect(providerModelEnvVar("openai")).toBe("CSM_OPENAI_MODEL");
+    expect(providerModelEnvVar("ollama")).toBe("CSM_OPENAI_MODEL");
+  });
+
+  it("refuses to name a slot for providers that have none", () => {
+    // Callers must then not write at all, rather than pick one.
+    expect(providerModelEnvVar("mock")).toBeUndefined();
+    expect(providerModelEnvVar(undefined)).toBeUndefined();
+  });
+
+  it("never names the generic CSM_MODEL — that slot is read by EVERY provider", () => {
+    for (const p of ["gemini", "agent-sdk", "openai", "ollama", "llama-server", "mock"]) {
+      expect(providerModelEnvVar(p)).not.toBe("CSM_MODEL");
+    }
+  });
+});
+
+describe("the AMB bridge publishes models without crossing namespaces", () => {
+  /**
+   * CASE 4 of the same bug, found by the 2026-07-31 system audit. The read side
+   * was already guarded by `resolveProviderModel`, but the bridge WROTE its
+   * `--model` argument (default `"gemini-3.5-flash"`) into the generic
+   * `CSM_MODEL`. Since `resolveProviderModel` falls back to `CSM_MODEL` for
+   * every provider, merely starting the bridge under `CSM_PROVIDER=agent-sdk`
+   * handed a Gemini id to the Claude sidecar.
+   */
+  it("does NOT let a bridge model leak into another provider's resolution", () => {
+    const env = { CSM_PROVIDER: "agent-sdk" } as NodeJS.ProcessEnv;
+    publishBridgeModel("gemini-3.5-flash", "gemini", env);
+    expect(env.CSM_GEMINI_MODEL).toBe("gemini-3.5-flash");
+    expect(env.CSM_MODEL).toBeUndefined();
+    // The exact regression: the Claude sidecar must still have no model.
+    expect(resolveProviderModel("agent-sdk", env)).toBeUndefined();
+  });
+
+  it("writes into the ACTIVE provider's slot", () => {
+    const env = {} as NodeJS.ProcessEnv;
+    publishBridgeModel("claude-sonnet-5", "agent-sdk", env);
+    expect(env.CSM_AGENT_MODEL).toBe("claude-sonnet-5");
+    expect(resolveProviderModel("agent-sdk", env)).toBe("claude-sonnet-5");
+  });
+
+  it("never overwrites configuration that is already present", () => {
+    const env = { CSM_AGENT_MODEL: "claude-opus-5" } as NodeJS.ProcessEnv;
+    publishBridgeModel("claude-sonnet-5", "agent-sdk", env);
+    expect(env.CSM_AGENT_MODEL).toBe("claude-opus-5");
+  });
+
+  it("writes nothing for providers with no model slot", () => {
+    const env = {} as NodeJS.ProcessEnv;
+    publishBridgeModel("anything", "mock", env);
+    expect(Object.keys(env)).toHaveLength(0);
+  });
+
+  it("resolves undefined rather than a hardcoded id when nothing is configured", () => {
+    // Was `?? "gemini-3.5-flash"` — a valid id for one of six providers.
+    const saved = { ...process.env };
+    try {
+      delete process.env.CSM_AMB_MODEL;
+      delete process.env.CSM_MODEL;
+      delete process.env.CSM_AGENT_MODEL;
+      process.env.CSM_PROVIDER = "agent-sdk";
+      expect(resolveBridgeModel()).toBeUndefined();
+      expect(resolveBridgeModel("explicit-flag-wins")).toBe("explicit-flag-wins");
+    } finally {
+      process.env = saved;
+    }
   });
 });
 

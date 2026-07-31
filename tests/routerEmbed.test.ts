@@ -5,6 +5,8 @@ import {
   buildRouterIndex,
   DEFAULT_HYBRID_WEIGHTS,
   hybridEquivalentOfLexScore,
+  hybridRouterStats,
+  resetHybridRouterStats,
   routeConfidence,
   routerIndexFromDirectory,
   satLex,
@@ -371,5 +373,74 @@ describe("weights & confidence helpers", () => {
 
     const flat = separated.map((c, i) => mk(c.entry.id, 1 - i * 0.01));
     expect(routeConfidence(flat).recommendedProbeCount).toBe(8); // keep all
+  });
+});
+
+// ─── Degradation is counted, not silent ──────────────────────────────────────
+
+describe("hybrid router degradation accounting", () => {
+  /**
+   * "Falls back to lexical" reads as graceful until you notice what lexical
+   * selection does on a BEAM-shaped corpus: every entry scores ~0, so the cut
+   * returns the alphabetically-first N for every query. The embedding leg is
+   * the entire measured win (+0.365 at BEAM 1M). A transient embed failure
+   * therefore silently swaps the winning config for the losing one, mid-run,
+   * while the manifest still says the hybrid router was on.
+   */
+  it("counts a fallback when no index is supplied", async () => {
+    resetHybridRouterStats();
+    const directory: MemoryDirectory = { version: 1, entries: [makeEntry("s-a")] };
+    await selectCandidatesHybrid({ query: "password", directory, index: null });
+    expect(hybridRouterStats()).toMatchObject({ hybrid: 0, fallbackNoIndex: 1 });
+  });
+
+  it("counts a fallback — and records the reason — when embedding throws", async () => {
+    resetHybridRouterStats();
+    const directory: MemoryDirectory = { version: 1, entries: [makeEntry("s-a")] };
+    const index = await buildRouterIndex({
+      shards: [{ shardId: "s-a", terms: ["password"], centroid: null }],
+      embed: fakeEmbed,
+      model: "fake-axes-v1",
+    });
+    const broken: RouterIndex = {
+      ...index!,
+      embed: () => Promise.reject(new Error("model download failed")),
+    };
+    const cands = await selectCandidatesHybrid({ query: "password", directory, index: broken });
+    // Still returns the lexical baseline — degradation, not failure.
+    expect(cands.length).toBeGreaterThan(0);
+    const stats = hybridRouterStats();
+    expect(stats.fallbackEmbedFailed).toBe(1);
+    expect(stats.hybrid).toBe(0);
+    expect(stats.lastEmbedError).toContain("model download failed");
+  });
+
+  it("counts an empty embed result as a fallback, not as a hybrid run", async () => {
+    resetHybridRouterStats();
+    const directory: MemoryDirectory = { version: 1, entries: [makeEntry("s-a")] };
+    const index = await buildRouterIndex({
+      shards: [{ shardId: "s-a", terms: ["password"], centroid: null }],
+      embed: fakeEmbed,
+      model: "fake-axes-v1",
+    });
+    const empty: RouterIndex = { ...index!, embed: () => Promise.resolve([]) };
+    await selectCandidatesHybrid({ query: "password", directory, index: empty });
+    expect(hybridRouterStats().fallbackEmbedFailed).toBe(1);
+  });
+
+  it("counts a real hybrid run as hybrid", async () => {
+    resetHybridRouterStats();
+    const directory: MemoryDirectory = { version: 1, entries: [makeEntry("s-a")] };
+    const index = await buildRouterIndex({
+      shards: [{ shardId: "s-a", terms: ["password"], centroid: null }],
+      embed: fakeEmbed,
+      model: "fake-axes-v1",
+    });
+    await selectCandidatesHybrid({ query: "password", directory, index });
+    expect(hybridRouterStats()).toMatchObject({
+      hybrid: 1,
+      fallbackNoIndex: 0,
+      fallbackEmbedFailed: 0,
+    });
   });
 });

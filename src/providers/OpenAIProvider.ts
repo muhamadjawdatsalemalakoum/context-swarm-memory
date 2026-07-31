@@ -5,6 +5,7 @@ import type {
   ProviderResponse,
   ProviderUsage,
 } from "./LlmProvider.js";
+import { envInt } from "../utils/env.js";
 
 /** OpenAI-compatible HTTP provider.
  *
@@ -169,7 +170,11 @@ export class OpenAIProvider implements LlmProvider {
     // and has occasional 5xx blips. Honor Retry-After when present; otherwise
     // exponential backoff. A request LARGER than the org's whole TPM limit can
     // never succeed ("Requested X. ... must be reduced") — fail fast on those.
-    const maxRetries = parseNonNegativeInt(process.env.CSM_OPENAI_MAX_RETRIES, 5);
+    const maxRetries = envInt(process.env.CSM_OPENAI_MAX_RETRIES, {
+      name: "CSM_OPENAI_MAX_RETRIES",
+      fallback: 5,
+      min: 0,
+    });
     let response!: Response;
     for (let attempt = 0; ; attempt++) {
       // Manual AbortController + unref'd timer.
@@ -317,11 +322,6 @@ export class OpenAIProvider implements LlmProvider {
   }
 }
 
-function parseNonNegativeInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
-}
 
 function stripSlash(s: string): string {
   return s.endsWith("/") ? s.slice(0, -1) : s;

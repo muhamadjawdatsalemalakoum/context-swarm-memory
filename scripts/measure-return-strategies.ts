@@ -39,6 +39,13 @@ const STRATEGIES: Array<{ name: string; fn: Strategy }> = [
   { name: "mmr-perTok-q", fn: (ids, q, g) => greedyCoverageOrder(ids, g, q, 4, 1) },
 ];
 
+/**
+ * MANDATED COPY of `src/core/selection.ts:packToBudget`. This script reads BEAM
+ * gold, so `tests/beamLeakageFirewall.test.ts` requires it to stay isolated from
+ * every retrieval-side module — it may not import `src/core/**`. Do not "dedupe"
+ * this into the shared helper; the firewall will fail. Same rule governs the
+ * second `escapeRegExp` in `src/eval/retrievalScore.ts`.
+ */
 function packToBudget(order: string[], budget: number, getText: (id: string) => string): string[] {
   const out: string[] = [];
   let used = 0;

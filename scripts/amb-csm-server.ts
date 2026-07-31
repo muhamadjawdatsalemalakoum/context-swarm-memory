@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
 import type { Corpus } from "../src/eval/corpus.js";
 import type { LlmProvider } from "../src/providers/LlmProvider.js";
+import { envFlag, envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import {
   type AmbBridgeOptions,
@@ -36,6 +37,10 @@ import {
   aggregationQueryIntent,
   buildCorpus,
   createBridgeProvider,
+  DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS,
+  DEFAULT_BRIDGE_MODEL_CONTEXT,
+  publishBridgeModel,
+  resolveBridgeModel,
   emptyAmbPayload,
   executeAmbRetrieve,
   factMemoryActive,
@@ -119,11 +124,19 @@ export function createAmbServerState(provider?: LlmProvider): AmbServerState {
 
 export function defaultBridgeOptions(): AmbBridgeOptions {
   return {
-    model:
-      process.env.CSM_AMB_MODEL ?? process.env.CSM_MODEL ?? "gemini-3.5-flash",
-    modelContext: parsePositiveInt(process.env.CSM_AMB_MODEL_CONTEXT, 8192),
-    maxOutputTokens: parsePositiveInt(process.env.CSM_AMB_MAX_OUTPUT_TOKENS, 512),
-    withInternalAnswer: isTruthy(process.env.CSM_AMB_WITH_INTERNAL_ANSWER),
+    model: resolveBridgeModel(),
+    modelContext: envPositiveInt(process.env.CSM_AMB_MODEL_CONTEXT, {
+      name: "CSM_AMB_MODEL_CONTEXT",
+      fallback: DEFAULT_BRIDGE_MODEL_CONTEXT,
+    }),
+    maxOutputTokens: envPositiveInt(process.env.CSM_AMB_MAX_OUTPUT_TOKENS, {
+      name: "CSM_AMB_MAX_OUTPUT_TOKENS",
+      fallback: DEFAULT_BRIDGE_MAX_OUTPUT_TOKENS,
+    }),
+    withInternalAnswer: envFlag(process.env.CSM_AMB_WITH_INTERNAL_ANSWER, {
+      name: "CSM_AMB_WITH_INTERNAL_ANSWER",
+      fallback: false,
+    }),
   };
 }
 
@@ -183,7 +196,7 @@ export async function getScopedObservation(
   // high enough to cover a full conversation at any BEAM tier (10M units run to
   // tens of thousands of turns); the hierarchical map-reduce inside
   // organizeMemoryScaled — not this cap — is what bounds cost at scale.
-  const maxEvents = parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, 200_000);
+  const maxEvents = envPositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, { name: "CSM_AMB_OBSERVE_MAX_EVENTS", fallback: 200_000 });
   const contents = corpus.events.slice(0, maxEvents).map((e) => e.content);
   if (contents.length === 0) return undefined;
 
@@ -204,14 +217,14 @@ export async function getScopedObservation(
       query: OBSERVATION_FOCUS,
       eventContents: contents,
       model: state.defaults.model,
-      chunkTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, 600_000),
-      singlePassTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, 700_000),
-      chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_OUTPUT, 3000),
+      chunkTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, { name: "CSM_AMB_OBSERVE_CHUNK_TOKENS", fallback: 600_000 }),
+      singlePassTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, { name: "CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS", fallback: 700_000 }),
+      chunkOutputTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_OUTPUT, { name: "CSM_AMB_OBSERVE_CHUNK_OUTPUT", fallback: 3000 }),
       // Default matches organizeMemoryScaled's own default AND the proven
       // 0.9364 run (measured observations were 4.0K–10.5K tokens; the old 2048
       // default silently truncated ~95% of them — 2026-06-24 audit finding).
-      finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_OUTPUT, 12_000),
-      mapConcurrency: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, 4),
+      finalOutputTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_MAX_OUTPUT, { name: "CSM_AMB_OBSERVE_MAX_OUTPUT", fallback: 12_000 }),
+      mapConcurrency: envPositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, { name: "CSM_AMB_OBSERVE_MAP_CONCURRENCY", fallback: 4 }),
       onProgress: (msg) => process.stderr.write(`[observation] user=${key} ${msg}\n`),
     });
     state.observationInflight.set(inflightKey, inflight);
@@ -261,7 +274,7 @@ export async function getScopedFactRegistry(
   const hit = state.factCache.get(key);
   if (hit && hit.version === version) return { text: hit.text, buildCost: null };
 
-  const maxEvents = parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, 200_000);
+  const maxEvents = envPositiveInt(process.env.CSM_AMB_OBSERVE_MAX_EVENTS, { name: "CSM_AMB_OBSERVE_MAX_EVENTS", fallback: 200_000 });
   const contents = corpus.events.slice(0, maxEvents).map((e) => e.content);
   if (contents.length === 0) return undefined;
 
@@ -276,11 +289,11 @@ export async function getScopedFactRegistry(
     inflight = state.baseline.organizeFactsScaled({
       eventContents: contents,
       model: state.defaults.model,
-      chunkTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, 600_000),
-      singlePassTokens: parsePositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, 700_000),
-      chunkOutputTokens: parsePositiveInt(process.env.CSM_AMB_FACT_CHUNK_OUTPUT, 4000),
-      finalOutputTokens: parsePositiveInt(process.env.CSM_AMB_FACT_MAX_OUTPUT, 12_000),
-      mapConcurrency: parsePositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, 4),
+      chunkTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_CHUNK_TOKENS, { name: "CSM_AMB_OBSERVE_CHUNK_TOKENS", fallback: 600_000 }),
+      singlePassTokens: envPositiveInt(process.env.CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS, { name: "CSM_AMB_OBSERVE_SINGLE_PASS_TOKENS", fallback: 700_000 }),
+      chunkOutputTokens: envPositiveInt(process.env.CSM_AMB_FACT_CHUNK_OUTPUT, { name: "CSM_AMB_FACT_CHUNK_OUTPUT", fallback: 4000 }),
+      finalOutputTokens: envPositiveInt(process.env.CSM_AMB_FACT_MAX_OUTPUT, { name: "CSM_AMB_FACT_MAX_OUTPUT", fallback: 12_000 }),
+      mapConcurrency: envPositiveInt(process.env.CSM_AMB_OBSERVE_MAP_CONCURRENCY, { name: "CSM_AMB_OBSERVE_MAP_CONCURRENCY", fallback: 4 }),
       onProgress: (msg) => process.stderr.write(`[facts] user=${key} ${msg}\n`),
     });
     state.factInflight.set(inflightKey, inflight);
@@ -481,18 +494,6 @@ function sendJson(res: ServerResponse, status: number, value: unknown): void {
   res.end(text);
 }
 
-function parsePositiveInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function isTruthy(value: string | undefined): boolean {
-  if (!value) return false;
-  const v = value.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
-}
-
 async function main(): Promise<void> {
   // Same env contract as the CLI and the one-shot bridge: pick up the CSM
   // repo's .env; vars exported by the parent (AMB) process win.
@@ -503,7 +504,7 @@ async function main(): Promise<void> {
     portArgIx !== -1 ? Number.parseInt(process.argv[portArgIx + 1] ?? "0", 10) : 0;
 
   const state = createAmbServerState();
-  if (!process.env.CSM_MODEL) process.env.CSM_MODEL = state.defaults.model;
+  publishBridgeModel(state.defaults.model);
   const server = createAmbServer(state);
 
   await new Promise<void>((resolveListen, rejectListen) => {

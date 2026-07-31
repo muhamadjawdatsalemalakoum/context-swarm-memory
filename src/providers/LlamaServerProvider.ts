@@ -1,6 +1,7 @@
 import { Agent, setGlobalDispatcher } from "undici";
 
 import { OpenAIProvider, type OpenAIProviderOptions } from "./OpenAIProvider.js";
+import { envIntOptional } from "../utils/env.js";
 
 /**
  * Default llama.cpp `llama-server` base URL. Conventional port 8080 keeps it
@@ -113,9 +114,10 @@ export type LlamaServerProviderOptions = Omit<OpenAIProviderOptions, "providerNa
  */
 export class LlamaServerProvider extends OpenAIProvider {
   constructor(opts: LlamaServerProviderOptions = {}) {
-    const envTimeout = process.env.CSM_LLAMA_TIMEOUT_MS
-      ? Number.parseInt(process.env.CSM_LLAMA_TIMEOUT_MS, 10)
-      : undefined;
+    const envTimeout = envIntOptional(process.env.CSM_LLAMA_TIMEOUT_MS, {
+      name: "CSM_LLAMA_TIMEOUT_MS",
+      min: 1,
+    });
     const effectiveTimeout =
       opts.timeoutMs ?? envTimeout ?? LLAMA_SERVER_DEFAULT_TIMEOUT_MS;
     ensureLongTimeoutDispatcher(effectiveTimeout);

@@ -24,6 +24,8 @@
  * for pre-Phase β runs while making the upgrade available for new measurement.
  */
 
+import { envFlag } from "../utils/env.js";
+
 export const RERANKER_DEFAULT_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2";
 
 /** Read once at module load; honor `CSM_RERANKER_MODEL` env override. */
@@ -32,9 +34,8 @@ export function rerankerModelName(): string {
 }
 
 /** Whether the hybrid RAG baseline should run the reranker. Default off. */
-export function rerankerEnabled(): boolean {
-  const v = process.env.CSM_HYBRID_RERANK?.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
+export function rerankerEnabled(raw = process.env.CSM_HYBRID_RERANK): boolean {
+  return envFlag(raw, { name: "CSM_HYBRID_RERANK", fallback: false });
 }
 
 // Lazy-loaded pipeline (one per process).

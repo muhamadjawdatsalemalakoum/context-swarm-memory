@@ -242,21 +242,80 @@ export interface HybridRouteOptions {
  * Falls back to `selectCandidates` (byte-identical candidate list) when the
  * index is absent or the query embed fails — the hybrid path can only ever
  * add signal, never lose the lexical baseline.
+ *
+ * ── THE FALLBACK IS COUNTED, NOT SILENT ─────────────────────────────────────
+ *
+ * "Degrades gracefully to lexical" reads as a virtue right up until you notice
+ * what lexical selection DOES on a BEAM-shaped corpus: every entry scores ~0,
+ * so the cut returns the alphabetically-first N for every query — the exact
+ * query-independence bug documented in `src/core/router.ts`. The embedding leg
+ * is the whole measured win (+0.365 answer score at BEAM 1M, 26W/5L; the
+ * descriptor leg alone was flat). So a transient `embed()` failure does not
+ * "lose a little signal" — it silently converts the winning configuration into
+ * the losing one, mid-run, per query, while the run manifest still says the
+ * hybrid router was enabled.
+ *
+ * `hybridRouterStats()` therefore records every fallback. Anything that reports
+ * a hybrid-router measurement must read it and refuse to publish a run in which
+ * fallbacks occurred. Counting is deliberately not throwing: aborting a long
+ * benchmark on one flaky embed call would be worse than finishing it with an
+ * honest, inspectable degradation record.
  */
+export interface HybridRouterStats {
+  /** Calls that ran the full hybrid (lexical + embedding) path. */
+  hybrid: number;
+  /** Calls that fell back because no router index was supplied. */
+  fallbackNoIndex: number;
+  /** Calls that fell back because embedding the query failed or returned empty. */
+  fallbackEmbedFailed: number;
+  /** Message of the most recent embed failure, for diagnosis. */
+  lastEmbedError?: string;
+}
+
+const hybridStats: HybridRouterStats = {
+  hybrid: 0,
+  fallbackNoIndex: 0,
+  fallbackEmbedFailed: 0,
+};
+
+/** Snapshot of hybrid-router degradation counters for this process. */
+export function hybridRouterStats(): HybridRouterStats {
+  return { ...hybridStats };
+}
+
+/** Reset the counters (tests, and per-run accounting in long harnesses). */
+export function resetHybridRouterStats(): void {
+  hybridStats.hybrid = 0;
+  hybridStats.fallbackNoIndex = 0;
+  hybridStats.fallbackEmbedFailed = 0;
+  delete hybridStats.lastEmbedError;
+}
+
 export async function selectCandidatesHybrid(
   opts: HybridRouteOptions,
 ): Promise<CandidateScore[]> {
   const { query, directory, maxCandidates = 8, index } = opts;
-  if (!index) return selectCandidates({ query, directory, maxCandidates });
+  if (!index) {
+    hybridStats.fallbackNoIndex++;
+    return selectCandidates({ query, directory, maxCandidates });
+  }
 
   let queryVec: Float32Array | null = null;
+  let embedError: string | undefined;
   try {
     const [v] = await index.embed([query]);
     queryVec = v ?? null;
-  } catch {
+    if (!queryVec) embedError = "embed() returned no vector";
+  } catch (err) {
     queryVec = null;
+    embedError = err instanceof Error ? err.message : String(err);
   }
-  if (!queryVec) return selectCandidates({ query, directory, maxCandidates });
+  if (!queryVec) {
+    hybridStats.fallbackEmbedFailed++;
+    hybridStats.lastEmbedError = embedError;
+    return selectCandidates({ query, directory, maxCandidates });
+  }
+  hybridStats.hybrid++;
 
   const weights: HybridWeights = { ...DEFAULT_HYBRID_WEIGHTS, ...opts.weights };
   const queryTerms = new Set(tokenize(query));

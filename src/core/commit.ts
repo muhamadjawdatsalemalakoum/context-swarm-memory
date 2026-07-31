@@ -10,6 +10,7 @@ import type {
 } from "./types.js";
 import { JsonlStorage } from "../storage/jsonlStorage.js";
 import { newChronicleId, newEventId, newSnapshotId, nextSnapshotId } from "../utils/ids.js";
+import { truncate } from "../utils/text.js";
 import { nowIso } from "../utils/time.js";
 import { estimateEventsTokens, fullnessPct } from "./tokenBudget.js";
 
@@ -322,7 +323,3 @@ function round2(x: number): number {
   return Math.round(x * 100) / 100;
 }
 
-function truncate(s: string, n: number): string {
-  if (s.length <= n) return s;
-  return s.slice(0, n - 1) + "…";
-}

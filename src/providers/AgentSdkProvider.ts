@@ -5,6 +5,7 @@ import type {
   ProviderResponse,
   ProviderUsage,
 } from "./LlmProvider.js";
+import { envInt } from "../utils/env.js";
 
 /**
  * Runs CSM's probe/recall/synthesis stages on Claude via the Claude Agent SDK,
@@ -51,7 +52,11 @@ export class AgentSdkProvider implements LlmProvider {
     this.defaultModel = options.model ?? process.env.CSM_AGENT_MODEL;
     // Claude with adaptive thinking can spend well over a minute on a synthesis
     // call; default generously so slow stages fail on quality, not the clock.
-    this.timeoutMs = options.timeoutMs ?? parseIntOr(process.env.CSM_AGENT_TIMEOUT_MS, 300_000);
+    this.timeoutMs = options.timeoutMs ?? envInt(process.env.CSM_AGENT_TIMEOUT_MS, {
+      name: "CSM_AGENT_TIMEOUT_MS",
+      fallback: 300_000,
+      min: 1,
+    });
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
@@ -157,11 +162,6 @@ export class AgentSdkProvider implements LlmProvider {
   }
 }
 
-function parseIntOr(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
 
 function isAbortLike(err: unknown): boolean {
   const name = (err as { name?: string })?.name;

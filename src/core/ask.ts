@@ -27,6 +27,8 @@ import {
   resolveRecallBudget,
   resolveShardCount,
 } from "./tokenBudget.js";
+import { select } from "./selection.js";
+import { envFlag } from "../utils/env.js";
 import { newRunId } from "../utils/ids.js";
 import { nowIso } from "../utils/time.js";
 
@@ -258,10 +260,29 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     probes.push(o.result);
   }
 
-  let recallTargets = probes
-    .filter((p) => probeQualifiesForRecall(p, recallConfidenceMin))
-    .sort((a, b) => scoreProbe(b) - scoreProbe(a))
-    .slice(0, maxRecallShards);
+  // Recall selection is a score → sort → cut, i.e. the exact shape that produced
+  // the router query-independence bug (see src/core/selection.ts). It is if
+  // anything MORE tie-prone: `scoreProbe` maps two small enums (confidence ×
+  // estimatedAnswerValue) onto a handful of discrete values, so several probes
+  // routinely share a score and the cut lands inside a tie run.
+  //
+  // Tiebreak is deliberately "stable", NOT the module default "key-asc":
+  // `probes` is in router-candidate order, so insertion order here CARRIES
+  // SIGNAL (router rank). Sorting ties by shardId would replace a meaningful
+  // order with an alphabetical one — the very failure being guarded against.
+  // The win from routing through `select` is that the tie policy is now stated
+  // and tested rather than inherited from sort stability, and that degeneracy
+  // is reported instead of silent.
+  const recallSelection = select(
+    probes.filter((p) => probeQualifiesForRecall(p, recallConfidenceMin)),
+    {
+      score: scoreProbe,
+      key: (p) => p.shardId,
+      limit: maxRecallShards,
+      tieBreak: "stable",
+    },
+  );
+  let recallTargets = [...recallSelection.selected];
 
   // Router-trust safety net: ALWAYS recall the router's top-1 candidate, even
   // if its probe was rejected.
@@ -505,9 +526,7 @@ export function probeQualifiesForRecall(
  *  30-query scale (the tier-1 top-1 speculation is always on — it is provably
  *  schedule-only). */
 export function resolveEagerRecalls(raw = process.env.CSM_EAGER_RECALLS): boolean {
-  if (raw === undefined || raw.trim().length === 0) return false;
-  const v = raw.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
+  return envFlag(raw, { name: "CSM_EAGER_RECALLS", fallback: false });
 }
 
 function scoreProbe(p: ProbeResult): number {
