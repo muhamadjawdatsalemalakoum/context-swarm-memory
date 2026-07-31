@@ -51,28 +51,61 @@ Dropping uniform tags alone raises visible events from ~8 to ~11 (**+38%**) at
 no cost.
 
 
-## Instance 3 — recall digest truncation (`scopedEventDigest` blind mode)
+## Instance 3 — recall digest (`selectEventDigest` blind mode)
 
-`src/core/recall.ts:123-145` → `selectEventDigest` with both salience levers
-off (the default). Events are taken in hint-priority-then-original order and
-each is **head-truncated** to a per-event char share of the digest budget.
+> **CORRECTION (2026-07-31).** An earlier version of this section described the
+> per-event cap as "a per-event char *share* of the digest budget" and tabulated
+> 102 chars/event across 47 events. **That was wrong.** An adversarial verifier
+> caught it against the shipped code. `perEventChars` is a **fixed 480**
+> (`DEFAULT_PER_EVENT_CHARS`, `src/core/digestSelection.ts:50`); the budget does
+> not shrink per-event, it **drops trailing events**. The corrected measurements
+> are below and are worse in a different way.
 
-**Measured, real BEAM 1M document `13_s0_0` (47 turns; median turn 352 chars,
-p90 4,923 chars) at the default `maxRecallTokensPerShard = 1200`:**
+`src/core/digestSelection.ts:66-99`, reached from `scopedEventDigest`
+(`src/core/recall.ts:123-145`) with both salience levers off — the default.
+Two distinct defects, both of this class:
 
-| digest spans | chars/event | turns surviving intact | median turn survives |
-|---|---:|---:|---:|
-| 47 events | 102 | **0 of 47** | 29% |
-| 24 events | 200 | 15 of 47 | 57% |
-| 12 events | 400 | 24 of 47 | 100% |
+**3a — fixed 480-char head truncation.** Each event body is
+`truncate(e.content, 480)`. Position-blind: it keeps the opening of a turn
+regardless of where the answer-bearing clause sits.
 
-At full breadth the recall model sees roughly **the first sentence of each
-turn**, and ~30 of those 102 chars are the `[Month-DD-YYYY | Turn N] User:`
-header. Head-truncation is position-blind: a fact stated mid-turn is discarded
-even when the correct shard and correct event were both selected.
+**3b — budget overflow drops trailing events silently.** The loop packs lines
+greedily until `maxTokens` is exceeded, then emits
+`(… N more events truncated to fit budget)` and stops. Which events survive is
+decided by `orderCandidates` — on BEAM, with no hint and no salience, that is
+insertion order, i.e. lexicographic event id.
 
-There is a built, tested mitigation — `salientTruncation` /
-`reorderBySalience` behind `CSM_SIGNALS_RANKER` — and it is **default-off**.
+**Measured, real BEAM 1M shard `13_s0_0` (47 events, `maxRecallTokensPerShard`
+= 1200), running the production function:**
+
+| | |
+|---|---|
+| events exceeding the 480-char cap | **23 of 47 (49%)** |
+| events that get a digest line at all | **11 of 47 (23%)** — 36 dropped entirely |
+| **share of the shard's text reaching the recall model** | **3.8%** |
+| the 11 survivors | turn-0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18 |
+
+Note the survivor list: **lexicographic again.** Turns 2–9 and 19–46 are
+dropped before the recall model sees them. This is the same degenerate ordering
+as instances 1 and 2, at a third stage.
+
+### Severity bound — an important correction
+
+An adversarial verifier established that this does **not** dominate the 1M
+answer gap, and the reasoning holds up: `CSM_COVERAGE` is default-**ON**, and on
+the official 1M run 696/700 answer contexts begin with the CSM chronological
+evidence capsule. The capsule is built by `renderTimelineCapsule` from the
+coverage chronicle, which scores **untruncated** event content and renders
+query-anchored `termCenteredExcerpt` spans — not head truncation. With
+`return_k = 24` and `recall_count = 1` on 683/729 official rows, the
+recall-citation tier accounts for only roughly **3–4 of the 24 returned
+documents**; the rest arrive via the full-content chronicle, the embedding
+floor, shard-local expansion and the entity bridge.
+
+So instance 3 is **real and worth fixing, but low severity on the shipped BEAM
+path** — bounded to ~12–17% of answer-visible documents, where a bad pick also
+evicts a full-content timeline entry from the 24-slot return. It is not the
+cause of the verbatim-fact gap. I originally implied it was; that was wrong.
 
 ## The full compounding
 
@@ -97,7 +130,10 @@ inert, and a degenerate path that is the default.**
 | probe: 8 of ~47 turns | 17.0% |
 | **product (selection only)** | **≈2.7% of a user's memory ever reaches an LLM** |
 
-and of what does reach it, recall forwards ~29% of each turn's text.
+and of what does reach it, the recall digest forwards 3.8% of a shard's text —
+though see the severity bound in instance 3: the coverage capsule supplies most
+answer-visible documents from full content, so that last stage is not the
+dominant term.
 
 Chosen alphabetically. This is the mechanism behind "the answer was not
 retrieved": for most queries it was never *shown* to the probe in the first
