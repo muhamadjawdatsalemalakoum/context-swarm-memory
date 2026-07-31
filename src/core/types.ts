@@ -202,6 +202,15 @@ export interface AskRunResult {
   /** Eager (CSM_EAGER_RECALLS) recall calls that completed but were not in
    *  the score-ordered selection; their tokens are included in `cost`. */
   discardedRecalls?: number;
+  /** The per-shard recall digest budget this run actually used. Bimodal by
+   *  design — the coverage intent classifier escalates 1,200 → 3,200 tokens on
+   *  summary/ordering/temporal/aggregation-shaped queries — which is a 2.7×
+   *  swing on the most expensive per-call stage. Recorded because the 2026-08
+   *  token audit found the swing was invisible in telemetry: cost analyses were
+   *  averaging over two populations without knowing it. */
+  recallTokensPerShard: number;
+  /** True when the coverage intent classifier escalated the recall budget. */
+  coverageEscalated: boolean;
 }
 
 // Commit protocol — Phase 2.

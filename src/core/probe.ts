@@ -6,9 +6,21 @@ import { probePrompt, SHARD_SYSTEM_PROMPT } from "./prompts.js";
 import { tokenize, termMatchesAnyTag } from "./router.js";
 import { estimateTokens } from "./tokenBudget.js";
 import { select } from "./selection.js";
-import { envFlag } from "../utils/env.js";
+import { envFlag, envPositiveInt } from "../utils/env.js";
 
-const PROBE_INDEX_CHAR_BUDGET = 1200;
+/** Default char budget for the probe's ranked event index (~300 tokens).
+ *  The probe stage is ~72% of pipeline input and this index is its largest
+ *  variable part, so it is sweepable: `CSM_PROBE_INDEX_CHARS` overrides. */
+const DEFAULT_PROBE_INDEX_CHARS = 1200;
+
+export function resolveProbeIndexChars(
+  raw = process.env.CSM_PROBE_INDEX_CHARS,
+): number {
+  return envPositiveInt(raw, {
+    name: "CSM_PROBE_INDEX_CHARS",
+    fallback: DEFAULT_PROBE_INDEX_CHARS,
+  });
+}
 
 export async function probeShard(args: {
   provider: LlmProvider;
@@ -30,7 +42,7 @@ export async function probeShard(args: {
   // probe then correctly concluded "this shard isn't about auth" and the
   // pipeline missed the correct shard. Query-aware ranking puts auth-tagged
   // events first so the probe sees the most-relevant content within budget.
-  const eventIndex = compactEventIndex(snapshot, PROBE_INDEX_CHAR_BUDGET, userQuery);
+  const eventIndex = compactEventIndex(snapshot, resolveProbeIndexChars(), userQuery);
 
   // For the mock, pre-bake the answer; the MockProvider extracts it verbatim.
   // Real providers ignore the fence (they don't see it).
@@ -65,9 +77,11 @@ ${eventIndex}`;
       // Probe is binary classification ("does this shard know"). Phase α (2026-05)
       // disables Gemma 4 thinking mode for this stage — no reasoning trace, just JSON.
       // Reasoning consumed 600-1500 output tokens per probe on the e4b model; with
-      // thinking off the model emits ~100-200 JSON tokens total. Budget held at 2048
-      // for back-compat with cached responses (the budget is a ceiling, not a floor).
-      maxOutputTokens: 2048,
+      // thinking off the model emits ~100-200 JSON tokens total. 512 gives 2.5-5×
+      // headroom over observed usage. (An earlier 2048 was kept "for back-compat
+      // with cached responses" — void: the probe stage has no disk cache; only the
+      // final answer call goes through callLlmCached. 2026-08 token audit, plan L0.)
+      maxOutputTokens: 512,
       temperature: 0,
       model,
       shardId: snapshot.shardId,
@@ -260,5 +274,5 @@ function round2(x: number): number {
 
 // Used by recall to size its event digest budget.
 export function probeIndexTokenEstimate(snapshot: MemoryShardSnapshot): number {
-  return estimateTokens(compactEventIndex(snapshot, PROBE_INDEX_CHAR_BUDGET));
+  return estimateTokens(compactEventIndex(snapshot, resolveProbeIndexChars()));
 }

@@ -1461,6 +1461,11 @@ export class CsmBaseline implements BaselineRunner {
         probeCount: askResult.probes.length,
         probeAcceptCount: askResult.probes.filter((p) => p.knows).length,
         recallCount: askResult.recalls.length,
+        // 2026-08 token audit: the recall digest budget is bimodal (1,200 vs
+        // 3,200 tok, coverage-intent escalation) — a 2.7× swing on the most
+        // expensive per-call stage that was previously invisible in telemetry.
+        recallTokensPerShard: askResult.recallTokensPerShard,
+        coverageEscalated: askResult.coverageEscalated,
         candidateShardIds: askResult.candidates.map((c) => c.entry.id),
         probedShardIds: askResult.probes.map((p) => p.shardId),
         recalledShardIds: askResult.recalls.map((r) => r.shardId),

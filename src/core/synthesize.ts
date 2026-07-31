@@ -19,6 +19,10 @@ export async function synthesizeMemoryPacket(args: {
     promptSuffix = `\n\n<<MOCK_RESULT>>${JSON.stringify(baked)}<</MOCK_RESULT>>`;
   }
 
+  // Compact JSON, deliberately not pretty-printed: the 2-space indent this used
+  // to carry was ~10-15% of the recall payload spent on whitespace the model
+  // does not need. Synth input is dominated by this blob, so the indent was the
+  // single largest free token cut in the stage (2026-08 token audit, plan L0).
   const recallJson = JSON.stringify(
     recalls.map((r) => ({
       shard_id: r.shardId,
@@ -29,8 +33,6 @@ export async function synthesizeMemoryPacket(args: {
       unknowns: r.unknowns,
       conflicts: r.conflicts,
     })),
-    null,
-    2,
   );
 
   const { data, usage } = await completeAndValidate(

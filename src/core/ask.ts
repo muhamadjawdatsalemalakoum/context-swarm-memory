@@ -153,6 +153,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
       provider,
       storage,
       skipQueryLog,
+      recallTokensPerShard,
+      coverageEscalated: coverageIntent !== null,
     });
   }
 
@@ -435,6 +437,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     storage,
     skipQueryLog,
     discardedRecalls,
+    recallTokensPerShard,
+    coverageEscalated: coverageIntent !== null,
   });
 }
 
@@ -453,6 +457,8 @@ async function finalize(args: {
   storage: StorageReader;
   skipQueryLog: boolean;
   discardedRecalls?: number;
+  recallTokensPerShard: number;
+  coverageEscalated: boolean;
 }): Promise<AskRunResult> {
   args.cost.latencyMs = Date.now() - args.latencyStart;
   const finishedAt = args.finishedAtFn();
@@ -468,6 +474,8 @@ async function finalize(args: {
     startedAt: args.startedAt,
     finishedAt,
     discardedRecalls: args.discardedRecalls ?? 0,
+    recallTokensPerShard: args.recallTokensPerShard,
+    coverageEscalated: args.coverageEscalated,
   };
   if (!args.skipQueryLog && args.storage.appendQueryRun) {
     const record: QueryRunRecord = {
