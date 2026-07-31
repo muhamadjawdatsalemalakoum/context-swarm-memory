@@ -1,0 +1,278 @@
+{
+  "reader": "claude-sonnet-5",
+  "judgePromptVersion": "v2",
+  "n": 45,
+  "excluded": 0,
+  "results": [
+    {
+      "id": "10_instruction_following_1",
+      "category": "instruction_following",
+      "a": 0.8333333333333334,
+      "b": 0
+    },
+    {
+      "id": "10_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "13_instruction_following_1",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "10_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "13_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "13_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 1
+    },
+    {
+      "id": "14_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "14_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "14_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "15_instruction_following_1",
+      "category": "instruction_following",
+      "a": 0.875,
+      "b": 0.5
+    },
+    {
+      "id": "15_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "15_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 1
+    },
+    {
+      "id": "17_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "17_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "17_preference_following_0",
+      "category": "preference_following",
+      "a": 0.75,
+      "b": 0.625
+    },
+    {
+      "id": "19_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "19_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "19_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_instruction_following_1",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_instruction_following_0",
+      "category": "instruction_following",
+      "a": 0.8333333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "21_preference_following_0",
+      "category": "preference_following",
+      "a": 0.75,
+      "b": 0.75
+    },
+    {
+      "id": "21_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_instruction_following_1",
+      "category": "instruction_following",
+      "a": 0.8333333333333334,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "23_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_preference_following_1",
+      "category": "preference_following",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "26_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_preference_following_0",
+      "category": "preference_following",
+      "a": 0.8333333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "31_instruction_following_1",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "31_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "31_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.75
+    },
+    {
+      "id": "32_instruction_following_1",
+      "category": "instruction_following",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "32_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "32_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "34_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "34_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "34_preference_following_0",
+      "category": "preference_following",
+      "a": 0.75,
+      "b": 1
+    },
+    {
+      "id": "7_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "7_preference_following_0",
+      "category": "preference_following",
+      "a": 0.625,
+      "b": 0.25
+    },
+    {
+      "id": "7_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "8_instruction_following_0",
+      "category": "instruction_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "8_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "8_preference_following_0",
+      "category": "preference_following",
+      "a": 0.75,
+      "b": 0.5
+    }
+  ]
+}
