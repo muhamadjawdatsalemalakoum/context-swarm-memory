@@ -43,6 +43,9 @@ import {
   selectBeamQueries,
   type BeamRetrievalQuery,
 } from "../src/eval/corpus/beam.js";
+import { createHash } from "node:crypto";
+import { execSync } from "node:child_process";
+
 import { envFlag, envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
@@ -207,6 +210,20 @@ export async function runBeamSlice(
     const value = process.env[name];
     if (value !== undefined) envEcho[name] = value;
   }
+  // Provenance (audit P4/F7): the F11 false conclusion happened because a
+  // config delta was invisible in the manifests. Echo the code version and a
+  // content hash of exactly the documents/queries this run consumed, so any
+  // two runs can be diffed for same-config-ness without trusting memory.
+  let gitSha: string | null = null;
+  try {
+    gitSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    // Not fatal: a run outside a git checkout still gets content hashes.
+  }
+  const docsHash = createHash("sha256");
+  for (const d of documents) docsHash.update(`${d.id}\u0000${d.content}\u0000`);
+  const queriesHash = createHash("sha256");
+  for (const q of selected) queriesHash.update(`${q.id}\u0000${q.query}\u0000`);
   await writeFile(
     configPath,
     `${JSON.stringify(
@@ -224,6 +241,11 @@ export async function runBeamSlice(
         providerName: provider.name,
         bridgeOpts,
         envEcho,
+        gitSha,
+        documentsSha256: docsHash.digest("hex"),
+        documentCount: documents.length,
+        selectedQueriesSha256: queriesHash.digest("hex"),
+        selectedQueryCount: selected.length,
         startedAtIso: new Date().toISOString(),
         note:
           "Retrieval-only BEAM slice run. Gold never enters this process; scoring is scripts/score-beam-slice.ts.",
