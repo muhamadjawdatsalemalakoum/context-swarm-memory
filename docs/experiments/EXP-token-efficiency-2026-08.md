@@ -76,22 +76,48 @@ guarded: hybrid-only, and only when the (now `select()`-routed) hybrid cut
 DISCRIMINATED — shrinking on a degenerate ranking would replay the router bug
 as a probe bug. Prior sizing: −13–18% pipeline input at 60% gating.
 
-### L2b — batched probe *(committed 3f2850b)*
+### L2b — batched probe *(committed 3f2850b)* — **VERDICT: PASS, ship candidate**
 `CSM_PROBE_BATCH`: shards 2..N in one call; top-1 stays solo so the speculative
 recall still overlaps the probe barrier (~1.2s on 94% of 1M queries).
 Reconciliation contract test-pinned (pad missing / drop hallucinated /
 first-wins dupes / requested order / own-shard event-id hints). Object-wrapped
 schema so `completeAndValidate`'s array-salvage branch is unreachable.
-Acceptance-rate shift (baseline 82%) is the arm's first check → r1mJ (running).
+
+**Paired arm r1mJ-batchprobe-v1 vs control r1mI2-cleanvocab-v2** (same config,
+fixed answer gate, judge v2, n=45, 1M split):
+
+| | score (ALL) | answer-ctx tok | internal input | wall/query |
+|---|---|---|---|---|
+| I2 control | 0.8250 | ctxTok 7,143 | 8 probe calls | 45.5s |
+| J batched | 0.8565 | ctxTok 6,999 | 2 probe calls | 45.6s |
+| delta | **+0.0315, CI [−0.017,+0.093], MDE 0.079 → NOT an effect** (6W/3L/36T; knowledge_update 15/15 ties) | ≈unchanged | **−~2,090 tok/query scaffold (−21% of internal input, by construction)** | neutral |
+
+- Probe **count** preserved at 8.00/query (reconciliation working); acceptance
+  72.8→64.7% (batched prompt judges slightly stricter) but **recalls unchanged**
+  (2.98→3.16) — the extra rejections fall on shards recall never read anyway.
+- Internal saving is arithmetic, not telemetry: the sidecar's usage accounting
+  is broken (~23 in-tok/query reported), but the scaffold dedup is structural —
+  349 fixed tok × 8 calls → × 2 calls; digest text total unchanged. The staged
+  Gemini ladder is where the measured number lands.
+- Wall neutral as predicted (cost lever, not latency lever). The earlier "−12%
+  wall" note was J-vs-arm-I cross-run variance: the I2 same-config repeat also
+  ran 45s vs arm I's 51s.
+- **Same-config repeat noise floor** (arm I v1 vs I2 v2, retrieval level):
+  accept 5.87→5.82, recalls 3.09→2.98, ctxTok 7,008→7,143 — tight; the F11-class
+  variance lives in the answer/judge stage, not retrieval.
 
 ## Still open
 
-- **L3** — local pre-gate A/B/C (cross-encoder may *skip* witnesses, never
-  answer for them; `src/eval/rerank.ts` is spared from the baseline deletion).
-  Pre-registered: B ships iff score ≥ −MDE and tokens −30%+; C is a ceiling
-  diagnostic unless it wins outright, which goes back to the user with data.
-- **L2a/L2b paired arms** (r1mJ first) — internal-token + acceptance-rate +
-  answer-gate, reported as score + answer-ctx + internal + wall together.
+- **L3** — local pre-gate arm B running as r1mK-localgate-v1
+  (CSM_PROBE_LOCAL_KEEP=4, cross-encoder over shard digests; may *skip*
+  witnesses, never answer for them; `src/eval/rerank.ts` spared from the
+  baseline deletion). Pre-registered: B ships iff score ≥ −MDE and tokens
+  −30%+; C (ceiling diagnostic, no LLM probe at all) after B reads out —
+  C ships only if it *wins*, which goes back to the user with data.
+- **L2a paired arm** — deferred until the L3 verdict: L2a (confidence shrink)
+  and L3 (local gate) are both probe-reduction levers and would compose
+  awkwardly; if K passes at keep=4 it dominates L2a's −13–18% sizing, if K
+  fails L2a is the softer fallback to measure next.
 - **L4** — write-time fact shift (the Hindsight/M-1 lesson; separate arc).
 
 ## Method notes carried forward
