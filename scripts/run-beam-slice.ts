@@ -29,7 +29,7 @@
  *     [--seed 42] [--slice-dir <dir>] [--no-resume]
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
@@ -43,10 +43,9 @@ import {
   selectBeamQueries,
   type BeamRetrievalQuery,
 } from "../src/eval/corpus/beam.js";
-import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 
-import { envFlag, envPositiveInt } from "../src/utils/env.js";
+import { envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import {
@@ -60,6 +59,10 @@ import {
   type AmbBridgeOptions,
   type AmbDocument,
 } from "./amb-csm-retrieve.js";
+import {
+  loadOrBuildPreferenceProfile,
+  preferenceProfileActive,
+} from "./amb-preference-profile.js";
 
 export interface RunBeamSliceOptions {
   split: string;
@@ -223,7 +226,10 @@ export async function runBeamSlice(
   const docsHash = createHash("sha256");
   for (const d of documents) docsHash.update(`${d.id}\u0000${d.content}\u0000`);
   const queriesHash = createHash("sha256");
-  for (const q of selected) queriesHash.update(`${q.id}\u0000${q.query}\u0000`);
+  // questionSha256, never the question text: this runner is gold-blind by
+  // contract (beamLeakageFirewall) and the digest is already the canonical
+  // per-question identity the bridge telemetry uses.
+  for (const q of selected) queriesHash.update(`${q.id}\u0000${q.questionSha256}\u0000`);
   await writeFile(
     configPath,
     `${JSON.stringify(
@@ -336,11 +342,7 @@ export async function runBeamSlice(
    */
   const writeTimeModel = resolveProviderModel(provider.name);
 
-  const PREF_PROMPT_VERSION = "v1";
-  const prefEnabled = envFlag(process.env.CSM_AMB_PREFERENCE_PROFILE, {
-    name: "CSM_AMB_PREFERENCE_PROFILE",
-    fallback: false,
-  });
+  const prefEnabled = preferenceProfileActive();
   const prefProfiles = new Map<string, Promise<string | undefined>>();
   const getPreferenceProfile = (
     userId: string,
@@ -349,53 +351,28 @@ export async function runBeamSlice(
     if (!prefEnabled) return Promise.resolve(undefined);
     const hit = prefProfiles.get(userId);
     if (hit) return hit;
-    // Disk cache. The profile is a WRITE-TIME artifact: it depends only on the
-    // unit's content and the extractor, not on the query, so it is identical
-    // across every arm that uses the same unit. Rebuilding it per arm cost ~180
-    // large LLM calls and tripped a 429 on the subscription path. Keyed by
-    // split + unit + model + prompt version so a prompt change re-derives.
-    const cacheDir = resolve(process.cwd(), "data", "eval", "preference-profiles");
-    const cacheKey = createHash("sha256")
-      .update(`${opts.split}|${userId}|${writeTimeModel ?? "default"}|${PREF_PROMPT_VERSION}`)
-      .digest("hex")
-      .slice(0, 16);
-    const cachePath = join(cacheDir, `${opts.split}-u${userId}-${cacheKey}.txt`);
-    if (existsSync(cachePath)) {
-      const cached = Promise.resolve(readFileSync(cachePath, "utf8"));
-      prefProfiles.set(userId, cached);
-      process.stdout.write(`    [pref] unit ${userId} profile from cache
-`);
-      return cached;
-    }
-
-    const built = baseline
-      .organizePreferencesScaled({
-        eventContents: corpus.events.map((e) => e.content),
-        model: writeTimeModel as string,
-        // The 600K-token defaults are a Gemini-era setting; a 1M-tier unit is
-        // ~1.6M tokens, so those produce 600K-token prompts that the sidecar
-        // rejects outright. Size the map step to something any provider can
-        // actually accept, and let it be tuned per stack.
-        chunkTokens: envPositiveInt(process.env.CSM_AMB_PREF_CHUNK_TOKENS, { name: "CSM_AMB_PREF_CHUNK_TOKENS", fallback: 100_000 }),
-        singlePassTokens: envPositiveInt(process.env.CSM_AMB_PREF_SINGLE_PASS_TOKENS, { name: "CSM_AMB_PREF_SINGLE_PASS_TOKENS", fallback: 120_000 }),
-        chunkOutputTokens: envPositiveInt(process.env.CSM_AMB_PREF_CHUNK_OUTPUT, { name: "CSM_AMB_PREF_CHUNK_OUTPUT", fallback: 2000 }),
-        finalOutputTokens: envPositiveInt(process.env.CSM_AMB_PREF_MAX_OUTPUT, { name: "CSM_AMB_PREF_MAX_OUTPUT", fallback: 2000 }),
-        mapConcurrency: envPositiveInt(process.env.CSM_AMB_PREF_MAP_CONCURRENCY, { name: "CSM_AMB_PREF_MAP_CONCURRENCY", fallback: 4 }),
-        onProgress: (msg) => process.stdout.write(`    [pref] unit ${userId} ${msg}
+    // Disk cache + build are the SHARED helper in
+    // scripts/amb-preference-profile.ts (also used by the warm AMB server), so
+    // slice-harness and server runs hit the same cache entries. Key:
+    // split | unit | write-time model | prompt version.
+    const built: Promise<string | undefined> = loadOrBuildPreferenceProfile({
+      baseline,
+      eventContents: corpus.events.map((e) => e.content),
+      split: opts.split,
+      userId,
+      model: writeTimeModel,
+      onProgress: (msg) => process.stdout.write(`    [pref] unit ${userId} ${msg}
 `),
-      })
+    })
       .then((r) => {
         process.stdout.write(
-          `    [pref] unit ${userId} profile ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))
+          r.fromCache
+            ? `    [pref] unit ${userId} profile from cache
+`
+            : `    [pref] unit ${userId} profile ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))
 `,
         );
-        try {
-          mkdirSync(cacheDir, { recursive: true });
-          writeFileSync(cachePath, r.text, "utf8");
-        } catch {
-          // A cache write failure must never fail the run.
-        }
-        return r.text;
+        return r.text as string | undefined;
       })
       .catch((err) => {
         // A failed profile must not fail the query — it degrades to no profile,

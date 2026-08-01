@@ -1,5 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Server } from "node:http";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   createAmbServer,
@@ -12,6 +15,8 @@ import {
   type AmbDocument,
   observationQueryIntent,
 } from "../scripts/amb-csm-retrieve.js";
+import { preferenceProfileCachePath } from "../scripts/amb-preference-profile.js";
+import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import { MockProvider } from "../src/providers/MockProvider.js";
 
 const DOCS: AmbDocument[] = [
@@ -150,7 +155,15 @@ describe("amb-csm-server", () => {
     expect(payload.raw_response.reason).toBe("no_documents_in_scope");
   });
 
+  // The two gate tests below pin the BENCHMARK-VALIDATED (fitted) contract,
+  // which since the P2 split lives behind CSM_AMB_LEGACY_INTENT=1: the
+  // ordering/timeline phrase list and the two measured-leak guards were grown
+  // against individual BEAM queries. They stay exactly as measured because
+  // that knowledge is expensive and any legacy-ON arm still depends on it;
+  // the DEFAULT (plain-language) path is pinned separately in
+  // tests/ambIntent.test.ts.
   it("observation_gate_fires_on_both_coverage_loss_categories", () => {
+    process.env.CSM_AMB_LEGACY_INTENT = "1";
     // Summarization category (retrospective-summary requests) fire.
     for (const q of [
       "Can you give me a summary of how my work with Robert developed over time?",
@@ -191,9 +204,11 @@ describe("amb-csm-server", () => {
     ]) {
       expect(observationQueryIntent(q)).toBe(false);
     }
+    delete process.env.CSM_AMB_LEGACY_INTENT;
   });
 
   it("aggregation_gate_fires_on_multi_session_totals_only", () => {
+    process.env.CSM_AMB_LEGACY_INTENT = "1";
     // Measured multi_session aggregation phrasings (the fact-registry target).
     for (const q of [
       "How many documents am I planning to handle in total when combining my Elasticsearch and Solr projects?",
@@ -228,6 +243,7 @@ describe("amb-csm-server", () => {
     ]) {
       expect(aggregationQueryIntent(q)).toBe(false);
     }
+    delete process.env.CSM_AMB_LEGACY_INTENT;
   });
 
   it("amb_server_rejects_bad_requests", async () => {
@@ -246,5 +262,110 @@ describe("amb-csm-server", () => {
 
     const unknownRoute = await fetch(`${base}/nope`, { method: "POST", body: "{}" });
     expect(unknownRoute.status).toBe(404);
+  });
+
+  it("amb_server_passes_preference_profile_when_flag_on_and_omits_when_off", async () => {
+    const prevFlag = process.env.CSM_AMB_PREFERENCE_PROFILE;
+    const prevCacheDir = process.env.CSM_AMB_PREF_CACHE_DIR;
+    const cacheDir = mkdtempSync(join(tmpdir(), "csm-pref-test-"));
+    const profileText = "PREF | language | Use TypeScript for all examples | turn-1";
+    const spy = vi
+      .spyOn(state.baseline, "organizePreferencesScaled")
+      .mockResolvedValue({
+        text: profileText,
+        inputTokens: 10,
+        outputTokens: 5,
+        latencyMs: 1,
+        chunks: 1,
+      });
+    try {
+      process.env.CSM_AMB_PREFERENCE_PROFILE = "1";
+      process.env.CSM_AMB_PREF_CACHE_DIR = cacheDir;
+
+      // Ingest ONE unit (u1 only): /ingest fire-and-forget pre-warms the
+      // profile build for exactly the ingested scopes, and the retrieve right
+      // behind it must JOIN that in-flight build (single-flight), not start a
+      // second one.
+      const ingest = await fetch(`${base}/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documents: [DOCS[0]] }),
+      });
+      expect(ingest.status).toBe(200);
+
+      const retrieveOnce = () =>
+        fetch(`${base}/retrieve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: "What password hashing algorithm did we choose?",
+            k: 5,
+            user_id: "u1",
+          }),
+        });
+
+      const on = await retrieveOnce();
+      expect(on.status).toBe(200);
+      const onPayload = (await on.json()) as {
+        documents: Array<{ id: string; content: string }>;
+      };
+      // The profile rides in exactly ONE returned document (folded into the
+      // capsule when one exists, its own document otherwise), under the
+      // standing-preferences header.
+      const carriers = onPayload.documents.filter((d) =>
+        d.content.includes(profileText),
+      );
+      expect(carriers.length).toBe(1);
+      expect(carriers[0]!.content).toContain(
+        "STANDING PREFERENCES AND INSTRUCTIONS FROM THIS USER",
+      );
+      // Pre-warm build + joined query = exactly one build.
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Second retrieve: in-RAM memoized per (user, scope version) — no rebuild.
+      const again = await retrieveOnce();
+      expect(again.status).toBe(200);
+      const againPayload = (await again.json()) as {
+        documents: Array<{ id: string; content: string }>;
+      };
+      expect(
+        againPayload.documents.filter((d) => d.content.includes(profileText)).length,
+      ).toBe(1);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // The disk-cache entry uses the slice-compatible key scheme: the file the
+      // server wrote is the exact path the shared helper derives from the same
+      // (split, unit, write-time model) inputs the slice harness would use.
+      const files = readdirSync(cacheDir);
+      expect(files.length).toBe(1);
+      const expectedPath = preferenceProfileCachePath({
+        split: "amb", // CSM_AMB_SPLIT unset → server default namespace
+        userId: "u1",
+        model: resolveProviderModel("mock"),
+      });
+      expect(join(cacheDir, files[0]!)).toBe(expectedPath);
+
+      // Flag OFF: byte-identical to baseline — no profile text, no header,
+      // and no further build.
+      delete process.env.CSM_AMB_PREFERENCE_PROFILE;
+      const off = await retrieveOnce();
+      expect(off.status).toBe(200);
+      const offPayload = (await off.json()) as {
+        documents: Array<{ id: string; content: string }>;
+      };
+      expect(offPayload.documents.length).toBeGreaterThan(0);
+      for (const doc of offPayload.documents) {
+        expect(doc.content.includes(profileText)).toBe(false);
+        expect(doc.content.includes("STANDING PREFERENCES")).toBe(false);
+      }
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+      if (prevFlag === undefined) delete process.env.CSM_AMB_PREFERENCE_PROFILE;
+      else process.env.CSM_AMB_PREFERENCE_PROFILE = prevFlag;
+      if (prevCacheDir === undefined) delete process.env.CSM_AMB_PREF_CACHE_DIR;
+      else process.env.CSM_AMB_PREF_CACHE_DIR = prevCacheDir;
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
   });
 });
