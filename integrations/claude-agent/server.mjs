@@ -134,11 +134,43 @@ async function complete({ system, prompt, model, jsonMode }) {
 
   return {
     text,
-    usage: {
-      inputTokens: usage?.input_tokens ?? usage?.inputTokens ?? null,
-      outputTokens: usage?.output_tokens ?? usage?.outputTokens ?? null,
-    },
+    usage: summariseUsage(usage),
     latencyMs: Date.now() - started,
+  };
+}
+
+/**
+ * Total the input side of an Anthropic usage record.
+ *
+ * `input_tokens` counts ONLY the uncached portion — cached prompt content is
+ * reported separately in `cache_read_input_tokens` and
+ * `cache_creation_input_tokens`. Reading `input_tokens` alone made this sidecar
+ * report ~23 input tokens per query against multi-thousand-token prompts, which
+ * silently invalidated every internal-token figure measured through it (the
+ * token-efficiency campaign had to fall back to arithmetic estimates).
+ *
+ * The billed/consumed input is the sum of all three.
+ */
+function summariseUsage(usage) {
+  const n = (...keys) => {
+    for (const k of keys) {
+      const v = usage?.[k];
+      if (typeof v === "number") return v;
+    }
+    return null;
+  };
+  const uncached = n("input_tokens", "inputTokens");
+  const cacheRead = n("cache_read_input_tokens", "cacheReadInputTokens");
+  const cacheWrite = n("cache_creation_input_tokens", "cacheCreationInputTokens");
+  const parts = [uncached, cacheRead, cacheWrite].filter((v) => v !== null);
+  return {
+    inputTokens: parts.length > 0 ? parts.reduce((a, b) => a + b, 0) : null,
+    outputTokens: n("output_tokens", "outputTokens"),
+    // Breakdown kept so a future run can tell a cache-heavy query from a
+    // genuinely small one — the summed field alone cannot.
+    inputTokensUncached: uncached,
+    inputTokensCacheRead: cacheRead,
+    inputTokensCacheWrite: cacheWrite,
   };
 }
 
