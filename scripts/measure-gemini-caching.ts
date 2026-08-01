@@ -82,6 +82,32 @@ export const GEMINI_35_FLASH_PRICES = {
  *  https://ai.google.dev/gemini-api/docs/caching: "Gemini 3.5 Flash | 4096"). */
 export const GEMINI_35_FLASH_CACHE_MIN_TOKENS = 4096;
 
+/** The ONE model this harness is valid for. Every number it emits is that
+ *  model's: `estimatedUsd` and the effective-spend line are computed from
+ *  GEMINI_35_FLASH_PRICES unconditionally, and the 4,096-token floor is baked
+ *  into each call's `expectation` string plus the A1/A7 pass criteria. Both
+ *  are per-model in Google's tables, so pointing the run at another model
+ *  would file a report whose costs and pass/fail criteria belong to a
+ *  different model. The pin is deliberate — widen it only together with a
+ *  per-model price + floor table. */
+export type MeasuredModel = typeof GEMINI_35_FLASH_PRICES.model;
+
+/** Narrow an operator-supplied model name (`--model`, or `CSM_GEMINI_MODEL`
+ *  picked up from `.env`) to the pinned model, or refuse to measure at all. */
+export function assertMeasuredModel(model: string): MeasuredModel {
+  if (model !== GEMINI_35_FLASH_PRICES.model) {
+    throw new Error(
+      `this harness is pinned to ${GEMINI_35_FLASH_PRICES.model}, got "${model}": its pricing ` +
+        `table, the ${GEMINI_35_FLASH_CACHE_MIN_TOKENS}-token cache floor and every per-call ` +
+        `expectation are ${GEMINI_35_FLASH_PRICES.model}'s, so the run would report that ` +
+        `model's costs and pass criteria for a different model. Pass ` +
+        `--model ${GEMINI_35_FLASH_PRICES.model} (a CSM_GEMINI_MODEL in .env is the usual ` +
+        `source of a mismatch), or add a per-model price/floor table first.`,
+    );
+  }
+  return model;
+}
+
 // ─── Deterministic synthetic payloads ────────────────────────────────────────
 
 /** Tiny deterministic LCG so payloads are reproducible across runs/machines. */
@@ -149,7 +175,8 @@ export interface MeasureCall {
 }
 
 export interface MeasurePlan {
-  model: string;
+  /** Pinned: the plan's cost estimate and expectations are this model's only. */
+  model: MeasuredModel;
   calls: MeasureCall[];
   /** Estimated FRESH input tokens across all generate/create calls. */
   estimatedInputTokens: number;
@@ -157,7 +184,9 @@ export interface MeasurePlan {
 }
 
 /** The full A1–A7 matrix from the T4 brief. Deterministic; ~66 calls. */
-export function buildMeasurementMatrix(model = GEMINI_35_FLASH_PRICES.model): MeasurePlan {
+export function buildMeasurementMatrix(
+  model: MeasuredModel = GEMINI_35_FLASH_PRICES.model,
+): MeasurePlan {
   const calls: MeasureCall[] = [];
   const QUESTION = (i: number) => `Q${i}: which retry policy did the team pick for the payment gateway? Answer in one short sentence.`;
 
@@ -998,6 +1027,8 @@ export function renderCensusReport(c: CensusResult): string {
 interface CliArgs {
   live: boolean;
   offlineCensus: boolean;
+  /** Raw operator input; validated by assertMeasuredModel on the paths that
+   *  actually price/expect a model (the census is model-independent). */
   model: string;
   queries?: string[];
   targetTokens: number;
@@ -1049,7 +1080,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const plan = buildMeasurementMatrix(args.model);
+  // Refuse before printing a plan (let alone spending): the matrix below is
+  // priced and expectation-checked for one model only.
+  const model = assertMeasuredModel(args.model);
+
+  const plan = buildMeasurementMatrix(model);
   console.log(
     `Measurement plan: ${plan.calls.length} calls, ~${plan.estimatedInputTokens} fresh input tokens, ≈$${plan.estimatedUsd.toFixed(2)} at ${plan.model} prices.`,
   );
@@ -1071,7 +1106,7 @@ async function main(): Promise<void> {
   const maxCalls = Number(process.env.CSM_MEASURE_BUDGET_CALLS ?? 100);
   const rows = await runMeasurement(
     plan,
-    { apiKey, model: args.model, maxCalls },
+    { apiKey, model, maxCalls },
     {
       fetchImpl: globalThis.fetch.bind(globalThis),
       now: Date.now,
@@ -1080,7 +1115,7 @@ async function main(): Promise<void> {
     },
   );
   const summary = summarizeRows(rows);
-  const report = renderMeasureReport(summary, args.model);
+  const report = renderMeasureReport(summary, model);
   const outDir =
     args.outDir ??
     join("data", "eval", "runs", "gemini-caching-measure", new Date().toISOString().replace(/[:.]/g, "-"));

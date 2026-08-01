@@ -22,8 +22,10 @@ function makeCorpus(): Corpus {
         "[March-15-2024 | Turn 0] User: I need help with the kubernetes autoscaler " +
         "configuration for the payments cluster. ->-> 1,1",
       tags: ["amb", "beam"],
-      timestamp: null,
-    } as BenchEvent,
+      tokenCount: 24,
+      isCore: true,
+      tier: 0,
+    },
     {
       id: "d1#turn-1",
       shardId: "d1",
@@ -31,8 +33,10 @@ function makeCorpus(): Corpus {
         "[Turn 1] Assistant: For the kubernetes autoscaler, set the payments " +
         "cluster replica floor higher.",
       tags: ["amb", "beam"],
-      timestamp: null,
-    } as BenchEvent,
+      tokenCount: 24,
+      isCore: true,
+      tier: 0,
+    },
     {
       id: "d2#turn-0",
       shardId: "d2",
@@ -40,15 +44,19 @@ function makeCorpus(): Corpus {
         "[April-02-2024 | Turn 0] User: Let's talk about the sourdough starter " +
         "hydration ratio for baking. ->-> 2,1",
       tags: ["amb", "beam"],
-      timestamp: null,
-    } as BenchEvent,
+      tokenCount: 24,
+      isCore: true,
+      tier: 0,
+    },
     {
       id: "d2#turn-1",
       shardId: "d2",
       content: "[Turn 1] Assistant: A wetter sourdough starter ferments faster when baking.",
       tags: ["amb", "beam"],
-      timestamp: null,
-    } as BenchEvent,
+      tokenCount: 24,
+      isCore: true,
+      tier: 0,
+    },
   ];
   const byShard = new Map<string, BenchEvent[]>();
   for (const e of events) {
@@ -136,7 +144,9 @@ describe("shard descriptors", () => {
     const on = withEnv("1", () => buildShardsFromCorpus(makeCorpus()));
     const a = off.snapshots.get("d1@S001")!;
     const b = on.snapshots.get("d1@S001")!;
-    expect(b.events.map((e) => e.id)).toEqual(a.events.map((e) => e.id));
+    // `eventId`, not `id`: MemoryEvent has no `id`, so the old form compared
+    // [undefined, undefined] to [undefined, undefined] and asserted nothing.
+    expect(b.events.map((e) => e.eventId)).toEqual(a.events.map((e) => e.eventId));
     expect(b.events.map((e) => e.content)).toEqual(a.events.map((e) => e.content));
   });
 });

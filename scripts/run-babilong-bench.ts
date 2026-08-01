@@ -16,7 +16,7 @@
  *
  * Usage:
  *   # Default: all combos against MockProvider (smoke)
- *   npx tsx scripts/run-babilong-bench.ts --systems csm,longctx,rag,hybrid --trials 1
+ *   npx tsx scripts/run-babilong-bench.ts --systems csm --trials 1
  *
  *   # Specific tasks / lengths (subset for quick validation)
  *   npx tsx scripts/run-babilong-bench.ts --tasks 1,2 --lengths 0k,4k --trials 1
@@ -29,10 +29,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
-import { HybridRagBaseline } from "../src/eval/baselines/hybridRag.js";
-import { LongContextBaseline } from "../src/eval/baselines/longContext.js";
 import type { BaselineRunner } from "../src/eval/baselines/types.js";
-import { VanillaRagBaseline } from "../src/eval/baselines/vanillaRag.js";
 import { loadBabilongTask } from "../src/eval/corpus/babilong.js";
 import { runBenchmark } from "../src/eval/runner.js";
 import { createProvider } from "../src/providers/index.js";
@@ -65,14 +62,17 @@ interface Args {
   trials: number;
   model: string;
   seed: number;
-  /** Truncate to first N instances per (task × length) for fast smoke runs. */
+  /**
+   * Deterministically sub-sample N instances per (task × length) for fast
+   * smoke runs. Passed to `loadBabilongTask` as `sampleSize`; defaults to 30.
+   */
   limit?: number;
 }
 
 function parseArgs(argv: string[]): Args {
   let tasks = DEFAULT_TASKS;
   let lengths = DEFAULT_LENGTHS;
-  let systems = ["csm", "longctx", "rag", "hybrid"];
+  let systems = ["csm"];
   let trials = 1;
   let model = process.env.CSM_OPENAI_MODEL ?? "gemma4:31b";
   let seed = 42;
@@ -141,11 +141,11 @@ Usage:
 Defaults:
   --tasks    1,2,3
   --lengths  0k,4k,8k,32k,128k,256k,1m
-  --systems  csm,longctx,rag,hybrid
+  --systems  csm
   --trials   1
   --model    \$CSM_OPENAI_MODEL or gemma4:31b
   --seed     42
-  --limit    (no limit; subset to first N queries per cell for smoke runs)
+  --limit    30 (instances sub-sampled per cell, deterministic under --seed)
 
 Output:
   Per (task × length): data/eval/runs/babilong-task<N>-<label>/
@@ -166,12 +166,9 @@ function buildSystems(wanted: string[]): BaselineRunner[] {
   const set = new Set(wanted);
   const out: BaselineRunner[] = [];
   if (set.has("csm")) out.push(new CsmBaseline({ provider }));
-  if (set.has("longctx")) out.push(new LongContextBaseline({ provider }));
-  if (set.has("rag")) out.push(new VanillaRagBaseline({ provider }));
-  if (set.has("hybrid")) out.push(new HybridRagBaseline({ provider }));
   if (out.length === 0) {
     throw new Error(
-      `No systems matched ${JSON.stringify(wanted)}. Valid: csm,longctx,rag,hybrid`,
+      `No systems matched ${JSON.stringify(wanted)}. Valid: csm`,
     );
   }
   return out;
@@ -207,7 +204,7 @@ async function main(): Promise<void> {
         // 1. Load BABILong task (this is what may 404 if raw files missing).
         const { events, queries } = await loadBabilongTask(task, length.tokens, {
           seed: args.seed,
-          subsampleTo: args.limit ?? 30,
+          sampleSize: args.limit ?? 30,
         });
 
         // 2. Materialise to disk so the runner can pick them up.

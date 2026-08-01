@@ -16,7 +16,10 @@ import type {
 class RecordingProvider implements LlmProvider {
   readonly name = "recording";
   calls: CompleteTextInput[] = [];
-  async completeJson(): Promise<ProviderResponse<unknown>> {
+  // Must mirror the interface's generic signature: a bare `unknown` return
+  // does not satisfy `completeJson<T>(...): Promise<ProviderResponse<T>>`, so
+  // this class only *looked* like an LlmProvider.
+  async completeJson<T>(): Promise<ProviderResponse<T>> {
     throw new Error("completeJson not used in these tests");
   }
   async completeText(input: CompleteTextInput): Promise<ProviderResponse<string>> {

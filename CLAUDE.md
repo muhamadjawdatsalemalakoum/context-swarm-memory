@@ -42,7 +42,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
   - `cachedLlm.ts` — cache-wrapping LLM caller used by every baseline
   - `runner.ts` — sweep-aware matrix runner with adaptive 50%-accuracy early-stop, resumable, replayable
   - `plotter.ts` — Vega-Lite spec generator for Graphs A–F of the context-scaling study
-  - `baselines/{types.ts, longContext.ts, vanillaRag.ts, hybridRag.ts, csm.ts}` — 4 baseline runners sharing a common interface
+  - `baselines/{types.ts, csm.ts}` — the CSM baseline runner behind a common `BaselineRunner` interface
   - `runEval.ts` + `fixtures.ts` — the legacy smoke eval (preserved for `npm run eval`)
 - `scripts/` — one-shot helpers: `merge-phase-events.ts`, `merge-query-batches.ts`, `expand-filler.ts`, `build-corpus.ts`, `verify-corpus.ts`, `verify-no-leakage.ts`, `fetch-babilong.ts`, `run-babilong-bench.ts`, `render-plots.ts` (Vega-Lite spec → SVG), `probe-thinking-levels.ts` (Gemini thinking-level diagnostic)
 - AMB bridge: `scripts/amb-csm-retrieve.ts` (one-shot, exports the shared `executeAmbRetrieve` core), `scripts/amb-csm-server.ts` (warm ingest-once/query-many HTTP service, `npm run amb:csm:serve`), `integrations/amb/csm_provider.py` (AMB-side provider; starts/stops the warm service via AMB `initialize()`/`cleanup()`)
@@ -84,7 +84,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - Probe/recall concurrency is parallel by default for hosted providers and serial for local `ollama`/`llama-server`; `CSM_PARALLEL_PROBES=0|1` overrides (`resolveParallelProbes` in `src/eval/baselines/csm.ts`). Measured latency/token attribution and A/B numbers live in `docs/PERF_BREAKDOWN.md`.
 - `GeminiProvider` (`src/providers/GeminiProvider.ts`) hits the native `…/v1beta/models/<model>:generateContent` endpoint with an `x-goog-api-key` header and redacts the key from all error messages.
 - Inspect / smoke the active provider: `npm run csm -- provider info` (provider, model, which key vars are set — never prints the key) and `npm run csm -- provider ping [--max-tokens N]` (one live round-trip). Use `--max-tokens` ≥ ~256 for thinking models or the reasoning budget can starve the reply.
-- Full setup (timeouts, retries, cost-safety, SOTA sidecar path): `docs/GEMINI.md`. Copyable template: `.env.example`.
+- Full setup (timeouts, retries, cost-safety): `docs/GEMINI.md`. Copyable template: `.env.example`.
 - **Never paste the real key into any committed file** (CLAUDE.md, docs, code, `.env.example`) — only into the gitignored `.env`.
 
 ## Mock provider convention
@@ -102,7 +102,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - Phase 1 (provider interface, schemas, retry/parse): done; OpenAI provider has real fetch; OllamaProvider thin wrapper with Gemma-4090 defaults; **GeminiProvider has real fetch and is the active hosted provider (key in `.env`, see Provider configuration & secrets)**; Anthropic still stub
 - Phase 2 (Committer dry-run + apply): done; not autonomous
 - Phase 3 (split/compact): threshold check only (`csm split check`), no automatic action
-- **Phase 4 (eval suite expansion): MCQ benchmark harness shipped** — 4 baselines (CSM, longctx, vanilla RAG, hybrid RAG), sweep-aware runner with adaptive 50%-accuracy early-stop, cache-first design, Vega-Lite plotter; synthetic 22K-event / 9M-token PaySwift corpus with 30 MCQ queries (40 options each); BABILong free-form support for Tasks 1–3. Real Ollama benchmark runs are documented in the results docs.
+- **Phase 4 (eval suite expansion): MCQ benchmark harness shipped** — CSM baseline runner (the comparison baselines were removed after the benchmark campaign; historical runs remain under `data/eval/runs/`), sweep-aware runner with adaptive 50%-accuracy early-stop, cache-first design, Vega-Lite plotter; synthetic 22K-event / 9M-token PaySwift corpus with 30 MCQ queries (40 options each); BABILong free-form support for Tasks 1–3. Real Ollama benchmark runs are documented in the results docs.
 
 ## Query kinds & scoring
 - The benchmark supports two query kinds via a discriminated union in `src/eval/mcq.ts`:

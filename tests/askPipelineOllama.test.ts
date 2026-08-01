@@ -4,6 +4,15 @@ import { seedFixtures } from "../src/eval/fixtures.js";
 import { ask } from "../src/core/ask.js";
 import { OpenAIProvider } from "../src/providers/OpenAIProvider.js";
 
+/** Which pipeline stage the fake server decided a given call belongs to. Declared
+ *  once here — `makeFakeProvider` and every `history` array below reference this
+ *  alias rather than repeating the union, so a stage rename can't drift between
+ *  the producer and the assertions that filter on it. */
+type FakeStage = "probe" | "recall" | "synth" | "unknown";
+
+/** One recorded call to the fake server. */
+type FakeCall = { system: string; prompt: string; stage: FakeStage };
+
 describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", () => {
   let ctx: Awaited<ReturnType<typeof makeTempStorage>>;
   beforeEach(async () => {
@@ -12,14 +21,14 @@ describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", 
   });
   afterEach(async () => { await ctx.cleanup(); });
 
-  function makeFakeProvider(history: Array<{ system: string; prompt: string; stage: "probe" | "recall" | "synth" | "unknown" }>) {
+  function makeFakeProvider(history: FakeCall[]) {
     const fetchImpl: typeof fetch = async (_url, init) => {
       const body = JSON.parse((init?.body as string) ?? "{}");
       const system = body.messages?.[0]?.content ?? "";
       const userPrompt = body.messages?.[1]?.content ?? "";
 
       // Stage detection — synth has its own system; probe vs recall by JSON skeleton.
-      let stage: "probe" | "recall" | "synth" | "unknown" = "unknown";
+      let stage: FakeStage = "unknown";
       if (/memory synthesizer/i.test(system)) stage = "synth";
       else if (/relevant_event_ids/.test(userPrompt)) stage = "probe";
       else if (/answer using only this shard snapshot/i.test(userPrompt)) stage = "recall";
@@ -94,7 +103,7 @@ describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", 
   }
 
   it("runs end-to-end through fetch and never sees the MOCK_RESULT fence", async () => {
-    const history: Array<{ system: string; prompt: string; stage: string }> = [];
+    const history: FakeCall[] = [];
     const provider = makeFakeProvider(history);
     const result = await ask({
       provider,
@@ -123,7 +132,7 @@ describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", 
   });
 
   it("skips the synthesizer LLM call when only one shard recalls (efficiency win)", async () => {
-    const history: Array<{ system: string; prompt: string; stage: string }> = [];
+    const history: FakeCall[] = [];
     const provider = makeFakeProvider(history);
     await ask({
       provider,
@@ -135,7 +144,7 @@ describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", 
   });
 
   it("calls the synthesizer when ≥2 shards recall", async () => {
-    const history: Array<{ system: string; prompt: string; stage: string }> = [];
+    const history: FakeCall[] = [];
     const provider = makeFakeProvider(history);
     // This query intentionally hits Thalm AND admin (uses "thalm" + "passport").
     await ask({
@@ -150,7 +159,7 @@ describe("ask pipeline against a fake OpenAI-compatible (Ollama-style) server", 
   });
 
   it("scopes recall context to probe-identified events", async () => {
-    const history: Array<{ system: string; prompt: string; stage: string }> = [];
+    const history: FakeCall[] = [];
     const provider = makeFakeProvider(history);
     await ask({
       provider,

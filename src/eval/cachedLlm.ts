@@ -3,6 +3,7 @@ import {
   cacheGet,
   cacheSet,
   CacheRefusedEmptyError,
+  thinkingCacheTag,
   type CacheKeyInput,
 } from "./cache.js";
 
@@ -19,7 +20,9 @@ import {
  */
 export interface CachedLlmCallInput {
   provider: LlmProvider;
-  model: string;
+  /** `undefined` = the provider's own configured default; see
+   *  `BaselineRunContext.model`. Namespaced per provider in the cache key. */
+  model: string | undefined;
   system: string;
   prompt: string;
   maxOutputTokens: number;
@@ -54,13 +57,20 @@ export async function callLlmCached(
 ): Promise<CachedLlmCallOutput> {
   const useCache = input.useCache ?? true;
   const cacheInput: CacheKeyInput = {
-    model: input.model,
+    // `undefined` means "the provider's own default" (see BaselineRunContext).
+    // It must become a CONCRETE, provider-scoped string here: the key is built
+    // with JSON.stringify, which DROPS undefined-valued keys entirely — so an
+    // undefined model silently vanished from the hash and every
+    // provider-default call collided in one cache namespace regardless of
+    // which provider (or which default model) actually answered.
+    model: input.model ?? `${input.provider.name}:<provider-default>`,
     prompt: input.prompt,
     system: input.system,
     temperature: input.temperature ?? 0,
     seed: input.seed,
     maxOutputTokens: input.maxOutputTokens,
     disableThinking: input.disableThinking,
+    thinkingLevel: thinkingCacheTag(),
   };
 
   if (useCache) {

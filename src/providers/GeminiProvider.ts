@@ -8,7 +8,7 @@ import type {
   ProviderResponse,
   ProviderUsage,
 } from "./LlmProvider.js";
-import { envIntOptional } from "../utils/env.js";
+import { envEnum, envIntOptional } from "../utils/env.js";
 
 export const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
@@ -650,16 +650,52 @@ function geminiThinkingConfig(
   // thoughts at ~4.0 s at API default. "none" is NOT a valid thinkingLevel
   // (HTTP 400). CSM_GEMINI_THINKING_MIN overrides for models whose floor
   // differs (e.g. gemini-3-pro rejects "minimal" — use "low" there).
-  const minLevel = process.env.CSM_GEMINI_THINKING_MIN ?? "minimal";
+  const minLevel = resolveGeminiThinkingMin();
   if (disableThinking) return { thinkingLevel: minLevel };
 
-  const mode = (process.env.CSM_GEMINI_THINKING ?? "low").toLowerCase().trim();
+  const mode = resolveGeminiThinking();
   if (mode === "default") return undefined;
   // Historical footgun: "none" used to omit thinkingConfig entirely, which is
   // the API DEFAULT (= the most thinking, 436 thought tokens above), the
   // opposite of the requested behavior. Map it to the floor instead.
   if (mode === "none") return { thinkingLevel: minLevel };
   return { thinkingLevel: mode };
+}
+
+/** Accepted `CSM_GEMINI_THINKING` values. `default` omits thinkingConfig (API
+ *  default = most thinking); `none` is mapped to the floor, never omitted. */
+export const GEMINI_THINKING_LEVELS = [
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "none",
+  "default",
+] as const;
+
+/** Accepted `CSM_GEMINI_THINKING_MIN` values — the per-call floor for stages
+ *  that pass `disableThinking` (probe). No `none`/`default`: a floor must name
+ *  a real level (gemini-3-pro rejects "minimal", so set "low" there). */
+export const GEMINI_THINKING_MIN_LEVELS = ["minimal", "low", "medium", "high"] as const;
+
+export function resolveGeminiThinking(
+  raw = process.env.CSM_GEMINI_THINKING,
+): (typeof GEMINI_THINKING_LEVELS)[number] {
+  return envEnum(raw, {
+    name: "CSM_GEMINI_THINKING",
+    allowed: GEMINI_THINKING_LEVELS,
+    fallback: "low",
+  });
+}
+
+export function resolveGeminiThinkingMin(
+  raw = process.env.CSM_GEMINI_THINKING_MIN,
+): (typeof GEMINI_THINKING_MIN_LEVELS)[number] {
+  return envEnum(raw, {
+    name: "CSM_GEMINI_THINKING_MIN",
+    allowed: GEMINI_THINKING_MIN_LEVELS,
+    fallback: "minimal",
+  });
 }
 
 function geminiResponseSchema(schemaName: string): Record<string, unknown> {

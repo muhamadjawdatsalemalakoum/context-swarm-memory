@@ -34,7 +34,7 @@ import {
   ORDERING_EXTRACT_SYSTEM,
   JUDGE_PROMPT_VERSION,
 } from "../src/eval/beamJudge.js";
-import { cacheGet, cacheSet } from "../src/eval/cache.js";
+import { cacheGet, cacheSet, thinkingCacheTag } from "../src/eval/cache.js";
 
 interface AnswerRow {
   queryId: string;
@@ -79,6 +79,9 @@ async function call(system: string, prompt: string, model: string, attempt = 0):
     temperature: 0,
     maxOutputTokens: 2048,
     seed: 42,
+    // See answer-arms: a judge run at a different thinking level must not
+    // replay verdicts produced at the previous level.
+    thinkingLevel: thinkingCacheTag(),
   };
   const hit = await cacheGet(keyInput);
   if (hit) return hit.response;

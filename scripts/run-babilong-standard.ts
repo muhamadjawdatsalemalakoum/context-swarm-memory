@@ -13,10 +13,7 @@ import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
-import { HybridRagBaseline } from "../src/eval/baselines/hybridRag.js";
-import { LongContextBaseline } from "../src/eval/baselines/longContext.js";
 import type { BaselineRunner } from "../src/eval/baselines/types.js";
-import { VanillaRagBaseline } from "../src/eval/baselines/vanillaRag.js";
 import type { Corpus } from "../src/eval/corpus.js";
 import { loadBabilongTask } from "../src/eval/corpus/babilong.js";
 import type { FreeFormQuery } from "../src/eval/mcq.js";
@@ -157,11 +154,8 @@ function buildSystems(wanted: string[]): BaselineRunner[] {
   const set = new Set(wanted);
   const out: BaselineRunner[] = [];
   if (set.has("csm")) out.push(new CsmBaseline({ provider }));
-  if (set.has("longctx")) out.push(new LongContextBaseline({ provider }));
-  if (set.has("rag")) out.push(new VanillaRagBaseline({ provider }));
-  if (set.has("hybrid")) out.push(new HybridRagBaseline({ provider }));
   if (out.length === 0) {
-    throw new Error(`No systems matched. Valid here: csm,longctx,rag,hybrid`);
+    throw new Error(`No systems matched. Valid here: csm`);
   }
   return out;
 }

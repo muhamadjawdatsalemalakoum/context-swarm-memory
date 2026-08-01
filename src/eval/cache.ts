@@ -37,6 +37,18 @@ export interface CacheKeyInput {
   disableThinking?: boolean;
   /** OpenAI-compatible reasoning effort, when the provider exposes it. */
   reasoningEffort?: string;
+  /** Gemini thinking level in force for the call (`CSM_GEMINI_THINKING`,
+   *  plus the `CSM_GEMINI_THINKING_MIN` floor for `disableThinking` stages).
+   *  Hashed ONLY when the caller explicitly set the env var, so runs that
+   *  never touched it keep matching legacy entries.
+   *
+   *  WHY: thinking level changes the response, so without it in the key an
+   *  arm run at a different level silently REPLAYS the previous arm's answers
+   *  and measures nothing — the same class of invisible-config error as F11.
+   *  Residual caveat: entries written BEFORE this field existed under an
+   *  explicit level are indistinguishable from default-level entries; a
+   *  thinking-level A/B should run against a fresh cache namespace. */
+  thinkingLevel?: string;
 }
 
 export interface CacheEntry {
@@ -72,9 +84,27 @@ export function computeCacheKey(input: CacheKeyInput): string {
   if (input.reasoningEffort) {
     normalised.reasoningEffort = input.reasoningEffort;
   }
+  if (input.thinkingLevel) {
+    normalised.thinkingLevel = input.thinkingLevel;
+  }
   return createHash("sha256")
     .update(stableStringify(normalised, 0))
     .digest("hex");
+}
+
+/**
+ * The thinking configuration to fold into a cache key, or `undefined` when the
+ * caller never set one (keeping legacy keys intact).
+ *
+ * Exported so every cache-key builder — `cachedLlm`, the answer gate, the judge
+ * — folds in the SAME string. A per-call-site reimplementation is how two
+ * builders drift and one of them silently serves stale responses.
+ */
+export function thinkingCacheTag(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const level = env.CSM_GEMINI_THINKING?.trim();
+  const floor = env.CSM_GEMINI_THINKING_MIN?.trim();
+  if (!level && !floor) return undefined;
+  return `${level ?? ""}/${floor ?? ""}`.toLowerCase();
 }
 
 export function cacheRoot(rootDir?: string): string {

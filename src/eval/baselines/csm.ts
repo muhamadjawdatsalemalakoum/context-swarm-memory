@@ -428,7 +428,8 @@ export class CsmBaseline implements BaselineRunner {
   async organizeMemory(args: {
     query: string;
     eventContents: string[];
-    model: string;
+    /** See `BaselineRunContext.model`: undefined = provider's own default. */
+    model: string | undefined;
     maxOutputTokens?: number;
   }): Promise<{ text: string; inputTokens: number; outputTokens: number; latencyMs: number }> {
     const { query, eventContents, model, maxOutputTokens = 2048 } = args;
@@ -1041,7 +1042,10 @@ export class CsmBaseline implements BaselineRunner {
       outputTokens:
         retrieval.pipelineCost.outputTokensEstimate + llm.outputTokens,
       latencyMs: retrieval.pipelineCost.latencyMs + llm.latencyMs,
-      model: ctx.model,
+      // Traceability echo: when the run let the provider pick its own default,
+      // say exactly that rather than reporting an empty model. Same string the
+      // cache key uses, so a row and its cache entry always agree.
+      model: ctx.model ?? `${this.opts.provider.name}:<provider-default>`,
       meta: {
         ...retrieval.meta,
         // Per-stage breakdown so the report can disambiguate pipeline vs final.
@@ -1206,15 +1210,14 @@ export class CsmBaseline implements BaselineRunner {
     // embedding similarity.
     //
     // This floor gives CSM the same recall safety net: when the pipeline
-    // retrieved fewer than K events, backfill with embedding top-K over the
-    // whole sampled corpus — identical retrieval to `vanillaRag` — appended
-    // AFTER the pipeline's own events. Ordering matters: CSM's precise hits
-    // stay first so the budgeted context packs them preferentially and
-    // citation precision on the queries CSM already handles is preserved; the
-    // embedding hits only fill the remaining slots on starved queries. The
-    // embeddings are disk-cached per (model, content), so this reuses whatever
-    // `vanillaRag` already computed. Default is 10; set `CSM_EMBED_FLOOR_K=0`
-    // to disable for byte-identical replay of old runs.
+    // retrieved fewer than K events, backfill with plain embedding top-K over
+    // the whole sampled corpus, appended AFTER the pipeline's own events.
+    // Ordering matters: CSM's precise hits stay first so the budgeted context
+    // packs them preferentially and citation precision on the queries CSM
+    // already handles is preserved; the embedding hits only fill the remaining
+    // slots on starved queries. The embeddings are disk-cached per
+    // (model, content), so repeated runs reuse them. Default is 10; set
+    // `CSM_EMBED_FLOOR_K=0` to disable for byte-identical replay of old runs.
     const embedFloorK = resolveEmbeddingFloorK();
     let embedFloorFired = false;
     let embedFloorCount = 0;
@@ -1523,10 +1526,20 @@ export class CsmBaseline implements BaselineRunner {
     return adapter;
   }
 
+  /** Ingest-time pre-warm seam for the warm AMB server: build the hybrid
+   *  router index for this corpus NOW if `CSM_ROUTER_HYBRID` is on (null =
+   *  flag off, nothing to warm). Shares `routerIndexCache` with the query
+   *  path, so a query arriving mid-build joins the same promise instead of
+   *  double-building — and the query path stays byte-identical whether or
+   *  not this ran first. Zero LLM calls either way (local MiniLM only). */
+  warmRouterIndex(corpus: Corpus): Promise<RouterIndex> | null {
+    return resolveRouterHybrid() ? this.getRouterIndex(corpus) : null;
+  }
+
   /** [T2 WORKTREE WIRING — merge-window material] Build the hybrid router
    *  index for a corpus: TF-IDF descriptor terms + per-shard MiniLM
    *  centroids from per-event embeddings (same disk-cache keys the
-   *  embed-floor / vanillaRag paths already populate). O(events) once per
+   *  embed-floor path already populates). O(events) once per
    *  corpus; zero LLM calls. The merge window should lift this into a shared
    *  src/eval helper so the AMB bridge reuses it verbatim. */
   private getRouterIndex(corpus: Corpus): Promise<RouterIndex> {

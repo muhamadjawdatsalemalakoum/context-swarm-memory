@@ -163,6 +163,35 @@ export function envPositiveInt(
   return envInt(raw, { ...opts, min: 1 });
 }
 
+export interface EnvEnumOptions<T extends string> {
+  /** Name of the variable, used in error messages. */
+  name: string;
+  /** The complete set of accepted values (compared lower-cased and trimmed). */
+  allowed: readonly T[];
+  /** Value when the variable is unset or empty. */
+  fallback: T;
+}
+
+/**
+ * Read a value constrained to a fixed vocabulary.
+ *
+ * The missing shape in this module: `CSM_GEMINI_THINKING` was hand-parsed as
+ * `(process.env.X ?? "low").toLowerCase().trim()`, so a typo ("mimimal") sailed
+ * through to the API as a thinkingLevel and came back as an opaque HTTP 400 —
+ * or worse, a value the API tolerated but nobody intended. Same failure family
+ * as `CSM_ROUTER_HYBRID=off` turning the router ON.
+ */
+export function envEnum<T extends string>(
+  raw: string | undefined,
+  opts: EnvEnumOptions<T>,
+): T {
+  if (raw === undefined || raw.trim().length === 0) return opts.fallback;
+  const v = raw.trim().toLowerCase();
+  const hit = opts.allowed.find((a) => a.toLowerCase() === v);
+  if (hit !== undefined) return hit;
+  throw new EnvConfigError(opts.name, raw, `expected one of ${opts.allowed.join(", ")}`);
+}
+
 /** Exposed for tests and for `csm provider info`-style diagnostics. */
 export const ENV_TRUE_VALUES: readonly string[] = [...TRUE_VALUES];
 export const ENV_FALSE_VALUES: readonly string[] = [...FALSE_VALUES];

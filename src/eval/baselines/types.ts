@@ -5,9 +5,7 @@ import type { Answer, Query } from "../mcq.js";
  * Per-call context the runner passes to every baseline. Captures both the
  * model identity and the input-token budget the baseline must respect.
  *
- * Baselines that retrieve (RAG, hybrid, CSM) must truncate to fit
- * `maxInputTokens`. The long-context baseline truncates by packing as many
- * raw events as fit.
+ * Baselines that retrieve (CSM) must truncate to fit `maxInputTokens`.
  */
 export interface BaselineRunContext {
   /**
@@ -18,8 +16,15 @@ export interface BaselineRunContext {
    * remainder.
    */
   maxInputTokens: number;
-  /** Provider model name, e.g. "gemma4:31b". Forwarded to the LLM call. */
-  model: string;
+  /** Provider model name, e.g. "gemma4:31b". Forwarded to the LLM call.
+   *
+   *  `undefined` means "let the provider use its own configured default" — the
+   *  AMB bridge deliberately resolves to undefined rather than a literal id,
+   *  because no single id is valid across all six providers
+   *  (`resolveBridgeModel`). Callers must NOT substitute a hardcoded fallback;
+   *  `callLlmCached` namespaces undefined per provider so the cache key can
+   *  never silently lose the model. */
+  model: string | undefined;
   /** Default 0. Anything above is non-deterministic and breaks cache. */
   temperature?: number;
   /** Default 42. Pinned for reproducibility. */
@@ -43,9 +48,9 @@ export interface BaselineRunContext {
  * LLM call the baseline made (probes, recalls, synthesis, anything), not
  * just the final answering call.
  *
- * Single-call baselines (longContext, vanillaRag, hybridRag) satisfy this
- * trivially. Multi-call baselines (CSM) must SUM their per-stage costs
- * explicitly in the return block. The per-stage breakdown lives in `meta`.
+ * Single-call baselines satisfy this trivially. Multi-call baselines (CSM)
+ * must SUM their per-stage costs explicitly in the return block. The
+ * per-stage breakdown lives in `meta`.
  *
  * This rule exists because of a real shipping bug — CSM was reporting only
  * the final MCQ call's cost (~2k tokens) when the actual total was ~10k.
@@ -84,8 +89,8 @@ export interface BaselineResult {
 }
 
 /**
- * The single interface all four baselines (longctx, vanilla RAG, hybrid RAG,
- * CSM) implement. Lets the runner treat them uniformly.
+ * The single interface every baseline runner (today: CSM) implements. Lets
+ * the runner treat them uniformly.
  */
 export interface BaselineRunner {
   /** Short identifier — appears in result files and graphs. */

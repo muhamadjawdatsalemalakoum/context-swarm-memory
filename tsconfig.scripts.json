@@ -1,0 +1,22 @@
+{
+  // Type-check-ONLY project covering the code the build deliberately excludes.
+  //
+  // WHY THIS EXISTS: `tsconfig.json` sets `include: ["src"]` because `dist/`
+  // must mirror `src/` — so `scripts/` and `tests/` were never type-checked by
+  // `npm run lint`, and real breakage shipped twice: an `envInt` call with no
+  // import (caught only by a test), and a duplicate `createHash` import that
+  // tsx tolerated but vitest's transform rejected (2026-08-01). A parse error
+  // in the benchmark runner is a silent multi-hour loss — it fails when a run
+  // starts, not when the edit is made.
+  //
+  // Emit is off, so this changes no build output; it only widens the net.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src", "scripts", "tests"],
+  "exclude": ["dist", "node_modules", "data"]
+}

@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 
 import { buildCorpus } from "./amb-csm-retrieve.js";
-import { cacheGet, cacheSet } from "../src/eval/cache.js";
+import { cacheGet, cacheSet, thinkingCacheTag } from "../src/eval/cache.js";
 
 interface PayloadRow {
   harness: { queryId: string; category: string; userId: string };
@@ -195,6 +195,10 @@ async function answer(prompt: string, model: string): Promise<string> {
     temperature: 0,
     maxOutputTokens: 2048,
     seed: 42,
+    // Thinking level changes the answer, so it must namespace the cache —
+    // otherwise an arm run at a different level replays the previous arm's
+    // answers and the gate measures nothing.
+    thinkingLevel: thinkingCacheTag(),
   };
   const hit = await cacheGet(keyInput);
   if (hit) return hit.response;
