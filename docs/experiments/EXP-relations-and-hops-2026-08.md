@@ -129,6 +129,30 @@ Actionable leftovers found:
 4. Sidecar input-token telemetry confirmed broken (21–25 tok/query reported);
    never synthesize token conclusions from agent-sdk runs' meta.
 
+## Addendum (same day) — deterministic helpers & bespoke store
+
+Proposal considered: bake small deterministic tools into CSM, and give CSM a
+bespoke local database for critical info + relationships. Verdict: adopted as
+the unifying frame for R1+R2, with two amendments.
+
+- **Capsule computers (new, R3)**: deterministic scripts at packet-build time
+  whose *outputs* go into the capsule — (a) event-ordering line (sorted cited
+  events; targets BEAM event_ordering, judged by Kendall τ-b, a measured loss
+  to Hindsight), (b) latest-value table (deterministic read of R2's store),
+  (c) counts/aggregations for aggregation intents. Zero LLM tokens, cited,
+  slot-free (capsule-resident). Precedent inside CSM: in-code date arithmetic,
+  ID repair. Precedent outside: ForgetEval — deterministic supersession 100%.
+  (a) is rendering-only → measurable on minted virtual arms.
+- **No query-time LLM helpers**: every measured win puts LLM work at write
+  time; the read path stays deterministic + witness probes.
+- **Bespoke store = database FILE, not server**: versioned, snapshot-immutable
+  JSONL fact store written only by Committer/ingest, in-memory indexed, inside
+  the mutationSafety perimeter. "Bespoke" bounded to CONTENT (corpus-derived,
+  LLM-filled at write time); the meta-schema is fixed and typed
+  (entity | attribute | value | t_valid | t_invalid | source refs; edge types
+  co-occurrence/supersedes) — free-form LLM schemas fragment entities and are
+  the design that lost Mem0g its own single-hop benchmark.
+
 ## Method note
 
 Four independent research agents (repo read, code audit, literature, telemetry
