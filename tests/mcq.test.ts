@@ -277,7 +277,7 @@ describe("normalizeCitationId — strip wrapper punctuation", () => {
     expect(normalizeCitationId("e0002")).toBe("e0002");
   });
 
-  it("strips square brackets (the LightRAG/context-echo case)", () => {
+  it("strips square brackets (the context-echo case)", () => {
     expect(normalizeCitationId("[e0002]")).toBe("e0002");
   });
 
@@ -294,7 +294,7 @@ describe("normalizeCitationId — strip wrapper punctuation", () => {
     expect(normalizeCitationId("e0003]")).toBe("e0003");
   });
 
-  it("keeps internal hyphens (LightRAG filler ids like f3-0155-v002-v002)", () => {
+  it("keeps internal hyphens (filler ids like f3-0155-v002-v002)", () => {
     expect(normalizeCitationId("[f3-0155-v002-v002]")).toBe("f3-0155-v002-v002");
   });
 

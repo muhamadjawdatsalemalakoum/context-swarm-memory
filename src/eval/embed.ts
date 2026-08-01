@@ -6,15 +6,16 @@ import { dirname, join } from "node:path";
 import { getPaths } from "../storage/paths.js";
 
 /**
- * Default sentence embedding model used by `vanillaRag` and `hybridRag`.
+ * Default sentence embedding model used by the CSM embed-floor and hybrid
+ * router paths.
  * 384-dim, ~80 MB to download once via `@huggingface/transformers`. Runs entirely
  * locally — no API key, no GPU required.
  */
 export const EMBED_MODEL_NAME = "Xenova/all-MiniLM-L6-v2";
 export const EMBED_DIM = 384;
 
-// `@huggingface/transformers` is dynamically imported so users who don't run the
-// RAG baselines never pay the load cost or require the dep at type-check
+// `@huggingface/transformers` is dynamically imported so users who never
+// embed don't pay the load cost or require the dep at type-check
 // time. The pipeline is lazy-initialized once per process and reused.
 type FeaturePipeline = (
   text: string,

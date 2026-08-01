@@ -130,7 +130,7 @@ export async function buildIndexFromCorpus(
   const descriptors = deriveShardDescriptors(sources, { maxTerms });
 
   const t0 = Date.now();
-  // Embed every event once (same cache keys the embed-floor/vanillaRag use).
+  // Embed every event once (same cache keys the embed-floor uses).
   const allVecs = await embed(corpus.events.map((e) => e.content), EMBED_MODEL_NAME);
   const embedMs = Date.now() - t0;
   const vecByEventId = new Map<string, Float32Array>();

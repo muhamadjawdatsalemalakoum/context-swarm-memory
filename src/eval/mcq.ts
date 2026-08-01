@@ -258,7 +258,7 @@ export function normaliseFreeFormAnswer(s: string): string {
  * Strip wrapper punctuation the answering model sometimes puts around a cited
  * id — `[e0002]`, `(e0002)`, `` `e0002` ``, `**e0002**`, quotes — so the token
  * exact-matches the bare ids in `relevantEventIds`. Without this, a model that
- * echoes its context's bracketed style (e.g. the LightRAG sidecar packs
+ * echoes its context's bracketed style (e.g. a context packed as
  * `[e0002] …`) scores zero citation overlap despite citing the right events,
  * while a model that emits bare ids scores fine — an artifact of formatting,
  * not of retrieval quality. Internal hyphens (`f3-0155-v002-v002`) are kept.

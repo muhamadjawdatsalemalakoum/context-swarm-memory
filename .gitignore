@@ -93,9 +93,6 @@ data/eval/corpus-synthetic/queries-stub.json
 # Keep src/**/data un-ignored if any source uses it as a fixtures dir
 !src/**/data
 
-.venv-mem0/
-.venv-hipporag/
-.venv-lightrag/
 .venv-*/
 .claude/
 !data/eval/runs/gemini-caching-measure/

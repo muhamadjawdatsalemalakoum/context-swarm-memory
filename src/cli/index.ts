@@ -9,13 +9,7 @@ import { applyCommitDecision, appendEventAndSnapshot, createShard, dryRunCommit 
 import { SHARD_SYSTEM_PROMPT } from "../core/prompts.js";
 import { recommendForFullness, shardHealthReport } from "../core/split.js";
 import { CsmBaseline } from "../eval/baselines/csm.js";
-import { HippoRagBaseline } from "../eval/baselines/hippoRag.js";
-import { HybridRagBaseline } from "../eval/baselines/hybridRag.js";
-import { LightRagBaseline } from "../eval/baselines/lightRag.js";
-import { LongContextBaseline } from "../eval/baselines/longContext.js";
-import { Mem0Baseline } from "../eval/baselines/mem0.js";
 import type { BaselineRunner } from "../eval/baselines/types.js";
-import { VanillaRagBaseline } from "../eval/baselines/vanillaRag.js";
 import { CORPUS_SIZE_SWEEP, EARLY_STOP_ACCURACY, MODEL_CONTEXT_SWEEP } from "../eval/corpus.js";
 import { generateAllGraphs, type ResultDataset, type ResultRow } from "../eval/plotter.js";
 import { runEval } from "../eval/runEval.js";
@@ -97,7 +91,7 @@ Usage:
   csm commit apply  --shard <id> --action write|update|freeze|no_op --content "..." [--memory-type fact] [--tags a,b]
   csm provider info                       Show effective provider, base URL, models
   csm provider ping [--model X] [--max-tokens N]  Round-trip a tiny JSON request through the active provider
-  csm bench run [--corpus DIR] [--systems csm,longctx,rag,hybrid] [--trials N] [--model M]
+  csm bench run [--corpus DIR] [--systems csm] [--trials N] [--model M]
                 [--corpus-sizes 10K,100K,1M,...] [--model-contexts 1K,8K,...] [--queries q1,q2]
                                           Sweep matrix benchmark; writes results.jsonl + summary.json
   csm bench fill-cache [...same flags as run...]
@@ -559,64 +553,18 @@ async function cmdBench(rest: string[]): Promise<number> {
 
 function buildSystems(args: ParsedArgs): BaselineRunner[] {
   const provider = createProvider();
-  const wantedRaw = flagString(args, "systems") ?? "csm,longctx,rag,hybrid";
+  const wantedRaw = flagString(args, "systems") ?? "csm";
   const wanted = new Set(
     wantedRaw
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean),
   );
-  // The sidecar-backed baselines configure their INTERNAL extraction LLM with
-  // this name. It MUST match the actual backend model: Ollama wants
-  // "gemma4:31b" (colon); the baselines' own defaults are the llama-server
-  // name "gemma4-31b" (dash), which 404s against Ollama and silently produces
-  // an EMPTY memory store — the bug that sank the first Mem0 run (zero
-  // retrieval, every query wrong). Resolve it the same way the bench config
-  // resolves the answering model so all systems agree.
-  const sidecarLlmModel =
-    flagString(args, "model") ?? process.env.CSM_OPENAI_MODEL ?? "gemma4:31b";
-  // Sidecar /index does LLM-driven extraction over the whole corpus in one
-  // blocking call — ~2.5 h for a 100K sample on a 4090. The baselines' 30 s
-  // default would abort it instantly. Allow override via CSM_SIDECAR_TIMEOUT_MS.
-  const sidecarTimeoutMs = Number.parseInt(
-    process.env.CSM_SIDECAR_TIMEOUT_MS ?? "21600000", // 6 h
-    10,
-  );
   const out: BaselineRunner[] = [];
   if (wanted.has("csm")) out.push(new CsmBaseline({ provider }));
-  if (wanted.has("longctx")) out.push(new LongContextBaseline({ provider }));
-  if (wanted.has("rag")) out.push(new VanillaRagBaseline({ provider }));
-  if (wanted.has("hybrid")) out.push(new HybridRagBaseline({ provider }));
-  // Phase γ sidecar-backed baselines — opt-in via --systems. Require their
-  // Python sidecar to be running (default ports 8001/8002/8003) and the
-  // LLM-cache proxy at 8090. See services/_common/sidecar_protocol.md.
-  if (wanted.has("mem0"))
-    out.push(
-      new Mem0Baseline({
-        provider,
-        llmModel: sidecarLlmModel,
-        requestTimeoutMs: sidecarTimeoutMs,
-      }),
-    );
-  if (wanted.has("hipporag"))
-    out.push(
-      new HippoRagBaseline({
-        provider,
-        llmModel: sidecarLlmModel,
-        requestTimeoutMs: sidecarTimeoutMs,
-      }),
-    );
-  if (wanted.has("lightrag"))
-    out.push(
-      new LightRagBaseline({
-        provider,
-        llmModel: sidecarLlmModel,
-        requestTimeoutMs: sidecarTimeoutMs,
-      }),
-    );
   if (out.length === 0) {
     throw new Error(
-      `No systems matched --systems="${wantedRaw}". Valid: csm,longctx,rag,hybrid,mem0,hipporag,lightrag`,
+      `No systems matched --systems="${wantedRaw}". Valid: csm`,
     );
   }
   return out;

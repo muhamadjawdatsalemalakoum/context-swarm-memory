@@ -1,7 +1,7 @@
 /**
- * Cross-encoder reranker for hybrid RAG. Optional: when `CSM_HYBRID_RERANK=1`,
- * the `HybridRagBaseline` passes its RRF top-K through a cross-encoder before
- * truncating to the answer-prompt budget.
+ * Cross-encoder reranker. Optional: when `CSM_HYBRID_RERANK=1`, a retrieval
+ * consumer (today the L3 cross-encoder path) passes its top-K through a
+ * cross-encoder before truncating to the answer-prompt budget.
  *
  * **Why a reranker?** Bi-encoders (BM25 + cosine) score query and doc
  * independently, then fuse — cheap but lossy. A cross-encoder sees the
@@ -33,7 +33,7 @@ export function rerankerModelName(): string {
   return process.env.CSM_RERANKER_MODEL?.trim() || RERANKER_DEFAULT_MODEL;
 }
 
-/** Whether the hybrid RAG baseline should run the reranker. Default off. */
+/** Whether the caller should run the reranker. Default off. */
 export function rerankerEnabled(raw = process.env.CSM_HYBRID_RERANK): boolean {
   return envFlag(raw, { name: "CSM_HYBRID_RERANK", fallback: false });
 }
@@ -62,9 +62,9 @@ async function getRerankerPipeline(
         )) as unknown as CrossEncoderPipeline;
         return pipe;
       } catch (err) {
-        // Log once and return null so the hybrid RAG path falls back to the
+        // Log once and return null so the caller falls back to the
         // input order. We don't want a model-load failure to break the entire
-        // bench — the un-reranked hybrid RAG still produces meaningful results.
+        // bench — the un-reranked ordering still produces meaningful results.
         // eslint-disable-next-line no-console
         console.warn(
           `[rerank] failed to load model ${modelName}: ${(err as Error).message}. ` +
