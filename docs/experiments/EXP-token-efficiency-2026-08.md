@@ -108,12 +108,25 @@ fixed answer gate, judge v2, n=45, 1M split):
 
 ## Still open
 
-- **L3** — local pre-gate arm B running as r1mK-localgate-v1
-  (CSM_PROBE_LOCAL_KEEP=4, cross-encoder over shard digests; may *skip*
-  witnesses, never answer for them; `src/eval/rerank.ts` spared from the
-  baseline deletion). Pre-registered: B ships iff score ≥ −MDE and tokens
-  −30%+; C (ceiling diagnostic, no LLM probe at all) after B reads out —
-  C ships only if it *wins*, which goes back to the user with data.
+- **L3** — local pre-gate: **keep=4 (r1mK-localgate-v1) WITHHELD despite a
+  letter-of-the-rule pass; keep=6 dose-response running (r1mL-localgate6-v1).**
+  Arm K vs I2, fixed gate, n=45 @1M: ALL −0.0713, CI [−0.184,+0.040], MDE
+  0.162 → formally "not an effect" and tokens −36% (probes 8→4), so the
+  pre-registered ship rule passes on paper. Withheld anyway (the conservative
+  deviation): every category leans negative (IF −0.022 / KU −0.117 / PF
+  −0.075), losses 12 vs wins 6, the point estimate matches the size of the
+  CONFIRMED lean K=12 regression (−0.0759), and telemetry shows the mechanism
+  — recalls 2.98→2.71, the cross-encoder occasionally skips a witness the LLM
+  probe would have recalled. Playbook = the lean lever's dose-response: if
+  keep=6 ≈ 0 while keep=4 ≈ −0.07, ship keep=6 (~−18% probe input); if keep=6
+  also leans negative, L3 dies and L2b batching remains the probe-cost lever.
+  Arm K run notes: first launch interrupted (process exit) left one
+  NUL-corrupted line in each artifact file (Windows kill-mid-write) — cleaned
+  before resume; a TaskStop'd relaunch left a ZOMBIE writer that ran to
+  completion alongside the real resume → 87 rows/45 queries; deduped by
+  pairing each payload row with its synth-doc set and byte-LENGTH-verifying
+  every csm-* doc against the payload's declared contentChars (all 45 resolved
+  as first-occurrence pairs, zero re-runs). Kill-by-PID, not TaskStop.
 - **L2a paired arm** — deferred until the L3 verdict: L2a (confidence shrink)
   and L3 (local gate) are both probe-reduction levers and would compose
   awkwardly; if K passes at keep=4 it dominates L2a's −13–18% sizing, if K
