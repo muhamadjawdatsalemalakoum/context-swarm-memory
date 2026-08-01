@@ -169,6 +169,37 @@ fixed answer gate, judge v2, n=45, 1M split):
 - **L4** — write-time fact shift (the Hindsight/M-1 lesson; separate arc, now
   scoped as R1/R2/R3 in `EXP-relations-and-hops-2026-08.md`).
 
+## Sidecar token accounting — fixed, with a caveat that outlives the fix
+
+The agent-sdk sidecar reported **~23 input tokens/query** all campaign, which is
+why every saving above is stated as arithmetic rather than measured. Cause:
+Anthropic usage reports `input_tokens` as the **uncached** portion only; cached
+prompt content is billed through `cache_read_input_tokens` /
+`cache_creation_input_tokens`. The sidecar read the first field alone.
+
+Measured after the fix on a trivial 8-word prompt:
+
+```
+inputTokens 8549 = uncached 2 + cacheRead 0 + cacheWrite 8547
+```
+
+**The caveat is the real finding:** those ~8.5K tokens are the Claude Code
+harness's own system prompt, not CSM's. So the sidecar carries a large fixed
+per-call overhead that has nothing to do with the memory system — sidecar
+token totals are still NOT a measure of CSM's token cost, they are
+CSM + harness. The breakdown now makes that overhead visible and subtractable
+instead of invisible. Published token numbers must still come from the Gemini
+path, which was always the rule; this just removes a number that looked
+usable and was not.
+
+Operational note: killing the sidecar with `pkill -f server.mjs` did NOT free
+port 8787 on Windows — the replacement silently failed to bind with
+`EADDRINUSE` and the OLD process kept serving, so the "restarted" server was
+the pre-fix build. Kill by PID
+(`Get-NetTCPConnection -LocalPort 8787 | Stop-Process -Id …`) and verify the
+new behaviour in the response before trusting it. Same family as the
+kill-by-PID lesson already recorded for ladder runs.
+
 ## Method notes carried forward
 
 - Rendering levers are measured on **minted virtual arms** (frozen ids) — this
