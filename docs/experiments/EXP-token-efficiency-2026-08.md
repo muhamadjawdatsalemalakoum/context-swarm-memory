@@ -108,8 +108,34 @@ fixed answer gate, judge v2, n=45, 1M split):
 
 ## Still open
 
-- **L3** — local pre-gate: **keep=4 (r1mK-localgate-v1) WITHHELD despite a
-  letter-of-the-rule pass; keep=6 dose-response running (r1mL-localgate6-v1).**
+- **L3 — VERDICT: KILLED.** No setting satisfies both halves of the
+  pre-registered rule. Three-point dose-response vs the same I2 control
+  (n=45 @1M, fixed gate):
+
+  | probes/query | score | delta | MDE | recalls | knowledge_update |
+  |---:|---:|---:|---:|---:|---:|
+  | 8 (control) | 0.8250 | — | — | 2.98 | 0.8667 |
+  | 6 (arm L) | 0.7963 | −0.0287 | 0.114 | 2.84 | 0.7667 (0W/2L/13T) |
+  | 4 (arm K) | 0.7537 | −0.0713 | 0.162 | 2.71 | 0.7500 (1W/3L/11T) |
+
+  keep=6 saves only ~18% of internal input (probe stage is 72% of it, and 6/8
+  calls is −25% of that) — **below the −30% token bar**. keep=4 clears the
+  token bar (−36%) but sits at the bottom of a monotone decline with a
+  mechanism visible in telemetry: fewer probes → fewer recalls → the
+  latest-value witness that knowledge_update needs is the one being skipped.
+  Every individual delta is below its MDE and is NOT an effect on its own; the
+  kill rests on the ORDERING (three points monotone in dose, same per-category
+  pattern at both doses), not on any single point.
+
+  **L2b strictly dominates**: −21% internal input, +0.0315 (also below MDE),
+  and it removes NO witness — all 8 shards are still judged, just in one call.
+  The lesson generalises: *cheapen the question, don't drop the witness.*
+  Cross-encoder pre-gating remains sound for reranking retrieved items (that
+  is what `src/eval/rerank.ts` is spared for); it is not sound for deciding
+  which memories get read at all.
+
+- *(historical, superseded by the row above)* keep=4 was first WITHHELD despite
+  a letter-of-the-rule pass, pending the keep=6 dose-response:
   Arm K vs I2, fixed gate, n=45 @1M: ALL −0.0713, CI [−0.184,+0.040], MDE
   0.162 → formally "not an effect" and tokens −36% (probes 8→4), so the
   pre-registered ship rule passes on paper. Withheld anyway (the conservative
@@ -127,11 +153,21 @@ fixed answer gate, judge v2, n=45, 1M split):
   pairing each payload row with its synth-doc set and byte-LENGTH-verifying
   every csm-* doc against the payload's declared contentChars (all 45 resolved
   as first-occurrence pairs, zero re-runs). Kill-by-PID, not TaskStop.
-- **L2a paired arm** — deferred until the L3 verdict: L2a (confidence shrink)
-  and L3 (local gate) are both probe-reduction levers and would compose
-  awkwardly; if K passes at keep=4 it dominates L2a's −13–18% sizing, if K
-  fails L2a is the softer fallback to measure next.
-- **L4** — write-time fact shift (the Hindsight/M-1 lesson; separate arc).
+- **L2a — SHELVED, built and default-off.** It is the same *drop a witness*
+  family L3 just falsified: it shrinks the probe set on a confident route.
+  Its own prior sizing (−13–18% pipeline input) is below the −30% bar even in
+  the best case, so a passing arm still would not clear the rule that killed
+  L3. The guard (hybrid-only, discriminated-only) is genuinely stronger than
+  L3's blind top-N cut, so this is shelved rather than killed — worth an arm
+  only if a future capsule/fact lever makes the tail witnesses provably
+  redundant.
+- **Composition arm r1mM-shipstack-v1** (running): L2b batching + lean K=16
+  together vs the same I2 control. Both passed individually and both are
+  default-off; the repo's own scar tissue says compositions must be measured
+  (a router bench predicting +0.24 assembled into −0.12). Defaults flip only
+  on this arm's verdict.
+- **L4** — write-time fact shift (the Hindsight/M-1 lesson; separate arc, now
+  scoped as R1/R2/R3 in `EXP-relations-and-hops-2026-08.md`).
 
 ## Method notes carried forward
 
