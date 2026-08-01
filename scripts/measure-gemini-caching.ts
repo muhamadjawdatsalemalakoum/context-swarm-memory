@@ -734,6 +734,30 @@ export class CapturingStubProvider implements LlmProvider {
         needs_full_recall: true,
         relevant_event_ids: eventIds.slice(0, 6),
       };
+    } else if (input.schemaName === "BatchedProbeResult") {
+      // Batched probe (default-on for hosted providers since 2026-08-01).
+      // Without this branch the stub fell through to an empty object and the
+      // offline census CRASHED outright on the shipped defaults. The prompt
+      // ends with "Shard ids, in order: a, b, c" — answer exactly those, in
+      // that order, which is what `probeShardsBatched` reconciliation expects
+      // from a well-formed batch (it pads/drops only for malformed ones).
+      const listed = input.prompt.match(/Shard ids, in order:\s*(.+)/)?.[1] ?? "";
+      const ids = listed
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const requested = ids.length > 0 ? ids : [input.shardId ?? "s-stub"];
+      data = {
+        verdicts: requested.map((id) => ({
+          shard_id: id,
+          knows: true,
+          confidence: 0.8,
+          memory_type: "direct",
+          estimated_answer_value: "high",
+          needs_full_recall: true,
+          relevant_event_ids: eventIds.slice(0, 6),
+        })),
+      };
     } else if (input.schemaName === "RecallResult") {
       data = {
         shard_id: input.shardId ?? "s-stub",
@@ -910,8 +934,16 @@ export async function censusFromCorpus(
     else process.env.CSM_EMBED_FLOOR_K = savedFloor;
   }
 
+  // BatchedProbeResult is a PROBE-stage call (token plan L2b, default-on for
+  // hosted providers since 2026-08-01). Falling through to "synth" filed a
+  // ~2,300-token batched probe request under the ~486-token synth row and
+  // silently corrupted every per-stage number in the census table.
   const stageName = (schema: string) =>
-    schema === "ProbeResult" ? "probe" : schema === "RecallResult" ? "recall" : "synth";
+    schema === "ProbeResult" || schema === "BatchedProbeResult"
+      ? "probe"
+      : schema === "RecallResult"
+        ? "recall"
+        : "synth";
   const perStageCalls = new Map<string, typeof stub.calls>();
   for (const c of stub.calls) {
     const key = stageName(c.schemaName);

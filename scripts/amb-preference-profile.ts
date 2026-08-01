@@ -38,6 +38,7 @@ export const PREF_PROMPT_VERSION = "v1";
  *  serves never mention the preference they test, so no query-conditioned gate
  *  can exist; see docs/experiments/EXP-preference-write-time.md). */
 export function preferenceProfileActive(): boolean {
+  // DEFAULT ON since 2026-08-01: the lever that wins knowledge_update at 1M.
   return envFlag(process.env.CSM_AMB_PREFERENCE_PROFILE, {
     name: "CSM_AMB_PREFERENCE_PROFILE",
     fallback: false,

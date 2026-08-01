@@ -1464,7 +1464,12 @@ export interface LeanReturnOptions {
 
 export function resolveLeanReturn(env: NodeJS.ProcessEnv = process.env): LeanReturnOptions {
   return {
-    k: envInt(env.CSM_AMB_LEAN_K, { name: "CSM_AMB_LEAN_K", fallback: 0, min: 0 }),
+    // k DEFAULT 16 since 2026-08-01. Paired gate (minted arms, frozen
+    // retrieval): K=16 costs -0.0009 with 35/45 ties for -32% answer payload;
+    // K=12 was measured and REJECTED (-0.0759, CI excludes 0,
+    // instruction_following 0W/5L). Confirmed live in composition with the
+    // batched probe (r1mM: ALL +0.0037). 0 disables the transform entirely.
+    k: envInt(env.CSM_AMB_LEAN_K, { name: "CSM_AMB_LEAN_K", fallback: 16, min: 0 }),
     excerptChars: envInt(env.CSM_AMB_LEAN_EXCERPT_CHARS, {
       name: "CSM_AMB_LEAN_EXCERPT_CHARS",
       fallback: 0,

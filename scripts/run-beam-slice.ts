@@ -35,7 +35,11 @@ import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
-import { CsmBaseline } from "../src/eval/baselines/csm.js";
+import {
+  CsmBaseline,
+  resolveRouterHybrid,
+  resolveShardDescriptors,
+} from "../src/eval/baselines/csm.js";
 import {
   BEAM_LOSING_CATEGORIES,
   loadBeamDocuments,
@@ -55,6 +59,7 @@ import {
   DEFAULT_BRIDGE_MODEL_CONTEXT,
   executeAmbRetrieve,
   resolveBridgeModel,
+  resolveLeanReturn,
   scopeDocuments,
   type AmbBridgeOptions,
   type AmbDocument,
@@ -63,6 +68,11 @@ import {
   loadOrBuildPreferenceProfile,
   preferenceProfileActive,
 } from "./amb-preference-profile.js";
+import {
+  resolveProbeBatch,
+  resolveProbeLocalKeep,
+  resolveProbeShrink,
+} from "../src/core/ask.js";
 
 export interface RunBeamSliceOptions {
   split: string;
@@ -213,6 +223,24 @@ export async function runBeamSlice(
     const value = process.env[name];
     if (value !== undefined) envEcho[name] = value;
   }
+  // RESOLVED lever values, not just the raw env.
+  //
+  // `envEcho` records only variables that were SET, so "absent" used to be
+  // readable as "off". The 2026-08-01 default flips break that reading:
+  // absent now means ON for the router, descriptors, probe batching and the
+  // lean transform. Recording what actually APPLIED keeps every manifest
+  // self-describing across default changes — the F7/F11 failure was exactly
+  // an invisible config difference, and a silently inverted default would
+  // reproduce it in the opposite direction.
+  const resolvedLevers = {
+    routerHybrid: resolveRouterHybrid(),
+    shardDescriptors: resolveShardDescriptors(),
+    probeBatch: resolveProbeBatch(provider.name),
+    probeShrink: resolveProbeShrink(),
+    probeLocalKeep: resolveProbeLocalKeep(),
+    preferenceProfile: preferenceProfileActive(),
+    leanReturn: resolveLeanReturn(),
+  };
   // Provenance (audit P4/F7): the F11 false conclusion happened because a
   // config delta was invisible in the manifests. Echo the code version and a
   // content hash of exactly the documents/queries this run consumed, so any
@@ -247,6 +275,7 @@ export async function runBeamSlice(
         providerName: provider.name,
         bridgeOpts,
         envEcho,
+        resolvedLevers,
         gitSha,
         documentsSha256: docsHash.digest("hex"),
         documentCount: documents.length,

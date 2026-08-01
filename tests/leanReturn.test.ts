@@ -9,8 +9,17 @@
  * answer-visible at 1M vs Hindsight's 17.9K).
  *
  * The transform is RENDERING-ONLY: selection is untouched, and with every knob
- * off the output must be byte-identical (same object references) to the legacy
- * payload — that identity is what makes the default arm a true control.
+ * EXPLICITLY off the output must be byte-identical (same object references) to
+ * the legacy payload — that identity is what made the paired gate's control arm
+ * a true control, and it is still pinned below against `k: 0`.
+ *
+ * SHIPPED DEFAULT CHANGED 2026-08-01: `CSM_AMB_LEAN_K` now defaults to 16, so
+ * "unset" is no longer the identity — the paired gate (minted arms, frozen
+ * retrieval) measured K=16 at -0.0009 with 35/45 ties for -32% answer payload,
+ * while K=12 was REJECTED (-0.0759, CI excludes 0, instruction_following 0W/5L).
+ * The legacy identity payload is now reached only via an explicit
+ * `CSM_AMB_LEAN_K=0`. The other two knobs (excerpt, profile dedupe) are still
+ * un-gated and default OFF.
  */
 import { describe, expect, it } from "vitest";
 
@@ -37,6 +46,8 @@ function ev(id: string, content: string): BenchEvent {
   };
 }
 
+/** The legacy payload: every knob explicitly off. NOT what `resolveLeanReturn`
+ *  returns from an empty env any more — see the `resolveLeanReturn` block. */
 const OFF: LeanReturnOptions = { k: 0, excerptChars: 0, profileDedupe: false };
 
 describe("splitContextPrefix", () => {
@@ -62,10 +73,31 @@ describe("buildLeanDocs", () => {
     ev("f#turn-0", "a bare turn that never carried a preamble"),
   ];
 
-  it("is the IDENTITY (same references) with every knob off — the control arm", () => {
+  // Byte-identity is still the claim; it is now pinned against the EXPLICIT-off
+  // configuration (`k: 0`) rather than against "unset", because unset now
+  // resolves to k=16. This is the arm the paired gate scored as the control.
+  it("is the IDENTITY (same references) with every knob EXPLICITLY off — the control arm", () => {
     const out = buildLeanDocs(events, "postgres", OFF);
     expect(out).toHaveLength(events.length);
     for (let i = 0; i < events.length; i++) expect(out[i]).toBe(events[i]);
+  });
+
+  // Companion to the identity test above: what the SHIPPED default (k=16, other
+  // knobs off) actually does to a payload. It is a pure prefix slice — the docs
+  // it keeps are the same objects, byte-for-byte, so the -32% payload saving
+  // comes entirely from dropping the tail, never from rewriting kept turns.
+  it("the shipped default (k=16) is a prefix slice — kept docs are untouched references", () => {
+    const many = Array.from({ length: 20 }, (_, i) =>
+      ev(`g#turn-${i}`, PROFILE + `turn number ${i} about the postgres migration`),
+    );
+    const shipped = resolveLeanReturn({} as NodeJS.ProcessEnv);
+    const out = buildLeanDocs(many, "postgres", shipped);
+    expect(out).toHaveLength(16);
+    for (let i = 0; i < out.length; i++) expect(out[i]).toBe(many[i]);
+    // …and the cut keeps the best-ranked head, i.e. it drops from the tail.
+    expect(out.map((d) => d.id)).toEqual(many.slice(0, 16).map((d) => d.id));
+    // Under the explicit-off legacy config the same input is untruncated.
+    expect(buildLeanDocs(many, "postgres", OFF)).toHaveLength(20);
   });
 
   it("k caps the raw-turn count, keeping the best-ranked head", () => {
@@ -122,9 +154,28 @@ describe("buildLeanDocs", () => {
 });
 
 describe("resolveLeanReturn", () => {
-  it("defaults fully OFF — the shipped payload is unchanged until gated on", () => {
-    expect(resolveLeanReturn({} as NodeJS.ProcessEnv)).toEqual({
+  // Was "defaults fully OFF — the shipped payload is unchanged until gated on".
+  // The default flipped on 2026-08-01; the legacy fully-OFF payload is still
+  // reachable and still pinned, just via an explicit 0 instead of via "unset".
+  it("explicit CSM_AMB_LEAN_K=0 still resolves to the fully-OFF legacy payload", () => {
+    expect(
+      resolveLeanReturn({ CSM_AMB_LEAN_K: "0" } as NodeJS.ProcessEnv),
+    ).toEqual({
       k: 0,
+      excerptChars: 0,
+      profileDedupe: false,
+    });
+  });
+
+  // The new shipped default. WHY 16 and not less: the paired gate (minted arms,
+  // frozen retrieval) put K=16 at -0.0009 with 35/45 ties for -32% answer
+  // payload, and K=12 at -0.0759 with a CI excluding 0 and instruction_following
+  // 0W/5L — so 16 is the measured floor, not a round number. Confirmed live in
+  // composition with the batched probe (r1mM: ALL +0.0037). Excerpting and
+  // profile dedupe are NOT gated on and must stay off.
+  it("defaults to the gated K=16 raw-turn cap, with the other two knobs still OFF", () => {
+    expect(resolveLeanReturn({} as NodeJS.ProcessEnv)).toEqual({
+      k: 16,
       excerptChars: 0,
       profileDedupe: false,
     });

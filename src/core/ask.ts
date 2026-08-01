@@ -251,7 +251,8 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   // eager-recall handlers below attach unchanged. Usage is accumulated once,
   // directly — the views carry zero usage so the shared call is never counted
   // per view. Batch mode implies the parallel path (it is at most two calls).
-  const useBatchedProbe = resolveProbeBatch() && probedCandidates.length > 2;
+  const useBatchedProbe =
+    resolveProbeBatch(provider.name) && probedCandidates.length > 2;
   const startBatchedProbePromises = (): Array<
     Promise<{ result: ProbeResult; usage: ProviderUsage } | null>
   > => {
@@ -656,8 +657,25 @@ export function resolveProbeShrink(raw = process.env.CSM_PROBE_SHRINK): boolean 
  *  that small call resolves, worth ~1.2s on the 94% of 1M queries that are
  *  single-recall — and shards 2..N are classified in ONE call, paying the
  *  ~349-token probe scaffold once instead of N−1 times. */
-export function resolveProbeBatch(raw = process.env.CSM_PROBE_BATCH): boolean {
-  return envFlag(raw, { name: "CSM_PROBE_BATCH", fallback: false });
+export function resolveProbeBatch(
+  providerName: string,
+  raw = process.env.CSM_PROBE_BATCH,
+): boolean {
+  // DEFAULT ON for HOSTED providers since 2026-08-01. Paired gate r1mJ vs
+  // r1mI2 (n=45 @1M): −21% internal input at score +0.0315 (below MDE = no
+  // cost), probe COUNT preserved at 8.00 by reconciliation, recalls
+  // unchanged; confirmed in composition with lean K=16 (r1mM: ALL +0.0037).
+  //
+  // Default OFF for local single-GPU servers, following the same
+  // provider-class split as `resolveParallelProbes`. The evidence is from ONE
+  // hosted model family, and a batched prompt asks the model to judge shards
+  // COMPARATIVELY in one pass — a harder task that a 4B-class local model may
+  // well do worse than eight independent binary calls. Defaulting it on there
+  // would extrapolate past the measurement; `CSM_PROBE_BATCH=1` opts in.
+  return envFlag(raw, {
+    name: "CSM_PROBE_BATCH",
+    fallback: providerName !== "ollama" && providerName !== "llama-server",
+  });
 }
 
 /** Local probe pre-gate keep-count (token plan L3). 0 = off. When N > 0 and a

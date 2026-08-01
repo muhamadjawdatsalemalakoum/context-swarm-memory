@@ -324,7 +324,10 @@ export function resolveParallelProbes(
 export function resolveShardDescriptors(
   raw = process.env.CSM_SHARD_DESCRIPTORS,
 ): boolean {
-  return envFlag(raw, { name: "CSM_SHARD_DESCRIPTORS", fallback: false });
+  // DEFAULT ON since 2026-08-01. Flat as a standalone lever, but it is the
+  // input the (now default-on) hybrid router's lexical leg consumes — the two
+  // ship together or the router runs on a weaker signal.
+  return envFlag(raw, { name: "CSM_SHARD_DESCRIPTORS", fallback: true });
 }
 
 /** Leading `[Month-DD-YYYY | Turn N]` header, as a "Mar-15-2024. " prefix. */
@@ -356,7 +359,11 @@ function firstDatedHeader(events: Array<{ content: string }>): string | null {
 export function resolveRouterHybrid(
   raw = process.env.CSM_ROUTER_HYBRID,
 ): boolean {
-  return envFlag(raw, { name: "CSM_ROUTER_HYBRID", fallback: false });
+  // DEFAULT ON since 2026-08-01. The strongest lever ever measured on this
+  // system: +0.365 answer score, 26W/5L at the 1M tier, and the only one that
+  // CONVERTED a retrieval gain into an answer gain. Shipping it off meant a
+  // fresh clone ran the weaker configuration by default.
+  return envFlag(raw, { name: "CSM_ROUTER_HYBRID", fallback: true });
 }
 
 /** Everything `answer()` needs from the retrieval half of the baseline, and
