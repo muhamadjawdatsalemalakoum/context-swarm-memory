@@ -135,7 +135,24 @@ Proposal considered: bake small deterministic tools into CSM, and give CSM a
 bespoke local database for critical info + relationships. Verdict: adopted as
 the unifying frame for R1+R2, with two amendments.
 
-- **Capsule computers (new, R3)**: deterministic scripts at packet-build time
+**R3(a) IS ALREADY BUILT — it needs measuring, not writing.**
+`CSM_AMB_ORDERED_CAPSULE` (default OFF, `amb-csm-retrieve.ts:754`) already
+renders the capsule as an explicit numbered 1..N chronological sequence,
+written because BEAM events carry placeholder dates that *hide* the order
+event_ordering queries ask for. It has never been validly measured: every
+prior arm was graded through the capsule render gap, where the whole capsule
+became `(id csm-evidence-capsule unavailable)` — so a capsule-RESIDENT lever
+was measured as a literal content no-op. The same is true of the other three
+capsule-resident levers (OBSERVE / FACT / SYNTH).
+
+Cheapest valid design, no new code: ONE retrieval run over
+`event_ordering,summarization` (the categories the lever targets), then MINT
+two virtual arms from that frozen retrieval by re-rendering the capsule both
+ways (ordered vs date-prefixed) — the pattern `scripts/lean-return-mint.ts`
+already established. Zero retrieval nondeterminism, so the MDE roughly halves,
+and only the answer+judge steps spend anything.
+
+- **Capsule computers (remaining, R3b/R3c)**: deterministic scripts at packet-build time
   whose *outputs* go into the capsule — (a) event-ordering line (sorted cited
   events; targets BEAM event_ordering, judged by Kendall τ-b, a measured loss
   to Hindsight), (b) latest-value table (deterministic read of R2's store),
