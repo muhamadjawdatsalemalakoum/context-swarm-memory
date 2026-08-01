@@ -890,6 +890,20 @@ export function observeMemoryActive(): boolean {
   return envFlag(process.env.CSM_AMB_OBSERVE_MEMORY, { name: "CSM_AMB_OBSERVE_MEMORY", fallback: false });
 }
 
+/** CSM_AMB_LEGACY_INTENT (default OFF): restores the benchmark-TUNED intent
+ *  regexes below exactly as validated on the four BEAM tier query sets. The
+ *  fitted versions contain leak guards derived from specific measured BEAM
+ *  queries ("(mention 8 items in total)", "how much total time did I spend");
+ *  they are grammar, not corpus vocabulary, but their precision was tuned
+ *  against this one benchmark — the default path uses plain-language cores
+ *  instead, and any future lever-ON arm must A/B the intent gate it ships. */
+export function legacyIntentActive(): boolean {
+  return envFlag(process.env.CSM_AMB_LEGACY_INTENT, {
+    name: "CSM_AMB_LEGACY_INTENT",
+    fallback: false,
+  });
+}
+
 /** Gate for the ingestion-time Observation: fire ONLY on genuine retrospective
  *  summary/recap requests. Deliberately NARROWER than `detectAmbQueryIntent`'s
  *  `broadSummary` — the latter also matches the "across (our|my) conversations"
@@ -902,30 +916,21 @@ export function observeMemoryActive(): boolean {
  *  leak onto any other category — the organized memory is exactly a retrospective
  *  narrative, which is what those queries ask for.
  *
- *  Fires on the TWO coverage-failure losses. Validated (2026-06-24 audit) against
- *  ALL FOUR tier query sets (100k/500k/1m/10m, 2,000 queries): 100% recall on
- *  summarization (40+70+70+20) AND event_ordering (40+70+70+20), ZERO fires on
- *  any other category at any tier. Both categories fail identically at baseline —
- *  the answer model says "the context lacks the information" because retrieval
- *  drops nuggets scattered across the full conversation; the full-conversation
- *  organized memory is what supplies them.
- *
- *  Two constructions matter (both data-derived, see the audit):
- *  - The nouns summary/overview require a following "of|that": in every genuine
- *    summarization query across all tiers (145/145 noun usages) they head a
- *    request ("summary of how…", "overview that covers…"), while the measured
- *    leaks use them as NOUN MODIFIERS of a topic ("reduce summary generation
- *    time", "improving summary quality" — 1m multi_session; "the design overview
- *    document" — 10m abstention).
- *  - "in order" fires only when NOT the purpose idiom ("in order to/for/that"):
- *    500k/1m event_ordering phrase as "…my progress in order (mention N items)"
- *    and "reconstruct the timeline", which the original phrase list missed
- *    (500k 57/70, 1m 8/70 before this fix). */
+ *  DEFAULT path = the verb core only (summarize/recap + summary/overview as
+ *  head nouns): dictionary-definition summary intent, no benchmark-derived
+ *  additions. LEGACY path adds the ordering/timeline line, whose phrase list
+ *  ("in order" minus the purpose idiom, "reconstruct the timeline") was grown
+ *  against BEAM event_ordering queries (500k 57/70, 1m 8/70 before that fix;
+ *  100% recall on summarization AND event_ordering, zero cross-category fires,
+ *  validated 2026-06-24 across all four tiers / 2,000 queries). */
 export function observationQueryIntent(query: string): boolean {
-  return (
+  const verbCore =
     /\b(summarize|summarise|summarized|summarised|recap|recapped|(summary|overview)(?=\s+(of|that)\b))\b/i.test(
       query,
-    ) ||
+    );
+  if (!legacyIntentActive()) return verbCore;
+  return (
+    verbCore ||
     /\b(in (what|which) order|order in which|list (the |in )?order|walk me through the order|the sequence in which|in chronological order|in order(?!\s+(to|for|that)\b)|reconstruct (the |my )?timeline)\b/i.test(
       query,
     )
@@ -944,19 +949,29 @@ export function factMemoryActive(): boolean {
 
 /** Gate for the fact registry: cross-mention AGGREGATION questions ("how many X
  *  in total when combining A and B", "how much total ... across", "how many
- *  different X did I mention"). Validated on ALL FOUR BEAM tier query sets
- *  (2,000 queries, 2026-07-02): fires ONLY on multi_session_reasoning
- *  (100k 9/40, 500k 17/70, 1m 13/70, 10m 13/20), ZERO fires on any other
- *  category at any tier. Two measured-leak guards (both 500k):
- *  - `(?<!items )in total` — an event_ordering query embeds "(mention 8 items
+ *  different X did I mention").
+ *
+ *  DEFAULT path = the same aggregation grammar WITHOUT the two measured-leak
+ *  guards, which were derived from individual BEAM 500k queries and are the
+ *  benchmark-fitted part:
+ *  - `(?<!items )in total` — one event_ordering query embeds "(mention 8 items
  *    in total)" as an output-format instruction, not an aggregation ask;
- *  - "how much" must not target a DURATION ("how much total time did I spend
- *    ... across the sessions" is temporal_reasoning's time-arithmetic, a win
- *    category; metric aggregation like "how much total delay" still fires).
+ *  - "how much" duration exclusion — "how much total time did I spend ...
+ *    across the sessions" is temporal_reasoning's time-arithmetic, a win
+ *    category; metric aggregation like "how much total delay" still fires.
+ *  LEGACY path restores both guards exactly as validated on ALL FOUR BEAM tier
+ *  query sets (2,000 queries, 2026-07-02): fires ONLY on
+ *  multi_session_reasoning (100k 9/40, 500k 17/70, 1m 13/70, 10m 13/20), ZERO
+ *  fires on any other category at any tier.
  *  Deliberately does NOT try to catch knowledge_update's "current value"
  *  questions — lexically indistinguishable from information_extraction (a
  *  winner), so no safe lexical gate exists for them. */
 export function aggregationQueryIntent(query: string): boolean {
+  if (!legacyIntentActive()) {
+    return /\b(in total|total .{0,30}(across|combining|combined)|(across|combining|combined).{0,40}\b(total|combined?|altogether)|how (many|much) .{0,60}(across|combined|combining|in total)|how many different .{0,40}(mention|discuss|bring)|altogether)\b/i.test(
+      query,
+    );
+  }
   return /\b((?<!items )in total|total .{0,30}(across|combining|combined)|(across|combining|combined).{0,40}\b(total|combined?|altogether)|how (many|much) (?!(total\s+)?(time|minutes|hours|days)\b).{0,60}(across|combined|combining|(?<!items )in total)|how many different .{0,40}(mention|discuss|bring)|altogether)\b/i.test(
     query,
   );
