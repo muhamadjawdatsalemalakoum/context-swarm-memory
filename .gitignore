@@ -123,3 +123,7 @@ data/eval/corpus-synthetic/queries-stub.json
 !data/eval/runs/obs-wave-2026-07/csm-obs-summ40-100k.json.gz
 !data/eval/runs/obs-wave-2026-07/csm-oai-eo40-base-100k.json.gz
 !data/eval/runs/obs-wave-2026-07/csm-oai-eo40-obs-100k.json.gz
+
+# Hindsight BEAM artifacts: ~60MB each, re-fetchable from the AMB repo
+# (scripts/verify-hindsight-ladder.mjs, scripts/category-leaderboard.mjs).
+data/eval/external/hindsight-*.json
