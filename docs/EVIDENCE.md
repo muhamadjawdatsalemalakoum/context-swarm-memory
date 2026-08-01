@@ -112,6 +112,44 @@ The verifier currently checks these SHA-256 hashes:
 | `data/eval/external/babilong-leaderboard-v0_results.csv` | `584b7daf5f8cfcab96a005dabe6e6df189acd545a093dfc48f223af15ca6e196` |
 | `data/eval/external/babilong-leaderboard-v0_SOURCE.md` | `87418e7d69d57c7beb3c94cfa14630b0a2f97b01348d3dca384180d8fe69a658` |
 
+## Lever verdict ledger
+
+Every behavioural lever that has been through a paired gate, with what the
+evidence actually says. **Read the Evidence column before quoting a number:**
+`sidecar` rows were measured on the Claude Agent SDK path, which is
+subscription-authenticated and NOT independently reproducible — they steer
+iteration only and must never be published. Publishable numbers come from the
+key-based Gemini path. The ~105 other `CSM_*` variables are tuning knobs
+(budgets, K values, model ids), not levers with verdicts.
+
+| Lever (env var) | Default | Verdict | Evidence |
+|---|---|---|---|
+| `CSM_ROUTER_HYBRID` | ON | **CONVERTS** +0.365 answer, 26W/5L at 1M — the embedding leg does the work | gemini, 1M ladder |
+| `CSM_AMB_ID_REPAIR` | ON | **worth ~0.20**; default flipped after it was found missing from a manifest (F11→F12) | gemini |
+| `CSM_AMB_PREFERENCE_PROFILE` | ON | wins knowledge_update at 1M | gemini |
+| `CSM_SHARD_DESCRIPTORS` | ON | flat on its own — kept because the hybrid router consumes it | gemini |
+| `CSM_AMB_LEAN_K=16` | OFF→pending | **PASS** −32% answer payload, −0.0009 (CI [−0.051,+0.050], 35/45 ties) | sidecar, minted arms |
+| `CSM_AMB_LEAN_K=12` | never | **FAIL** −0.0759, CI excludes 0, instruction_following 0W/5L | sidecar, minted arms |
+| `CSM_PROBE_BATCH` | OFF→pending | **PASS** −21% internal input, +0.0315 (below MDE), no witness dropped | sidecar, r1mJ |
+| `CSM_PROBE_LOCAL_KEEP` | OFF | **KILLED** monotone 3-point dose-response; recalls and knowledge_update fall with it | sidecar, r1mK/r1mL |
+| `CSM_PROBE_SHRINK` | OFF | **SHELVED** same drop-a-witness family; best-case sizing below the bar | reasoned from L3 |
+| `CSM_AMB_COVERAGE_RERANK` | OFF | **anti-correlated**: +11.6 coverage proxy but LOST answers 4W/13L (p=0.049) | gemini |
+| `CSM_VIRTUAL_SHARDS` | OFF | **regression** coverage 0.743→0.620 | gemini |
+| `CSM_EAGER_RECALLS` | OFF | token-identical and latency-neutral — no reason to ship | gemini |
+| `CSM_AMB_LEGACY_VOCAB` | OFF | benchmark-fitted term tables removed at **zero cost** (+0.0037) | sidecar, arm I |
+| `CSM_AMB_LEGACY_INTENT` | OFF | benchmark-tuned intent regexes moved off the default path; legacy kept reproducible | not yet A/B'd |
+| Gemini context caching | n/a | **NO-GO**, degrades with scale | `EXP-T4-gemini-caching.md` |
+| `CSM_AMB_ORDERED_CAPSULE` | OFF | **NEVER VALIDLY MEASURED** — capsule-resident, so the render gap measured it as a content no-op | pending |
+| `CSM_AMB_OBSERVE_MEMORY` | OFF | same — never validly measured | pending |
+| `CSM_AMB_FACT_MEMORY` | OFF | same — never validly measured | pending |
+| `CSM_AMB_SYNTH_MEMORY` | OFF | same — never validly measured | pending |
+
+Two standing rules this table encodes: a delta below its MDE is **not** an
+effect (several "PASS" rows are passes because they cost nothing, not because
+they gained), and any lever whose effect lives inside the evidence capsule was
+un-measurable until the render gap was fixed — those four rows are honest
+unknowns, not quiet zeros.
+
 ## Honest limits
 
 - The public benchmark is still single-trial R&D evidence. CSM has measured
