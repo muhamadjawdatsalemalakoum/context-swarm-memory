@@ -79,6 +79,39 @@ which category) and unfit for *declaring* leadership. The scoreboard claim must
 land on the official Gemini ladder (P7, blocked on credits). Abstention in
 particular must not be counted as a free-instrument lead.
 
+## Scoreboard on the free instrument, today's config (n=25/category)
+
+Reader and judge held constant, only the retrieved context varies; Hindsight's
+arm is its own published artifact. **500K reaches the two-category target;
+1M does not.**
+
+| tier | category | CSM | Hindsight | leader |
+|---|---|---:|---:|---|
+| **500K** | preference_following | **0.890** | 0.808 | **CSM +0.082** |
+| **500K** | contradiction_resolution | **0.570** | 0.450 | **CSM +0.120** (12W/7L) |
+| 500K | temporal_reasoning | 0.467 | 0.480 | −0.013 (tied) |
+| 500K | abstention | 0.660 | 0.720 | −0.060 |
+| 500K | instruction_following | 0.673 | 0.720 | −0.047 |
+| 500K | information_extraction | 0.675 | 0.870 | −0.195 |
+| **1M** | abstention | **0.560** | 0.520 | **CSM +0.040** |
+| 1M | preference_following | 0.713 | 0.788 | −0.075 |
+| 1M | instruction_following | 0.723 | 0.830 | −0.107 |
+| 1M | information_extraction | 0.678 | 0.785 | −0.108 |
+| 1M | contradiction_resolution | 0.435 | 0.580 | −0.145 |
+| 1M | temporal_reasoning | 0.380 | 0.590 | −0.210 |
+
+`contradiction_resolution` at 500K is the notable mover: the official ladder
+had it at **−0.045** and today's config puts it at **+0.120**. The same
+category at 1M is −0.145, so this is not a uniform improvement — it is
+tier-specific, exactly like the needle net.
+
+**Caveat that governs every row: all but one cell is below its MDE.** At
+n=25/category the MDE is 0.09–0.35 against deltas of 0.01–0.21. These numbers
+are strong enough to *steer* work and far too weak to *declare* leadership. The
+only verdict the gate itself returns as decisive is 1M ALL, and it goes to
+Hindsight (31W/11L). A leadership claim needs the full 70-query categories or
+the official Gemini ladder.
+
 ## The needle net — diagnosis, lever, and its measured trade
 
 **Diagnosis (500K, per-query, both sides' real contexts).** Every
