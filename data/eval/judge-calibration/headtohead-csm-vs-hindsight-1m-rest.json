@@ -1,0 +1,458 @@
+{
+  "reader": "claude-sonnet-5",
+  "judgePromptVersion": "v2",
+  "n": 75,
+  "excluded": 0,
+  "results": [
+    {
+      "id": "10_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "11_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "10_summarization_1",
+      "category": "summarization",
+      "a": 1,
+      "b": 0.8
+    },
+    {
+      "id": "11_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0,
+      "b": 0.75
+    },
+    {
+      "id": "10_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.5,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "13_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "13_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.75,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "14_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "11_summarization_0",
+      "category": "summarization",
+      "a": 0.3125,
+      "b": 0.6875
+    },
+    {
+      "id": "14_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.375,
+      "b": 0.375
+    },
+    {
+      "id": "13_summarization_1",
+      "category": "summarization",
+      "a": 0.6875,
+      "b": 0.5
+    },
+    {
+      "id": "14_summarization_0",
+      "category": "summarization",
+      "a": 0.375,
+      "b": 0.75
+    },
+    {
+      "id": "15_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "17_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "15_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.8333333333333334,
+      "b": 1
+    },
+    {
+      "id": "17_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 1,
+      "b": 0.75
+    },
+    {
+      "id": "19_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "15_summarization_1",
+      "category": "summarization",
+      "a": 0.6666666666666666,
+      "b": 0.5
+    },
+    {
+      "id": "19_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "17_summarization_0",
+      "category": "summarization",
+      "a": 0.75,
+      "b": 0.625
+    },
+    {
+      "id": "19_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.3333333333333333,
+      "b": 0
+    },
+    {
+      "id": "19_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.5625,
+      "b": 0
+    },
+    {
+      "id": "20_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "19_summarization_1",
+      "category": "summarization",
+      "a": 0.75,
+      "b": 0.25
+    },
+    {
+      "id": "20_summarization_1",
+      "category": "summarization",
+      "a": 0.75,
+      "b": 0.75
+    },
+    {
+      "id": "19_summarization_0",
+      "category": "summarization",
+      "a": 0.7142857142857143,
+      "b": 0.5714285714285714
+    },
+    {
+      "id": "20_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.375,
+      "b": 0.875
+    },
+    {
+      "id": "21_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "23_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_summarization_0",
+      "category": "summarization",
+      "a": 0.3888888888888889,
+      "b": 0.5555555555555556
+    },
+    {
+      "id": "23_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.5,
+      "b": 0.75
+    },
+    {
+      "id": "23_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.6111111111111112
+    },
+    {
+      "id": "25_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.5,
+      "b": 0.8
+    },
+    {
+      "id": "25_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.5,
+      "b": 0.5833333333333334
+    },
+    {
+      "id": "27_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "25_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "26_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.07142857142857142
+    },
+    {
+      "id": "27_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.75,
+      "b": 0.75
+    },
+    {
+      "id": "2_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "27_summarization_0",
+      "category": "summarization",
+      "a": 0.4166666666666667,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "2_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.8333333333333334,
+      "b": 1
+    },
+    {
+      "id": "30_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "30_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "2_summarization_1",
+      "category": "summarization",
+      "a": 0.25,
+      "b": 0.6875
+    },
+    {
+      "id": "31_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "30_summarization_1",
+      "category": "summarization",
+      "a": 0.6111111111111112,
+      "b": 0.3888888888888889
+    },
+    {
+      "id": "31_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.625,
+      "b": 0.25
+    },
+    {
+      "id": "31_summarization_1",
+      "category": "summarization",
+      "a": 0.8333333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "32_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "32_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0,
+      "b": 0.2
+    },
+    {
+      "id": "32_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "32_summarization_1",
+      "category": "summarization",
+      "a": 0.9,
+      "b": 0.8
+    },
+    {
+      "id": "32_summarization_0",
+      "category": "summarization",
+      "a": 0.2222222222222222,
+      "b": 0.4444444444444444
+    },
+    {
+      "id": "34_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "3_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "34_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "34_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.1
+    },
+    {
+      "id": "3_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "4_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "3_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.4
+    },
+    {
+      "id": "6_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "4_summarization_1",
+      "category": "summarization",
+      "a": 0.5625,
+      "b": 0.5625
+    },
+    {
+      "id": "4_multi_session_reasoning_1",
+      "category": "multi_session_reasoning",
+      "a": 0.625,
+      "b": 0.625
+    },
+    {
+      "id": "6_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "7_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "7_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.25,
+      "b": 0.875
+    },
+    {
+      "id": "6_summarization_0",
+      "category": "summarization",
+      "a": 0.6,
+      "b": 0.5
+    },
+    {
+      "id": "8_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.75,
+      "b": 0.5
+    },
+    {
+      "id": "8_multi_session_reasoning_0",
+      "category": "multi_session_reasoning",
+      "a": 0.625,
+      "b": 0.75
+    },
+    {
+      "id": "7_summarization_0",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.6
+    },
+    {
+      "id": "8_summarization_0",
+      "category": "summarization",
+      "a": 0.3,
+      "b": 0.9
+    }
+  ]
+}

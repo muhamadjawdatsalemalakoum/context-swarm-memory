@@ -112,6 +112,41 @@ only verdict the gate itself returns as decisive is 1M ALL, and it goes to
 Hindsight (31W/11L). A leadership claim needs the full 70-query categories or
 the official Gemini ladder.
 
+## R3a — the ordered capsule, first valid measurement: NEGATIVE
+
+`CSM_AMB_ORDERED_CAPSULE` had never been validly measured (every prior arm went
+through the capsule render gap, which graded a capsule-resident lever as a
+content no-op). Measured now at 1M, and it does not help.
+
+**Head-to-head vs Hindsight (ordered ON), n=25/category:** event_ordering
+0.588 vs 0.614 (−0.027, against **−0.216 on the official ladder**),
+knowledge_update 0.750 vs 0.740, summarization 0.450 vs 0.542.
+
+**Paired A/B against the same-config control** (the reliable instrument for a
+lever question — same queries, same pairing):
+
+| category | control | ordered | delta | W/L |
+|---|---:|---:|---:|---|
+| knowledge_update | 0.720 | 0.690 | −0.030 | 2W/4L |
+| summarization | 0.480 | 0.461 | −0.019 | 6W/9L |
+| **ALL** | 0.600 | 0.575 | **−0.024** | 8W/13L |
+
+**Verdict: stays default-OFF.**
+
+### The retraction, and the noise floor it exposes
+
+The head-to-head reading suggested knowledge_update had flipped to a lead
+(0.750 vs Hindsight's 0.740). The paired re-measurement of *the same retrieved
+contexts* scored that arm at 0.690 — a **0.06 swing from answer/judge
+stochasticity alone**. The control moved only 0.01 (0.710 → 0.720), so this is
+not a systematic offset between instruments; it is per-arm noise.
+
+That single comparison calibrates everything else on this page: **at
+n=25/category the re-measurement noise is ~±0.05**, which is the same order as
+every "lead" in the scoreboard above. It is why the MDE column exists and why
+no cell here is a result on its own. A lead of +0.01 is not a lead; it is a
+coin landing.
+
 ## The needle net — diagnosis, lever, and its measured trade
 
 **Diagnosis (500K, per-query, both sides' real contexts).** Every
