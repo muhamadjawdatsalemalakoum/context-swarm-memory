@@ -29,7 +29,7 @@ import { buildPrompt, parseAnswer } from "../answer.js";
 import { rerank } from "../rerank.js";
 import { callLlmCached } from "../cachedLlm.js";
 import type { BenchEvent, Corpus } from "../corpus.js";
-import { embed, EMBED_MODEL_NAME, topKCosine } from "../embed.js";
+import { cosine, embed, EMBED_MODEL_NAME, topKCosine } from "../embed.js";
 import type { Query } from "../mcq.js";
 import type {
   BaselineResult,
@@ -154,6 +154,61 @@ export function applyEmbeddingUnion(
 
 export function resolveEmbeddingUnionK(raw = process.env.CSM_EMBED_ALWAYS_K): number {
   return envInt(raw, { name: "CSM_EMBED_ALWAYS_K", fallback: 0, min: 0 });
+}
+
+/**
+ * Confidence gate for the needle net, as a percent of cosine (0-100).
+ *
+ * WHY (measured 500K, K=5 vs control): the ungated union is a clean trade,
+ * not a wash — information_extraction +0.205 (7W/0L, CI [0.070,0.365]) and
+ * abstention -0.120 (0W/4L, CI [-0.240,-0.020]). The mechanism is symmetric:
+ * when the asked-for fact EXISTS, a global turn-level search finds it and the
+ * answer becomes right; when it genuinely does NOT exist — which is exactly
+ * what abstention tests — the same search still returns the five
+ * most-similar-looking turns, and handing the reader plausible material talks
+ * it out of refusing.
+ *
+ * So the net must fire on confidence, not unconditionally. Injecting only hits
+ * whose cosine clears a floor keeps the needle (the measured gold turns sit at
+ * cos ~0.60-0.66) while a query whose answer is absent has no such hit and
+ * gets nothing added.
+ *
+ * Percent-of-cosine rather than a float so it goes through `envInt` and a typo
+ * throws instead of silently becoming a default. 0 = no gate.
+ *
+ * CALIBRATION HONESTY: any threshold is chosen against observed data and is
+ * therefore fitted until it is shown to hold somewhere else. It must be
+ * validated at a DIFFERENT tier before being trusted, and it must never become
+ * a per-category or per-query rule — that would be the benchmark-fitted
+ * vocabulary mistake (audit F9/F10) in numeric clothing.
+ */
+export function resolveEmbeddingUnionMinCos(
+  raw = process.env.CSM_EMBED_ALWAYS_MIN_COS,
+): number {
+  return envInt(raw, { name: "CSM_EMBED_ALWAYS_MIN_COS", fallback: 0, min: 0, max: 100 }) / 100;
+}
+
+/**
+ * PARAMETER-FREE confidence gate: inject a global hit only if it matches the
+ * query BETTER than anything the pipeline already returned.
+ *
+ * Preferred over the absolute `MIN_COS` floor precisely because it has no
+ * number to tune. The rule states the claim the needle net is making —
+ * "the global search found something the pipeline demonstrably missed" — and
+ * it reads the threshold off each query's own returned set rather than off a
+ * constant calibrated against this benchmark.
+ *
+ * It also has the right shape for the measured failure. When the asked-for
+ * fact exists, the gold turn out-scores the off-target turns the router
+ * settled for, so the net fires. When the fact is genuinely absent (what
+ * abstention tests), the pipeline's topically-related turns already sit at the
+ * top of the same similarity distribution, nothing clears them, and the reader
+ * is handed nothing extra to be talked out of refusing by.
+ */
+export function resolveEmbeddingUnionBeatsBest(
+  raw = process.env.CSM_EMBED_ALWAYS_BEATS_BEST,
+): boolean {
+  return envFlag(raw, { name: "CSM_EMBED_ALWAYS_BEATS_BEST", fallback: false });
 }
 
 export interface ShardLocalExpansionInput {
@@ -1297,6 +1352,8 @@ export class CsmBaseline implements BaselineRunner {
     let embedUnionFired = false;
     let embedUnionCount = 0;
     let embedUnionAddedEventIds: string[] = [];
+    let embedUnionTopCos: number | null = null;
+    let embedUnionBestReturnedCos: number | null = null;
     let eventVecs: Float32Array[] | null = null;
     let queryVec: Float32Array | null = null;
     let eventIndexById: Map<string, number> | null = null;
@@ -1358,6 +1415,7 @@ export class CsmBaseline implements BaselineRunner {
     // Shares `ensureEmbeddings`, so when the floor already ran this costs no
     // extra embedding work.
     const embedUnionK = resolveEmbeddingUnionK();
+    const embedUnionMinCos = resolveEmbeddingUnionMinCos();
     if (embedUnionK > 0) {
       const embeddings = await ensureEmbeddings();
       if (embeddings) {
@@ -1366,7 +1424,27 @@ export class CsmBaseline implements BaselineRunner {
           embeddings.eventVecs,
           embedUnionK * 3,
         );
+        embedUnionTopCos = topK[0]?.score ?? null;
+        // Parameter-free gate: the best cosine among the events the pipeline
+        // ALREADY returned. A global hit must beat it to be worth injecting.
+        let floor = embedUnionMinCos;
+        if (resolveEmbeddingUnionBeatsBest()) {
+          let best = 0;
+          for (const id of augmentedRetrievalOrder) {
+            const idx = embeddings.eventIndexById.get(id);
+            const vec = idx === undefined ? undefined : embeddings.eventVecs[idx];
+            if (!vec) continue;
+            const c = cosine(embeddings.queryVec, vec);
+            if (c > best) best = c;
+          }
+          embedUnionBestReturnedCos = best;
+          floor = Math.max(floor, best);
+        }
         const rankedIds = topK
+          // A query whose answer is genuinely absent still has a "most similar"
+          // turn; injecting it is what talked the reader out of abstaining.
+          // Below the floor, add nothing.
+          .filter((hit) => hit.score >= floor)
           .map((hit) => corpus.events[hit.index]?.id)
           .filter((id): id is string => Boolean(id));
         const union = applyEmbeddingUnion(
@@ -1599,6 +1677,8 @@ export class CsmBaseline implements BaselineRunner {
         embedUnionFired,
         embedUnionCount,
         embedUnionAddedEventIds,
+        embedUnionTopCos,
+        embedUnionBestReturnedCos,
         shardExpandFired,
         shardExpandCount,
         shardExpandShardIds,

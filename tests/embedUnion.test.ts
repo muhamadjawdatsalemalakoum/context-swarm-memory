@@ -24,7 +24,9 @@ import {
   applyEmbeddingFloor,
   applyEmbeddingUnion,
   resolveEmbeddingFloorK,
+  resolveEmbeddingUnionBeatsBest,
   resolveEmbeddingUnionK,
+  resolveEmbeddingUnionMinCos,
 } from "../src/eval/baselines/csm.js";
 import { EnvConfigError } from "../src/utils/env.js";
 
@@ -106,5 +108,19 @@ describe("applyEmbeddingUnion", () => {
     const out = applyEmbeddingUnion(base, 2, ["p", "q", "r", "s"]);
     expect(out.count).toBe(2);
     expect(out.addedIds).toEqual(["p", "q"]);
+  });
+});
+
+describe("resolveEmbeddingUnionBeatsBest / MinCos", () => {
+  it("both gates default off and reject garbage", () => {
+    expect(resolveEmbeddingUnionBeatsBest(undefined)).toBe(false);
+    expect(resolveEmbeddingUnionBeatsBest("1")).toBe(true);
+    expect(() => resolveEmbeddingUnionBeatsBest("maybe")).toThrow(EnvConfigError);
+
+    expect(resolveEmbeddingUnionMinCos(undefined)).toBe(0);
+    // Percent-of-cosine, so it can go through envInt and a typo throws.
+    expect(resolveEmbeddingUnionMinCos("55")).toBeCloseTo(0.55, 10);
+    expect(() => resolveEmbeddingUnionMinCos("0.55")).toThrow(EnvConfigError);
+    expect(() => resolveEmbeddingUnionMinCos("140")).toThrow(EnvConfigError);
   });
 });
