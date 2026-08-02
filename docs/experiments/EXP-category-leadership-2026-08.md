@@ -153,8 +153,38 @@ Against Hindsight at 500K this moves information_extraction from **−0.220 to
 **NOT flipped to default yet, deliberately.** ALL +0.0428 is below its MDE
 (0.092), and the lean-return revert earlier the same day is the standing
 lesson: a lever measured on three categories at one tier is evidence about
-three categories at one tier. Cross-tier validation at 1M is running before any
-default changes.
+three categories at one tier.
+
+### Cross-tier validation at 1M — DOES NOT REPLICATE
+
+Same gated config, same three categories, paired against the 1M control:
+
+| category | 500K | **1M** |
+|---|---:|---:|
+| information_extraction | +0.150 (5W/2L) | **+0.012 (3W/7L)** |
+| abstention | −0.040 (1W/3L) | +0.040 (5W/3L) |
+| preference_following | +0.018 (4W/1L) | −0.008 (6W/5L) |
+| **ALL** | +0.0428 (10W/6L) | **+0.0147 (14W/15L)** |
+
+The headline 500K result — information_extraction +0.150 — collapses to +0.012
+at 1M, with **losses outnumbering wins** (3W/7L). Overall the lever is a coin
+flip there (14W/15L). Every cell was below MDE at both tiers, so nothing here
+was ever an effect on its own; what the second tier removes is the *pattern*
+that made the first tier persuasive.
+
+**Verdict: `CSM_EMBED_ALWAYS_K` stays default-OFF.** It is a measured,
+documented, opt-in lever with a real 500K result and no evidence of
+generalisation. Shipping it on the strength of one tier would have repeated the
+lean-return mistake in the same session that taught it.
+
+What survives regardless of the lever's fate is the **diagnosis**: the losses
+are absences, not burials; the retrieval unit is a whole session document; and
+mean-pooling 50–70 turn vectors dilutes a one-turn needle to ~1/56 of the
+signal. That is a structural property of document-granular routing, and any
+future fix — a smaller retrieval unit, turn-level indexing at ingest, R1's
+co-occurrence edges — has to answer it. Making the *unit* smaller is a
+different and more promising attack than bolting a global search onto the end
+of a document-granular pipeline.
 
 ## Open thread — did the lean default cost information_extraction?
 
