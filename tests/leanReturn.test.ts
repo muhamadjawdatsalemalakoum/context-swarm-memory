@@ -13,13 +13,15 @@
  * the legacy payload — that identity is what made the paired gate's control arm
  * a true control, and it is still pinned below against `k: 0`.
  *
- * SHIPPED DEFAULT CHANGED 2026-08-01: `CSM_AMB_LEAN_K` now defaults to 16, so
- * "unset" is no longer the identity — the paired gate (minted arms, frozen
- * retrieval) measured K=16 at -0.0009 with 35/45 ties for -32% answer payload,
- * while K=12 was REJECTED (-0.0759, CI excludes 0, instruction_following 0W/5L).
- * The legacy identity payload is now reached only via an explicit
- * `CSM_AMB_LEAN_K=0`. The other two knobs (excerpt, profile dedupe) are still
- * un-gated and default OFF.
+ * SHIPPED DEFAULT: `CSM_AMB_LEAN_K` is 0 (OFF), so "unset" IS the identity.
+ * It was flipped to 16 on 2026-08-01 and reverted the same day: K=16 cost
+ * -0.0009 on the three categories it was gated on (instruction_following /
+ * preference_following / knowledge_update @1M) for -32% payload, but on
+ * abstention / information_extraction / preference_following @500K, lean-OFF
+ * beat it in ALL THREE (ALL +0.0306, 9W/5L, MDE 0.0965). Below MDE, but the
+ * sign is consistent and the mechanism is plain — so the global flip was
+ * unjustified generalisation from a 3-category result. K=16 remains a
+ * measured, explicitly-selectable token lever.
  */
 import { describe, expect, it } from "vitest";
 
@@ -82,16 +84,18 @@ describe("buildLeanDocs", () => {
     for (let i = 0; i < events.length; i++) expect(out[i]).toBe(events[i]);
   });
 
-  // Companion to the identity test above: what the SHIPPED default (k=16, other
-  // knobs off) actually does to a payload. It is a pure prefix slice — the docs
-  // it keeps are the same objects, byte-for-byte, so the -32% payload saving
-  // comes entirely from dropping the tail, never from rewriting kept turns.
-  it("the shipped default (k=16) is a prefix slice — kept docs are untouched references", () => {
+  // Companion to the identity test above: what K=16 — the measured token
+  // lever, opt-in since the 2026-08-01 revert — actually does to a payload. It
+  // is a pure prefix slice: the docs it keeps are the same objects,
+  // byte-for-byte, so the -32% payload saving comes entirely from dropping the
+  // tail, never from rewriting kept turns. Resolved through the env so the
+  // opt-in path stays covered, not by hand-building the options object.
+  it("explicit k=16 is a prefix slice — kept docs are untouched references", () => {
     const many = Array.from({ length: 20 }, (_, i) =>
       ev(`g#turn-${i}`, PROFILE + `turn number ${i} about the postgres migration`),
     );
-    const shipped = resolveLeanReturn({} as NodeJS.ProcessEnv);
-    const out = buildLeanDocs(many, "postgres", shipped);
+    const lean16 = resolveLeanReturn({ CSM_AMB_LEAN_K: "16" } as NodeJS.ProcessEnv);
+    const out = buildLeanDocs(many, "postgres", lean16);
     expect(out).toHaveLength(16);
     for (let i = 0; i < out.length; i++) expect(out[i]).toBe(many[i]);
     // …and the cut keeps the best-ranked head, i.e. it drops from the tail.
@@ -167,15 +171,12 @@ describe("resolveLeanReturn", () => {
     });
   });
 
-  // The new shipped default. WHY 16 and not less: the paired gate (minted arms,
-  // frozen retrieval) put K=16 at -0.0009 with 35/45 ties for -32% answer
-  // payload, and K=12 at -0.0759 with a CI excluding 0 and instruction_following
-  // 0W/5L — so 16 is the measured floor, not a round number. Confirmed live in
-  // composition with the batched probe (r1mM: ALL +0.0037). Excerpting and
-  // profile dedupe are NOT gated on and must stay off.
-  it("defaults to the gated K=16 raw-turn cap, with the other two knobs still OFF", () => {
+  // Unset resolves to the identity transform: score outranks payload while
+  // category margins on the ladder are ~0.05 and lean costs ~0.03 on the
+  // categories that want their specific turns kept.
+  it("defaults fully OFF — the shipped payload is unchanged until gated on", () => {
     expect(resolveLeanReturn({} as NodeJS.ProcessEnv)).toEqual({
-      k: 16,
+      k: 0,
       excerptChars: 0,
       profileDedupe: false,
     });

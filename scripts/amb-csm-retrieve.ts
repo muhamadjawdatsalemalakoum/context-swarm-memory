@@ -1464,12 +1464,28 @@ export interface LeanReturnOptions {
 
 export function resolveLeanReturn(env: NodeJS.ProcessEnv = process.env): LeanReturnOptions {
   return {
-    // k DEFAULT 16 since 2026-08-01. Paired gate (minted arms, frozen
-    // retrieval): K=16 costs -0.0009 with 35/45 ties for -32% answer payload;
-    // K=12 was measured and REJECTED (-0.0759, CI excludes 0,
-    // instruction_following 0W/5L). Confirmed live in composition with the
-    // batched probe (r1mM: ALL +0.0037). 0 disables the transform entirely.
-    k: envInt(env.CSM_AMB_LEAN_K, { name: "CSM_AMB_LEAN_K", fallback: 16, min: 0 }),
+    // k DEFAULT 0 (OFF). It was flipped to 16 on 2026-08-01 and REVERTED the
+    // same day when a wider category set was measured.
+    //
+    // What K=16 was validated on: instruction_following / preference_following
+    // / knowledge_update at 1M, where it cost -0.0009 (35/45 ties) for -32%
+    // answer payload, and composed cleanly with the batched probe
+    // (r1mM: ALL +0.0037). K=12 was measured and REJECTED there (-0.0759).
+    //
+    // What the wider set showed: on abstention / information_extraction /
+    // preference_following at 500K, lean-OFF beats K=16 in ALL THREE
+    // (+0.045 / +0.040 / +0.007; ALL +0.0306, 9W/5L, MDE 0.0965). Below MDE
+    // and so not an effect on its own — but the sign is consistent across
+    // every category, the mechanism is plain (information_extraction wants the
+    // specific turns lean trims), and none of these categories was in the
+    // set that justified the flip. Generalising a 3-category result to a
+    // GLOBAL default was the error.
+    //
+    // Score outranks payload here: category margins on the ladder are ~0.05,
+    // so paying ~0.03 for -30% tokens is a bad trade while leadership is the
+    // objective. Set CSM_AMB_LEAN_K=16 explicitly for a deployment that wants
+    // the token saving and accepts that cost.
+    k: envInt(env.CSM_AMB_LEAN_K, { name: "CSM_AMB_LEAN_K", fallback: 0, min: 0 }),
     excerptChars: envInt(env.CSM_AMB_LEAN_EXCERPT_CHARS, {
       name: "CSM_AMB_LEAN_EXCERPT_CHARS",
       fallback: 0,
