@@ -90,8 +90,12 @@ describe("resolveEmbeddingFloorK", () => {
     expect(resolveEmbeddingFloorK("0")).toBe(0);
   });
 
-  it("falls back to the default for invalid input", () => {
-    expect(resolveEmbeddingFloorK("nope")).toBe(10);
+  // BEHAVIOUR CHANGED 2026-08-02: this used to assert that garbage silently
+  // became the default — the exact shape the env.ts invariant exists to forbid
+  // (it is how `CSM_ROUTER_HYBRID=off` once turned the router ON). A typo in
+  // the off-arm of an A/B would otherwise resolve to the treatment.
+  it("throws on invalid input instead of silently defaulting", () => {
+    expect(() => resolveEmbeddingFloorK("nope")).toThrow(/CSM_EMBED_FLOOR_K/);
   });
 });
 
