@@ -79,6 +79,58 @@ which category) and unfit for *declaring* leadership. The scoreboard claim must
 land on the official Gemini ladder (P7, blocked on credits). Abstention in
 particular must not be counted as a free-instrument lead.
 
+## The needle net — diagnosis, lever, and its measured trade
+
+**Diagnosis (500K, per-query, both sides' real contexts).** Every
+information_extraction loss is a hard **absence**, not a burial: the rubric's
+literal string occurs **0× in CSM's context in 7/7 losses and ≥1× in 13/13
+wins**, so the reader is not the variable. The cause is structural — BEAM gold
+is one short user turn inside a ~100K-char session document, and the *document*
+is CSM's retrieval unit. The hybrid router scores a shard by the **mean of its
+50–70 turn vectors**, pooling the needle to ~1/56 of the signal, so the top-8
+candidate cut is close to a coin flip: in **5 of 7 losses the gold-bearing
+shard was never even a candidate**; the other 2 lost the 4-shard recall cap.
+
+**CSM already had the right-shaped stage and suppressed it.**
+`applyEmbeddingFloor` is the only retrieval stage that is both *global* and
+*event-level*, but it no-ops unless the pipeline came back starved — 9% of
+queries. Where it fired it was a perfect predictor (**8/8 scored 1.0**; every
+zero sits in the not-fired group), and two runs with **identical router
+candidates and identical recalled shards** differ only in the floor firing:
+`30_information_extraction_1` scores **1.0 with, 0 without**. Over the cached
+MiniLM vectors, a global turn-level cosine ranks the missing gold turn
+**#1, #1, #3, #3, #8, #35, #38 of ~1000**.
+
+**Lever:** `CSM_EMBED_ALWAYS_K` unions the top-K global turn hits regardless of
+pipeline fullness, at the **head** (at the tail a RETURN_K cut discards them
+first — the floor only survives today because a starved order sits far below
+the cap).
+
+**Measured, K=5 vs control, paired, n=25/category:**
+
+| category | control | needle K=5 | delta | CI95 | W/L |
+|---|---:|---:|---:|---|---|
+| information_extraction | 0.650 | **0.855** | **+0.205** | [0.070, 0.365] | **7W/0L** |
+| abstention | 0.700 | 0.580 | **−0.120** | [−0.240, −0.020] | 0W/4L |
+| preference_following | 0.868 | 0.865 | −0.003 | [−0.083, 0.063] | 2W/1L |
+
+A clean trade with a symmetric mechanism: when the asked-for fact exists the
+global search finds it; when it genuinely does not — exactly what abstention
+tests — the same search still returns the five most-similar-*looking* turns,
+and plausible material talks the reader out of refusing. It moves
+information_extraction from −0.195 behind Hindsight to **−0.015**.
+
+**Gate (`CSM_EMBED_ALWAYS_BEATS_BEST`), deliberately parameter-free.** A global
+hit must beat the best cosine among the events the pipeline already returned.
+A cosine threshold tuned to separate these two categories would be
+benchmark-fitting in numeric clothing — the F9/F10 vocabulary mistake with
+numbers — so the gate reads its threshold off each query's own returned set
+instead. Early telemetry shows it discriminating as intended: 5 injected when
+topCos 0.674 ≫ bestReturned 0.609, **0** when the pipeline already held the
+best match (0.174 = 0.174), and 1 on abstention queries. An absolute floor
+(`CSM_EMBED_ALWAYS_MIN_COS`) exists but is documented as the fitted option,
+requiring cross-tier validation.
+
 ## Open thread — did the lean default cost information_extraction?
 
 `information_extraction` was **−0.003 (a tie)** on the official ladder and is
