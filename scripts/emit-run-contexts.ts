@@ -101,15 +101,23 @@ function main(): void {
 
   const results = payloads.map((row) => {
     const qid = row.harness.queryId;
-    return {
-      query_id: qid,
-      query: queryText.get(qid) ?? "",
-      // Hard-fails on any unresolvable id rather than emitting a placeholder —
-      // the render-gap lesson: a context you cannot reproduce must not be graded.
-      context: renderExcerpts(`${runId}/${qid}`, row.documents, (id) =>
-        synth.get(synthKey(qid, id)) ?? text.get(id),
-      ),
-    };
+    const resolveText = (id: string): string | undefined =>
+      synth.get(synthKey(qid, id)) ?? text.get(id);
+    // Validate first: hard-fail on any unresolvable id rather than emitting a
+    // placeholder. That is the render-gap lesson — a context you cannot
+    // reproduce must never be graded. (renderExcerpts is used purely as the
+    // shared resolver//hard-fail check; its own layout is not what ships.)
+    renderExcerpts(`${runId}/${qid}`, row.documents, resolveText);
+    // AMB wraps every returned document as "## Memory N" and joins with a
+    // blank line — visible in BOTH published artifacts (CSM's own official run
+    // and Hindsight's). Emitting anything else would put CSM's arm in a
+    // non-native format while Hindsight's stayed native, and a head-to-head
+    // that changes the presentation as well as the content is not measuring
+    // the memory system.
+    const context = row.documents
+      .map((d, i) => `## Memory ${i + 1}\n${resolveText(d.id)!}`)
+      .join("\n\n");
+    return { query_id: qid, query: queryText.get(qid) ?? "", context };
   });
 
   writeFileSync(out, `${JSON.stringify({ run: runId, split, results }, null, 2)}\n`, "utf8");
