@@ -5,28 +5,22 @@
   "excluded": 0,
   "results": [
     {
-      "id": "10_information_extraction_1",
-      "category": "information_extraction",
-      "a": 1,
-      "b": 0.875
-    },
-    {
       "id": "10_abstention_1",
       "category": "abstention",
-      "a": 0,
-      "b": 0
+      "a": 1,
+      "b": 1
     },
     {
-      "id": "10_preference_following_1",
-      "category": "preference_following",
-      "a": 0,
+      "id": "10_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.875,
       "b": 0.5
     },
     {
       "id": "11_abstention_0",
       "category": "abstention",
-      "a": 0.5,
-      "b": 0.5
+      "a": 1,
+      "b": 1
     },
     {
       "id": "11_information_extraction_0",
@@ -35,33 +29,33 @@
       "b": 1
     },
     {
-      "id": "11_preference_following_0",
+      "id": "10_preference_following_1",
       "category": "preference_following",
       "a": 1,
-      "b": 0.5
+      "b": 0.875
     },
     {
       "id": "13_abstention_1",
       "category": "abstention",
-      "a": 0,
-      "b": 0
+      "a": 1,
+      "b": 1
     },
     {
       "id": "13_information_extraction_1",
       "category": "information_extraction",
-      "a": 0,
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "11_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
       "b": 1
     },
     {
       "id": "14_abstention_0",
       "category": "abstention",
-      "a": 0,
-      "b": 0
-    },
-    {
-      "id": "13_preference_following_1",
-      "category": "preference_following",
-      "a": 0.8333333333333334,
+      "a": 1,
       "b": 1
     },
     {
@@ -71,7 +65,7 @@
       "b": 1
     },
     {
-      "id": "14_preference_following_0",
+      "id": "13_preference_following_1",
       "category": "preference_following",
       "a": 1,
       "b": 1
@@ -79,19 +73,25 @@
     {
       "id": "15_abstention_1",
       "category": "abstention",
-      "a": 0,
+      "a": 1,
       "b": 1
     },
     {
       "id": "15_information_extraction_1",
       "category": "information_extraction",
       "a": 1,
-      "b": 0.7
+      "b": 1
     },
     {
-      "id": "15_preference_following_1",
+      "id": "14_preference_following_0",
       "category": "preference_following",
-      "a": 0.3333333333333333,
+      "a": 0.75,
+      "b": 1
+    },
+    {
+      "id": "17_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
       "b": 1
     },
     {
@@ -101,64 +101,76 @@
       "b": 1
     },
     {
-      "id": "17_information_extraction_0",
-      "category": "information_extraction",
-      "a": 0,
-      "b": 1
-    },
-    {
       "id": "17_preference_following_0",
       "category": "preference_following",
-      "a": 0.625,
-      "b": 0.625
+      "a": 1,
+      "b": 0
     },
     {
       "id": "19_abstention_0",
       "category": "abstention",
       "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "15_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 0.5
+    },
+    {
+      "id": "19_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
       "b": 1
     },
     {
       "id": "19_abstention_1",
       "category": "abstention",
-      "a": 1,
-      "b": 1
-    },
-    {
-      "id": "19_information_extraction_0",
-      "category": "information_extraction",
-      "a": 1,
-      "b": 1
+      "a": 0,
+      "b": 0
     },
     {
       "id": "19_information_extraction_1",
       "category": "information_extraction",
       "a": 1,
-      "b": 0.6428571428571429
-    },
-    {
-      "id": "19_preference_following_0",
-      "category": "preference_following",
-      "a": 0.75,
       "b": 1
-    },
-    {
-      "id": "19_preference_following_1",
-      "category": "preference_following",
-      "a": 0.75,
-      "b": 0.5
     },
     {
       "id": "20_abstention_1",
       "category": "abstention",
       "a": 1,
-      "b": 0.5
+      "b": 1
+    },
+    {
+      "id": "19_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "19_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
     },
     {
       "id": "20_information_extraction_1",
       "category": "information_extraction",
-      "a": 0.8333333333333334,
-      "b": 0.8333333333333334
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "21_abstention_0",
+      "category": "abstention",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
     },
     {
       "id": "20_preference_following_1",
@@ -167,85 +179,85 @@
       "b": 1
     },
     {
-      "id": "21_abstention_0",
-      "category": "abstention",
-      "a": 1,
-      "b": 0
-    },
-    {
-      "id": "21_information_extraction_0",
+      "id": "23_information_extraction_1",
       "category": "information_extraction",
-      "a": 0.5,
+      "a": 1,
       "b": 1
     },
     {
       "id": "21_preference_following_0",
       "category": "preference_following",
-      "a": 0.75,
-      "b": 0.75
+      "a": 1,
+      "b": 1
     },
     {
       "id": "23_abstention_1",
       "category": "abstention",
       "a": 0,
-      "b": 0.5
-    },
-    {
-      "id": "23_information_extraction_1",
-      "category": "information_extraction",
-      "a": 0.07142857142857142,
-      "b": 0.9285714285714286
+      "b": 0
     },
     {
       "id": "23_preference_following_1",
       "category": "preference_following",
       "a": 1,
-      "b": 1
+      "b": 0.5
     },
     {
       "id": "25_abstention_1",
       "category": "abstention",
-      "a": 1,
-      "b": 0
+      "a": 0,
+      "b": 1
     },
     {
       "id": "25_information_extraction_1",
       "category": "information_extraction",
-      "a": 0.35714285714285715,
-      "b": 0.7142857142857143
+      "a": 0,
+      "b": 0
     },
     {
       "id": "25_preference_following_1",
       "category": "preference_following",
-      "a": 0.8333333333333334,
-      "b": 1
-    },
-    {
-      "id": "26_abstention_0",
-      "category": "abstention",
-      "a": 0.75,
+      "a": 1,
       "b": 1
     },
     {
       "id": "26_information_extraction_0",
       "category": "information_extraction",
-      "a": 1,
-      "b": 0.5
+      "a": 0,
+      "b": 1
     },
     {
-      "id": "27_abstention_0",
+      "id": "26_abstention_0",
       "category": "abstention",
       "a": 0,
       "b": 0
     },
     {
+      "id": "27_abstention_0",
+      "category": "abstention",
+      "a": 0.5,
+      "b": 1
+    },
+    {
       "id": "26_preference_following_0",
       "category": "preference_following",
-      "a": 0.6666666666666666,
-      "b": 0.6666666666666666
+      "a": 1,
+      "b": 1
     },
     {
       "id": "27_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "2_abstention_1",
+      "category": "abstention",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "2_information_extraction_1",
       "category": "information_extraction",
       "a": 1,
       "b": 1
@@ -253,26 +265,8 @@
     {
       "id": "27_preference_following_0",
       "category": "preference_following",
-      "a": 0.5,
-      "b": 0.5
-    },
-    {
-      "id": "2_information_extraction_1",
-      "category": "information_extraction",
-      "a": 0,
+      "a": 0.8333333333333334,
       "b": 0
-    },
-    {
-      "id": "2_abstention_1",
-      "category": "abstention",
-      "a": 1,
-      "b": 1
-    },
-    {
-      "id": "2_preference_following_1",
-      "category": "preference_following",
-      "a": 0.6666666666666666,
-      "b": 0.6666666666666666
     },
     {
       "id": "30_abstention_1",
@@ -283,11 +277,11 @@
     {
       "id": "30_information_extraction_1",
       "category": "information_extraction",
-      "a": 0.5,
-      "b": 0.5
+      "a": 0,
+      "b": 1
     },
     {
-      "id": "30_preference_following_1",
+      "id": "2_preference_following_1",
       "category": "preference_following",
       "a": 1,
       "b": 1
@@ -295,36 +289,42 @@
     {
       "id": "31_abstention_1",
       "category": "abstention",
-      "a": 0,
-      "b": 0
+      "a": 1,
+      "b": 0.5
     },
     {
       "id": "31_information_extraction_1",
-      "category": "information_extraction",
-      "a": 0,
-      "b": 0
-    },
-    {
-      "id": "31_preference_following_1",
-      "category": "preference_following",
-      "a": 0.5,
-      "b": 0.75
-    },
-    {
-      "id": "32_abstention_0",
-      "category": "abstention",
-      "a": 0.5,
-      "b": 0
-    },
-    {
-      "id": "32_information_extraction_0",
       "category": "information_extraction",
       "a": 1,
       "b": 1
     },
     {
+      "id": "30_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 1
+    },
+    {
       "id": "32_abstention_1",
       "category": "abstention",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_abstention_0",
+      "category": "abstention",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "31_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "32_information_extraction_0",
+      "category": "information_extraction",
       "a": 1,
       "b": 1
     },
@@ -335,10 +335,10 @@
       "b": 1
     },
     {
-      "id": "32_preference_following_0",
-      "category": "preference_following",
-      "a": 0.75,
-      "b": 1
+      "id": "34_abstention_0",
+      "category": "abstention",
+      "a": 0,
+      "b": 0
     },
     {
       "id": "32_preference_following_1",
@@ -347,16 +347,16 @@
       "b": 1
     },
     {
-      "id": "34_abstention_0",
-      "category": "abstention",
-      "a": 1,
-      "b": 1
-    },
-    {
       "id": "34_information_extraction_0",
       "category": "information_extraction",
       "a": 0,
-      "b": 0.3333333333333333
+      "b": 0.25
+    },
+    {
+      "id": "32_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
     },
     {
       "id": "34_preference_following_0",
@@ -365,16 +365,16 @@
       "b": 1
     },
     {
-      "id": "3_information_extraction_1",
-      "category": "information_extraction",
+      "id": "3_abstention_1",
+      "category": "abstention",
       "a": 1,
       "b": 1
     },
     {
-      "id": "3_abstention_1",
-      "category": "abstention",
+      "id": "3_information_extraction_1",
+      "category": "information_extraction",
       "a": 0,
-      "b": 0
+      "b": 1
     },
     {
       "id": "4_abstention_1",
@@ -383,26 +383,20 @@
       "b": 1
     },
     {
-      "id": "3_preference_following_1",
-      "category": "preference_following",
+      "id": "4_information_extraction_1",
+      "category": "information_extraction",
       "a": 1,
       "b": 1
     },
     {
+      "id": "3_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0
+    },
+    {
       "id": "4_preference_following_1",
       "category": "preference_following",
-      "a": 0.5,
-      "b": 0.5
-    },
-    {
-      "id": "4_information_extraction_1",
-      "category": "information_extraction",
-      "a": 0.5,
-      "b": 0.6
-    },
-    {
-      "id": "6_abstention_0",
-      "category": "abstention",
       "a": 1,
       "b": 1
     },
@@ -413,34 +407,34 @@
       "b": 1
     },
     {
-      "id": "7_abstention_0",
-      "category": "abstention",
-      "a": 0.5,
-      "b": 0.5
-    },
-    {
       "id": "6_preference_following_0",
       "category": "preference_following",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "7_abstention_0",
+      "category": "abstention",
       "a": 1,
       "b": 1
     },
     {
-      "id": "7_preference_following_0",
-      "category": "preference_following",
-      "a": 0.25,
-      "b": 0.25
+      "id": "6_abstention_0",
+      "category": "abstention",
+      "a": 0,
+      "b": 0
     },
     {
       "id": "7_information_extraction_0",
       "category": "information_extraction",
-      "a": 0,
-      "b": 1
+      "a": 1,
+      "b": 0
     },
     {
       "id": "8_abstention_0",
       "category": "abstention",
-      "a": 0,
-      "b": 0
+      "a": 1,
+      "b": 1
     },
     {
       "id": "8_information_extraction_0",
@@ -449,10 +443,16 @@
       "b": 1
     },
     {
+      "id": "7_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
       "id": "8_preference_following_0",
       "category": "preference_following",
-      "a": 0.5,
-      "b": 0.5
+      "a": 1,
+      "b": 1
     }
   ]
 }

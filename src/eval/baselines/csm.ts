@@ -1,5 +1,5 @@
 import { ask, resolveProbeLocalKeep } from "../../core/ask.js";
-import { envFlag } from "../../utils/env.js";
+import { envFlag, envInt } from "../../utils/env.js";
 import { dedupeInOrder } from "../../core/selection.js";
 import { escapeRegExp } from "../../utils/text.js";
 import { collectTimelineEventIds } from "../../core/coverage.js";
@@ -86,9 +86,74 @@ export function applyEmbeddingFloor(
 }
 
 export function resolveEmbeddingFloorK(raw = process.env.CSM_EMBED_FLOOR_K): number {
-  if (raw === undefined || raw.trim().length === 0) return 10;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 10;
+  // Was hand-parsed with a silent fallback on garbage, against the env.ts
+  // invariant (an unrecognised value is an error, never a default).
+  return envInt(raw, { name: "CSM_EMBED_FLOOR_K", fallback: 10, min: 0 });
+}
+
+/**
+ * ALWAYS-ON global, event-level dense recall — the needle net.
+ *
+ * WHY THIS EXISTS (measured, 500K, 2026-08-02): every information_extraction
+ * loss is a hard ABSENCE, not a burial. The rubric's literal string occurs 0×
+ * in CSM's returned context in 7/7 losses and ≥1× in 13/13 wins, so the reader
+ * is not the variable. The cause is structural: BEAM gold is one short user
+ * turn inside a ~100K-char session document, and the DOCUMENT is CSM's
+ * retrieval unit. The hybrid router scores a shard by the MEAN of its 50–70
+ * turn vectors, which pools the needle down to ~1/56 of the signal, so the
+ * top-8 candidate cut is close to a coin flip: in 5 of 7 losses the
+ * gold-bearing shard was never even a candidate.
+ *
+ * `applyEmbeddingFloor` is the one stage that is BOTH global and event-level —
+ * exactly the right shape — but it is gated to fire only when the pipeline
+ * came back starved (`baseOrder.length >= k` → no-op), which was 9% of
+ * queries. Where it did fire it was a perfect predictor: 8/8 scored 1.0, while
+ * every zero sits in the not-fired group. Causal proof from two runs with
+ * IDENTICAL router candidates and IDENTICAL recalled shards:
+ * `30_information_extraction_1` scored 1.0 with the floor fired and 0 without.
+ * Simulated over the cached MiniLM vectors, a global event-level cosine ranks
+ * the missing gold turn #1,#1,#3,#3,#8,#35,#38 of ~1000.
+ *
+ * So this unions the top-K global turn hits in REGARDLESS of how full the
+ * pipeline's own result was. Placement is the whole trade: appended at the
+ * tail they are the first thing a RETURN_K cut discards (the floor only
+ * survives today because a starved order is far below the cap), so they go at
+ * the HEAD. That displaces the lowest-ranked pipeline events, which is a real
+ * cost to breadth — order-changing levers here have been proxy-positive and
+ * answer-negative before, so this ships default-OFF and gated on the answer
+ * metric, never on a coverage proxy.
+ */
+export function applyEmbeddingUnion(
+  baseOrder: string[],
+  k: number,
+  rankedIds: string[],
+): { order: string[]; fired: boolean; count: number; addedIds: string[] } {
+  if (!Number.isFinite(k) || k <= 0) {
+    return { order: baseOrder, fired: false, count: 0, addedIds: [] };
+  }
+  const already = new Set(baseOrder);
+  const addedIds: string[] = [];
+  for (const id of rankedIds) {
+    if (already.has(id)) continue;
+    already.add(id);
+    addedIds.push(id);
+    if (addedIds.length >= k) break;
+  }
+  if (addedIds.length === 0) {
+    return { order: baseOrder, fired: false, count: 0, addedIds: [] };
+  }
+  // Head placement, and the pipeline's own order is preserved after it — the
+  // dense hits are additive evidence, they never reorder CSM's citations.
+  return {
+    order: [...addedIds, ...baseOrder],
+    fired: true,
+    count: addedIds.length,
+    addedIds,
+  };
+}
+
+export function resolveEmbeddingUnionK(raw = process.env.CSM_EMBED_ALWAYS_K): number {
+  return envInt(raw, { name: "CSM_EMBED_ALWAYS_K", fallback: 0, min: 0 });
 }
 
 export interface ShardLocalExpansionInput {
@@ -1229,6 +1294,9 @@ export class CsmBaseline implements BaselineRunner {
     let embedFloorFired = false;
     let embedFloorCount = 0;
     let embedFloorAddedEventIds: string[] = [];
+    let embedUnionFired = false;
+    let embedUnionCount = 0;
+    let embedUnionAddedEventIds: string[] = [];
     let eventVecs: Float32Array[] | null = null;
     let queryVec: Float32Array | null = null;
     let eventIndexById: Map<string, number> | null = null;
@@ -1281,6 +1349,35 @@ export class CsmBaseline implements BaselineRunner {
         embedFloorFired = floor.fired;
         embedFloorCount = floor.count;
         embedFloorAddedEventIds = floor.addedIds;
+      }
+    }
+
+    // Always-on global event-level dense union (CSM_EMBED_ALWAYS_K, default 0
+    // = off). Runs whatever the pipeline returned, unlike the starvation floor
+    // above — see applyEmbeddingUnion for the measurement that motivates it.
+    // Shares `ensureEmbeddings`, so when the floor already ran this costs no
+    // extra embedding work.
+    const embedUnionK = resolveEmbeddingUnionK();
+    if (embedUnionK > 0) {
+      const embeddings = await ensureEmbeddings();
+      if (embeddings) {
+        const topK = topKCosine(
+          embeddings.queryVec,
+          embeddings.eventVecs,
+          embedUnionK * 3,
+        );
+        const rankedIds = topK
+          .map((hit) => corpus.events[hit.index]?.id)
+          .filter((id): id is string => Boolean(id));
+        const union = applyEmbeddingUnion(
+          augmentedRetrievalOrder,
+          embedUnionK,
+          rankedIds,
+        );
+        augmentedRetrievalOrder = union.order;
+        embedUnionFired = union.fired;
+        embedUnionCount = union.count;
+        embedUnionAddedEventIds = union.addedIds;
       }
     }
 
@@ -1499,6 +1596,9 @@ export class CsmBaseline implements BaselineRunner {
         ragAugmentCount,
         embedFloorFired,
         embedFloorCount,
+        embedUnionFired,
+        embedUnionCount,
+        embedUnionAddedEventIds,
         shardExpandFired,
         shardExpandCount,
         shardExpandShardIds,
