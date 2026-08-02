@@ -131,6 +131,31 @@ best match (0.174 = 0.174), and 1 on abstention queries. An absolute floor
 (`CSM_EMBED_ALWAYS_MIN_COS`) exists but is documented as the fitted option,
 requiring cross-tier validation.
 
+### Gated vs ungated (500K, paired vs the same control)
+
+| category | control | ungated K=5 | **gated K=5** |
+|---|---:|---:|---:|
+| information_extraction | 0.650 | 0.855 (+0.205) | **0.800 (+0.150)**, 5W/2L |
+| abstention | 0.700 | 0.580 (−0.120) | **0.660 (−0.040)**, 1W/3L |
+| preference_following | 0.868 | 0.865 (−0.003) | **0.887 (+0.018)**, 4W/1L |
+| **ALL** | 0.739 | 0.767 (+0.027) | **0.782 (+0.043)**, 10W/6L |
+
+The gate dominates the ungated form on every axis: it keeps ¾ of the
+information_extraction gain, cuts the abstention damage by two thirds, and
+turns preference_following slightly positive. Injection drops from a flat 5.0
+to 1.0–2.0 per query, with **14/25 abstention queries receiving nothing at
+all** — the discrimination is doing exactly the work it was designed for,
+without a tuned constant.
+
+Against Hindsight at 500K this moves information_extraction from **−0.220 to
+−0.070** and leaves preference_following leading at **0.887 vs 0.808**.
+
+**NOT flipped to default yet, deliberately.** ALL +0.0428 is below its MDE
+(0.092), and the lean-return revert earlier the same day is the standing
+lesson: a lever measured on three categories at one tier is evidence about
+three categories at one tier. Cross-tier validation at 1M is running before any
+default changes.
+
 ## Open thread — did the lean default cost information_extraction?
 
 `information_extraction` was **−0.003 (a tie)** on the official ladder and is
