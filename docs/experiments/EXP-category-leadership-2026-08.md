@@ -264,3 +264,67 @@ precisely the category that needs specific facts from specific turns — the
 payload lean K trims. `g500k-leanoff-v1` (`CSM_AMB_LEAN_K=0`, everything else
 identical) is running to settle it. If confirmed, lean must be gated by intent
 rather than shipped globally.
+
+## FINAL: full-power (n=70) results and the honest verdict
+
+Every plausible candidate re-measured at the COMPLETE category (n=70 — the
+whole 70-query category, so no further sampling is possible on this
+instrument). "Certified" below means the gate's own criterion: |delta| > MDE
+with the CI excluding zero.
+
+| tier | category | n | CSM | Hindsight | delta | MDE | verdict |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1M | **abstention** | 70 | **0.679** | 0.486 | **+0.193** | 0.167 | **CSM — CERTIFIED** |
+| 1M | event_ordering | 70 | 0.608 | 0.631 | −0.023 | 0.064 | tie |
+| 1M | knowledge_update | 70 | 0.639 | 0.750 | −0.111 | 0.149 | tie |
+| 1M | summarization | 70 | 0.429 | 0.564 | −0.135 | 0.077 | Hindsight |
+| 500K | contradiction_resolution | 70 | 0.559 | 0.463 | +0.096 | 0.148 | tie (38W/21L) |
+| 500K | preference_following | 70 | 0.842 | 0.767 | +0.075 | 0.122 | tie (18W/10L) |
+| 500K | *both combined* | 140 | 0.701 | 0.615 | +0.086 | 0.096 | tie (56W/31L) |
+
+### The verdict
+
+**The two-categories-at-every-tier goal is NOT met, and cannot be settled on
+this instrument.** What is true:
+
+- **1M has exactly one CERTIFIED lead** (abstention, +0.193). No second
+  candidate is near: the closest, event_ordering, is −0.023.
+- **500K has two DIRECTIONAL leads** that survive at full power (+0.096,
+  +0.075, with 56W/31L combined) but neither clears its MDE.
+- 100K (7) and 10M (4) lead on the OFFICIAL Gemini ladder — a different
+  instrument and an older CSM config. Mixing them into one scoreboard would be
+  an instrument error, so they are reported separately, not summed.
+
+**Why more measurement cannot fix this.** n=70 is the entire category. The MDE
+is set by the free reader/judge's per-query variance, not by sample size, so a
+~0.09 effect is below the resolving power of this instrument *at maximum n*.
+Certification requires the lower-variance official Gemini path (P7), which is
+credit-blocked. That is the single remaining blocker, and it is a
+procurement issue, not an engineering one.
+
+### What genuinely improved (measured, not inferred)
+
+Today's accumulated defaults moved several categories a long way from the
+official ladder's numbers, even where they did not produce a certified lead:
+
+| category @1M | official ladder | today (n=70) |
+|---|---:|---:|
+| event_ordering | −0.216 | **−0.023** |
+| knowledge_update | −0.435 | **−0.111** |
+| abstention | +0.086 | **+0.193 (certified)** |
+
+`knowledge_update` in particular: CSM scored 0.229 on the official ladder and
+0.639 here, which is the preference-profile lever — absent from that run,
+default-on now — doing what it was built for.
+
+### Method lessons this campaign forced
+
+1. **n=25 is a pointer, not a verdict.** abstention read +0.040 at n=25 and
+   +0.193 at n=70; knowledge_update looked like a near-tie and is −0.111. The
+   re-measurement noise at n=25 is ±0.05, the size of most "leads".
+2. **Re-measure the same arm before believing a delta.** Re-scoring identical
+   contexts moved one arm 0.06 — which is how the retracted knowledge_update
+   "lead" was caught.
+3. **Levers do not transfer across tiers.** lean K=16, the needle net, and
+   contradiction_resolution's gain all held at one tier and vanished at
+   another. Every default flip now requires cross-tier evidence.

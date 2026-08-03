@@ -1,0 +1,848 @@
+{
+  "reader": "claude-sonnet-5",
+  "judgePromptVersion": "v2",
+  "n": 140,
+  "excluded": 0,
+  "results": [
+    {
+      "id": "10_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "10_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.4142507074287456,
+      "b": 0.3297792733377024
+    },
+    {
+      "id": "10_summarization_0",
+      "category": "summarization",
+      "a": 0.8,
+      "b": 0.6
+    },
+    {
+      "id": "11_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7350079959702108,
+      "b": 0.5
+    },
+    {
+      "id": "10_summarization_1",
+      "category": "summarization",
+      "a": 0.9,
+      "b": 0.8
+    },
+    {
+      "id": "11_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7700308624336608,
+      "b": 0.7700308624336608
+    },
+    {
+      "id": "11_summarization_1",
+      "category": "summarization",
+      "a": 0.625,
+      "b": 0.75
+    },
+    {
+      "id": "12_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7672612419124244,
+      "b": 0.7672612419124244
+    },
+    {
+      "id": "11_summarization_0",
+      "category": "summarization",
+      "a": 0.5625,
+      "b": 0.6875
+    },
+    {
+      "id": "12_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7466100126039052,
+      "b": 0.4346279549539387
+    },
+    {
+      "id": "12_summarization_0",
+      "category": "summarization",
+      "a": 0.2,
+      "b": 0.3
+    },
+    {
+      "id": "12_summarization_1",
+      "category": "summarization",
+      "a": 0.4,
+      "b": 0.3
+    },
+    {
+      "id": "13_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.3486734359165914,
+      "b": 0.5
+    },
+    {
+      "id": "13_summarization_0",
+      "category": "summarization",
+      "a": 0.2857142857142857,
+      "b": 0.35714285714285715
+    },
+    {
+      "id": "13_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.7981423969999719
+    },
+    {
+      "id": "13_summarization_1",
+      "category": "summarization",
+      "a": 0.6875,
+      "b": 0.5
+    },
+    {
+      "id": "14_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6408590424547528,
+      "b": 1
+    },
+    {
+      "id": "14_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6543033499620919,
+      "b": 0.580582296402538
+    },
+    {
+      "id": "14_summarization_0",
+      "category": "summarization",
+      "a": 0.375,
+      "b": 0.75
+    },
+    {
+      "id": "15_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5725476250110012,
+      "b": 0.6250322955695868
+    },
+    {
+      "id": "14_summarization_1",
+      "category": "summarization",
+      "a": 0.25,
+      "b": 0.5625
+    },
+    {
+      "id": "15_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5608580619450184,
+      "b": 0.7177324215807269
+    },
+    {
+      "id": "15_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.3
+    },
+    {
+      "id": "15_summarization_1",
+      "category": "summarization",
+      "a": 0.6666666666666666,
+      "b": 0.5
+    },
+    {
+      "id": "16_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.9114755998989117,
+      "b": 0.8415650255319866
+    },
+    {
+      "id": "16_summarization_0",
+      "category": "summarization",
+      "a": 0.4166666666666667,
+      "b": 0.75
+    },
+    {
+      "id": "16_summarization_1",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "16_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.45120499635257333,
+      "b": 0.551434449987364
+    },
+    {
+      "id": "17_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.6626978433639921
+    },
+    {
+      "id": "17_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.8903600291794134,
+      "b": 0.9255322481734951
+    },
+    {
+      "id": "17_summarization_0",
+      "category": "summarization",
+      "a": 0.75,
+      "b": 0.625
+    },
+    {
+      "id": "17_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.4
+    },
+    {
+      "id": "18_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.8857583749052298,
+      "b": 0.4433053290486159
+    },
+    {
+      "id": "18_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6111873974991652,
+      "b": 0.5741249316661101
+    },
+    {
+      "id": "18_summarization_1",
+      "category": "summarization",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "19_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.9346591439606113,
+      "b": 0.8917733969501032
+    },
+    {
+      "id": "18_summarization_0",
+      "category": "summarization",
+      "a": 0.4375,
+      "b": 0.6875
+    },
+    {
+      "id": "19_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "19_summarization_1",
+      "category": "summarization",
+      "a": 0.75,
+      "b": 0.25
+    },
+    {
+      "id": "1_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5582025246474649,
+      "b": 0.6637846049706652
+    },
+    {
+      "id": "19_summarization_0",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.5714285714285714
+    },
+    {
+      "id": "1_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6739163982499836,
+      "b": 0.5903876907577734
+    },
+    {
+      "id": "1_summarization_0",
+      "category": "summarization",
+      "a": 0.4375,
+      "b": 0.5
+    },
+    {
+      "id": "20_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.9008918628686367
+    },
+    {
+      "id": "20_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.4109129193625252,
+      "b": 0.5445435403187374
+    },
+    {
+      "id": "1_summarization_1",
+      "category": "summarization",
+      "a": 0.1111111111111111,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "20_summarization_1",
+      "category": "summarization",
+      "a": 1,
+      "b": 0.75
+    },
+    {
+      "id": "21_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6785714285714286,
+      "b": 0.3842724875284311
+    },
+    {
+      "id": "20_summarization_0",
+      "category": "summarization",
+      "a": 0.2857142857142857,
+      "b": 0.35714285714285715
+    },
+    {
+      "id": "21_summarization_1",
+      "category": "summarization",
+      "a": 0.7,
+      "b": 0.6
+    },
+    {
+      "id": "21_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.21132486540518713
+    },
+    {
+      "id": "21_summarization_0",
+      "category": "summarization",
+      "a": 0.3888888888888889,
+      "b": 0.5555555555555556
+    },
+    {
+      "id": "22_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.47515480025000234,
+      "b": 0.5180775381515547
+    },
+    {
+      "id": "22_summarization_0",
+      "category": "summarization",
+      "a": 0.9,
+      "b": 0.7
+    },
+    {
+      "id": "22_summarization_1",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "22_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.8761626197515064,
+      "b": 0.706112875586455
+    },
+    {
+      "id": "23_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6088662107903635,
+      "b": 0.6934603333626698
+    },
+    {
+      "id": "23_summarization_0",
+      "category": "summarization",
+      "a": 0.3,
+      "b": 0.5
+    },
+    {
+      "id": "23_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6408590424547528,
+      "b": 0.6752191610126156
+    },
+    {
+      "id": "23_summarization_1",
+      "category": "summarization",
+      "a": 0.05555555555555555,
+      "b": 0.6111111111111112
+    },
+    {
+      "id": "24_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.649071198499986,
+      "b": 0.7858309752375148
+    },
+    {
+      "id": "24_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7571722499368199,
+      "b": 0.7927700218845599
+    },
+    {
+      "id": "24_summarization_0",
+      "category": "summarization",
+      "a": 0.5833333333333334,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "24_summarization_1",
+      "category": "summarization",
+      "a": 0.5555555555555556,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "25_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.3071208125473851,
+      "b": 0.5909241209316635
+    },
+    {
+      "id": "25_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "25_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7882783300985275,
+      "b": 0.6781741612749496
+    },
+    {
+      "id": "26_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.3689643954097602,
+      "b": 0.7358640882624317
+    },
+    {
+      "id": "25_summarization_0",
+      "category": "summarization",
+      "a": 0.21428571428571427,
+      "b": 0.7857142857142857
+    },
+    {
+      "id": "26_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.7456769074559977
+    },
+    {
+      "id": "26_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.07142857142857142
+    },
+    {
+      "id": "27_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.27639320225002106,
+      "b": 0.5
+    },
+    {
+      "id": "26_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.2
+    },
+    {
+      "id": "27_summarization_0",
+      "category": "summarization",
+      "a": 0.25,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "27_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5692045665447834,
+      "b": 0.8296305974107289
+    },
+    {
+      "id": "27_summarization_1",
+      "category": "summarization",
+      "a": 0.8,
+      "b": 0.7
+    },
+    {
+      "id": "28_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.91576092031015,
+      "b": 0.6797866299901979
+    },
+    {
+      "id": "28_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5358057437019716,
+      "b": 0.837099931231621
+    },
+    {
+      "id": "28_summarization_0",
+      "category": "summarization",
+      "a": 0.5833333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "28_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.25
+    },
+    {
+      "id": "29_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.32539242605760543,
+      "b": 0.2822675784192731
+    },
+    {
+      "id": "29_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7958039891549809,
+      "b": 0.7756229552631883
+    },
+    {
+      "id": "29_summarization_0",
+      "category": "summarization",
+      "a": 0.125,
+      "b": 0.1875
+    },
+    {
+      "id": "29_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.25
+    },
+    {
+      "id": "2_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6626978433639921,
+      "b": 0.7236067977499789
+    },
+    {
+      "id": "2_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7045239970259655,
+      "b": 0.806897452761713
+    },
+    {
+      "id": "2_summarization_0",
+      "category": "summarization",
+      "a": 0.14285714285714285,
+      "b": 0.2857142857142857
+    },
+    {
+      "id": "30_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6133893419027682,
+      "b": 0.5
+    },
+    {
+      "id": "2_summarization_1",
+      "category": "summarization",
+      "a": 0.0625,
+      "b": 0.6875
+    },
+    {
+      "id": "30_summarization_1",
+      "category": "summarization",
+      "a": 0.7777777777777778,
+      "b": 0.3888888888888889
+    },
+    {
+      "id": "30_summarization_0",
+      "category": "summarization",
+      "a": 0.4375,
+      "b": 0.8125
+    },
+    {
+      "id": "30_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5555555555555556,
+      "b": 0.8240906080438344
+    },
+    {
+      "id": "31_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.39113378920963654,
+      "b": 0.62456821978061
+    },
+    {
+      "id": "31_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7083108095932455,
+      "b": 0.5255654996282457
+    },
+    {
+      "id": "31_summarization_1",
+      "category": "summarization",
+      "a": 0.8333333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "32_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5248451997499977,
+      "b": 0.6522500463985232
+    },
+    {
+      "id": "31_summarization_0",
+      "category": "summarization",
+      "a": 0.18181818181818182,
+      "b": 0.5
+    },
+    {
+      "id": "32_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6521451548625461,
+      "b": 0.8144140727612662
+    },
+    {
+      "id": "32_summarization_1",
+      "category": "summarization",
+      "a": 0.8,
+      "b": 0.8
+    },
+    {
+      "id": "32_summarization_0",
+      "category": "summarization",
+      "a": 0.2777777777777778,
+      "b": 0.4444444444444444
+    },
+    {
+      "id": "33_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.8689323936863109,
+      "b": 0.9
+    },
+    {
+      "id": "33_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.44859274242795844,
+      "b": 0.7140872096444189
+    },
+    {
+      "id": "33_summarization_0",
+      "category": "summarization",
+      "a": 0.21428571428571427,
+      "b": 0.42857142857142855
+    },
+    {
+      "id": "34_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6290994448735806,
+      "b": 0.7070196678027063
+    },
+    {
+      "id": "33_summarization_1",
+      "category": "summarization",
+      "a": 0.125,
+      "b": 0.375
+    },
+    {
+      "id": "34_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.6380131118684709,
+      "b": 0.6781741612749496
+    },
+    {
+      "id": "34_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.1
+    },
+    {
+      "id": "34_summarization_1",
+      "category": "summarization",
+      "a": 0.6,
+      "b": 0.8
+    },
+    {
+      "id": "35_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.2697169067640809,
+      "b": 0.3027973405633462
+    },
+    {
+      "id": "35_summarization_0",
+      "category": "summarization",
+      "a": 0.375,
+      "b": 0.6875
+    },
+    {
+      "id": "3_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.6398757212360471,
+      "b": 0.7130032168075646
+    },
+    {
+      "id": "35_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "3_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5903876907577734,
+      "b": 0.6348399724926485
+    },
+    {
+      "id": "35_summarization_1",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.6
+    },
+    {
+      "id": "3_summarization_1",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.4
+    },
+    {
+      "id": "3_summarization_0",
+      "category": "summarization",
+      "a": 0.4,
+      "b": 0.8
+    },
+    {
+      "id": "4_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7983811975164303,
+      "b": 0.7352955262522632
+    },
+    {
+      "id": "4_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.8651483716701107,
+      "b": 0.6825741858350554
+    },
+    {
+      "id": "4_summarization_1",
+      "category": "summarization",
+      "a": 0.5625,
+      "b": 0.5625
+    },
+    {
+      "id": "4_summarization_0",
+      "category": "summarization",
+      "a": 0.3333333333333333,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "5_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.4880647520993428,
+      "b": 0.44886900074350866
+    },
+    {
+      "id": "5_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7236067977499789,
+      "b": 0.5577350269189626
+    },
+    {
+      "id": "6_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5358057437019716,
+      "b": 0.6167748416242285
+    },
+    {
+      "id": "5_summarization_0",
+      "category": "summarization",
+      "a": 0,
+      "b": 0.625
+    },
+    {
+      "id": "5_summarization_1",
+      "category": "summarization",
+      "a": 0.65,
+      "b": 0.65
+    },
+    {
+      "id": "6_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.447295372330527,
+      "b": 0.8
+    },
+    {
+      "id": "6_summarization_0",
+      "category": "summarization",
+      "a": 0.4,
+      "b": 0.5
+    },
+    {
+      "id": "6_summarization_1",
+      "category": "summarization",
+      "a": 0.6,
+      "b": 0.8
+    },
+    {
+      "id": "7_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.552704627669473,
+      "b": 0.08166998673296222
+    },
+    {
+      "id": "7_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5771516749810459,
+      "b": 0.5188982236504613
+    },
+    {
+      "id": "7_summarization_0",
+      "category": "summarization",
+      "a": 0.7,
+      "b": 0.6
+    },
+    {
+      "id": "7_summarization_1",
+      "category": "summarization",
+      "a": 0.7142857142857143,
+      "b": 0.7857142857142857
+    },
+    {
+      "id": "8_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.7882783300985275,
+      "b": 0.5370624658330551
+    },
+    {
+      "id": "8_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.7302830932359191,
+      "b": 0.5
+    },
+    {
+      "id": "8_summarization_0",
+      "category": "summarization",
+      "a": 0.5,
+      "b": 0.9
+    },
+    {
+      "id": "8_summarization_1",
+      "category": "summarization",
+      "a": 0.625,
+      "b": 0.75
+    },
+    {
+      "id": "9_event_ordering_1",
+      "category": "event_ordering",
+      "a": 0.5,
+      "b": 0.3757740012500117
+    },
+    {
+      "id": "9_summarization_0",
+      "category": "summarization",
+      "a": 0.7,
+      "b": 0.8
+    },
+    {
+      "id": "9_event_ordering_0",
+      "category": "event_ordering",
+      "a": 0.5372677996249965,
+      "b": 0.6746075739423946
+    },
+    {
+      "id": "9_summarization_1",
+      "category": "summarization",
+      "a": 0.625,
+      "b": 0.875
+    }
+  ]
+}
