@@ -117,18 +117,25 @@ async function call(
   return text;
 }
 
-async function scoreArm(
+/**
+ * Score one arm ONCE. `rep` selects an independent answer+judge sample by
+ * changing the cache key, so rep>0 is a genuinely fresh draw and not a replay
+ * of the cached one.
+ */
+async function scoreArmOnce(
   category: string,
   query: string,
   rubric: string[],
   context: string,
   model: string,
+  rep = 0,
 ): Promise<number | null> {
+  const repTag = rep > 0 ? `:rep${rep}` : "";
   const answer = await call(
     ANSWER_SYSTEM,
     `Memory excerpts:\n\n${context.slice(0, 200_000)}\n\nQuestion: ${query}\n\nAnswer:`,
     model,
-    `answer:${ANSWER_PROMPT_VERSION}`,
+    `answer:${ANSWER_PROMPT_VERSION}${repTag}`,
   );
   const ordering = judgeModeFor(category) === "ordering";
   const system = ordering ? ORDERING_EXTRACT_SYSTEM : RUBRIC_JUDGE_SYSTEM;
@@ -136,7 +143,7 @@ async function scoreArm(
     ? renderOrderingExtractionPrompt(query, rubric, answer)
     : renderRubricJudgePrompt(query, rubric, answer);
   for (let attempt = 0; attempt < 2; attempt++) {
-    const raw = await call(system, prompt, model, `judge:${JUDGE_PROMPT_VERSION}`, attempt);
+    const raw = await call(system, prompt, model, `judge:${JUDGE_PROMPT_VERSION}${repTag}`, attempt);
     if (ordering) {
       const p = parseOrderingPositions(raw, rubric.length);
       if (p.values) return orderingScoreFromPositions(p.values);
@@ -148,11 +155,44 @@ async function scoreArm(
   return null; // excluded and counted, never scored 0
 }
 
+/**
+ * Mean of `repeats` INDEPENDENT answer+judge samples of the SAME context.
+ *
+ * WHY: the 2026-08-02 retraction showed that re-scoring identical contexts
+ * moves an arm ~0.06 while its control moves 0.01 — the variance lives in the
+ * answer/judge stage, not in retrieval. That noise is what sets the MDE, so at
+ * n=70 (the entire category — there are no more queries to add) a real ~0.09
+ * effect still reads "below MDE". Averaging k draws shrinks the stochastic
+ * component by ~sqrt(k) and lowers the MDE without needing the paid instrument.
+ *
+ * This reduces MEASUREMENT noise only. It cannot shift the underlying
+ * quantity, so it can certify a real effect and can never manufacture one.
+ */
+async function scoreArm(
+  category: string,
+  query: string,
+  rubric: string[],
+  context: string,
+  model: string,
+  repeats = 1,
+): Promise<number | null> {
+  const draws: number[] = [];
+  for (let rep = 0; rep < Math.max(1, repeats); rep++) {
+    const v = await scoreArmOnce(category, query, rubric, context, model, rep);
+    if (v !== null) draws.push(v);
+  }
+  if (draws.length === 0) return null;
+  return draws.reduce((a, b) => a + b, 0) / draws.length;
+}
+
 async function main(): Promise<void> {
   const hsPath = arg("hindsight")!;
   const model = arg("model", "claude-sonnet-5")!;
   const jobs = Math.max(1, Number.parseInt(arg("jobs", "6")!, 10));
   const perCat = Number.parseInt(arg("per-category", "0")!, 10);
+  // Independent answer+judge draws averaged per query. Shrinks the stochastic
+  // component of the MDE by ~sqrt(repeats); 1 keeps the original behaviour.
+  const repeats = Math.max(1, Number.parseInt(arg("repeats", "1")!, 10));
   if (!hsPath) throw new Error("--hindsight <path to hindsight 100k.json[.gz]> is required");
 
   const csm = new Map(load(arg("csm", DEFAULT_CSM_ARTIFACT)!).map((r) => [r.query_id, r]));
@@ -175,7 +215,7 @@ async function main(): Promise<void> {
 
   console.log(
     `head-to-head: CSM vs Hindsight [${arg("tier", "100k")}] | reader=${model} judge=${JUDGE_PROMPT_VERSION} ` +
-      `paired=${ids.length} jobs=${jobs}`,
+      `paired=${ids.length} jobs=${jobs} repeats=${repeats}`,
   );
   console.log(
     `  both arms are official artifacts; only the retrieved context differs.\n`,
@@ -200,8 +240,8 @@ async function main(): Promise<void> {
       try {
         const cat = categoryOf(id);
         const [a, b] = await Promise.all([
-          scoreArm(cat, A.query, rubric, A.context, model),
-          scoreArm(cat, B.query, rubric, B.context, model),
+          scoreArm(cat, A.query, rubric, A.context, model, repeats),
+          scoreArm(cat, B.query, rubric, B.context, model, repeats),
         ]);
         if (a === null || b === null) {
           excluded++;
