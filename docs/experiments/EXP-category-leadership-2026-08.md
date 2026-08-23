@@ -389,3 +389,24 @@ excluded on ox-alpha (a retries-exhausted upstream call), reported as-is.
 Instrument note: ox-alpha's absolute levels sit ~0.04 above sonnet-5's on
 both arms — a reader offset, which is precisely why only WITHIN-instrument
 deltas are ever compared and cross-instrument numbers are never pooled.
+
+## 500K cross-reader replication: direction and magnitude replicate, certification still out of reach
+
+Same frozen n=70 contexts, re-judged end to end on ox-alpha:
+
+| category | sonnet-5 (rep3) | ox-alpha | verdict on both |
+|---|---:|---:|---|
+| contradiction_resolution | +0.099 (38W/24L) | +0.136 (32W/21L, n=59) | directional, uncertified |
+| preference_following | +0.075 (22W/10L) | +0.049 (17W/14L) | directional, uncertified |
+| **ALL** | **+0.087** (60W/34L) | **+0.089** (49W/35L) | directional, uncertified |
+
+The combined-set advantage reproduces across two independent readers to within
+0.002 — these are real effects — yet neither reader can certify them: the
+per-query heterogeneity that sets the MDE travels with the queries, not the
+reader. contradiction_resolution misses on ox-alpha by 0.014 with 11 pairs
+excluded (retry exhaustion on the throttled free tier; exclusions reported,
+category read at n=59).
+
+**Standing verdict for 500K: directionally ahead on both categories and the
+combined set, replicated cross-reader, uncertifiable on any free instrument at
+full n. The official Gemini ladder (P7) is the only remaining certifier.**
