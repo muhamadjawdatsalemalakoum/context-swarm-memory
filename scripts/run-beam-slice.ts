@@ -170,6 +170,7 @@ const ECHOED_ENV_VARS = [
   "CSM_AMB_SYNTH_MEMORY",
   "CSM_AMB_COVERAGE_RERANK",
   "CSM_AMB_ORDERED_CAPSULE",
+  "CSM_AMB_SESSION_DIGESTS",
 ];
 
 export async function runBeamSlice(

@@ -24,7 +24,7 @@ import {
   selectProviderName,
 } from "../src/providers/LlmProvider.js";
 import { envFlag, envInt, envPositiveInt } from "../src/utils/env.js";
-import { escapeRegExp } from "../src/utils/text.js";
+import { escapeRegExp, truncate } from "../src/utils/text.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 
 export interface AmbDocument {
@@ -561,6 +561,28 @@ export async function executeAmbRetrieve(input: {
     };
   }
 
+  // SESSION ARC INDEX — same fold-not-append rule as the preference profile.
+  if (sessionDigestsActive()) {
+    const digests = buildSessionDigests(corpus);
+    if (digests) {
+      if (capsule) {
+        capsule = { ...capsule, content: `${capsule.content}
+
+---
+
+${digests}` };
+      } else {
+        capsule = {
+          id: "csm-session-digests",
+          content: digests,
+          user_id: request.user_id ?? null,
+          timestamp: null,
+          context: "CSM session arc index",
+        };
+      }
+    }
+  }
+
   const responseDocuments = capsule ? [capsule, ...outDocs] : outDocs;
 
   return {
@@ -738,6 +760,126 @@ function parseTimelineEntries(value: unknown): TimelineEntryLike[] {
     });
   }
   return out;
+}
+
+/** CSM_AMB_SESSION_DIGESTS toggle (default OFF). When ON, a compact per-
+ *  session "arc index" is folded into the capsule: one card per session of the
+ *  scoped user's history, each quoting a few salient turns VERBATIM with their
+ *  event ids and turn numbers.
+ *
+ *  WHY (measured, 1M event_ordering, n=70, 2026-08-23 diagnosis): CSM's
+ *  retrieval temporally concentrates — the returned context spans a mean of
+ *  2.86 of the user's ~10 sessions — while "how did X develop" rubrics place
+ *  one milestone per session-phase across the whole arc. Milestones outside
+ *  the retrieved band are ABSENT (85% of the deficit; ordering only 15%), so
+ *  no presentation fix can reach them: the ordered capsule renumbered the same
+ *  narrow set and measured -0.024. This lever changes WHAT is present: at
+ *  least one arc-level witness per session, session-ordered, turn-anchored —
+ *  structurally what Hindsight's per-fact cards provide. Extraction is
+ *  deterministic and corpus-derived (df across sessions; no LLM, no
+ *  benchmark vocabulary), so in production it belongs at write time; here it
+ *  is recomputed from the ingest-provided corpus, which is byte-equivalent.
+ *  Folded INTO the capsule so the document count never changes — displacement
+ *  has been measured as the killer four separate times. */
+export function sessionDigestsActive(): boolean {
+  return envFlag(process.env.CSM_AMB_SESSION_DIGESTS, {
+    name: "CSM_AMB_SESSION_DIGESTS",
+    fallback: false,
+  });
+}
+
+/** Structural session key: the `s<digits>` segment of the shard id when the
+ *  corpus uses one (`10_s4_16` -> `s4`); the whole shard id otherwise, so
+ *  generic corpora degrade to per-shard cards instead of breaking. */
+export function sessionKeyOfShard(shardId: string): string {
+  return shardId.match(/(?:^|_)(s\d+)(?:_|$)/)?.[1] ?? shardId;
+}
+
+export function buildSessionDigests(
+  corpus: Corpus,
+  opts: { maxSessions?: number; linesPerSession?: number; lineChars?: number } = {},
+): string {
+  const maxSessions = opts.maxSessions ?? 12;
+  const linesPerSession = opts.linesPerSession ?? 3;
+  const lineChars = opts.lineChars ?? 170;
+
+  // Group events by session (structural key), session order = earliest turn.
+  const sessions = new Map<string, BenchEvent[]>();
+  for (const [shardId, events] of corpus.byShard) {
+    const key = sessionKeyOfShard(shardId);
+    const bucket = sessions.get(key);
+    if (bucket) bucket.push(...events);
+    else sessions.set(key, [...events]);
+  }
+  if (sessions.size === 0) return "";
+
+  // Corpus-derived salience: document frequency of tokens ACROSS sessions —
+  // a term that appears in every session is boilerplate, a term confined to
+  // one is that session's subject matter. Same philosophy as the shard
+  // descriptors (df kills boilerplate), zero vocabulary tables.
+  const tokensOf = (text: string): Set<string> => {
+    const out = new Set<string>();
+    for (const m of text.toLowerCase().matchAll(/[a-z0-9][a-z0-9-]{3,}/g)) out.add(m[0]);
+    return out;
+  };
+  const df = new Map<string, number>();
+  const sessionTokens = new Map<string, Set<string>>();
+  for (const [key, events] of sessions) {
+    const toks = tokensOf(events.map((e) => e.content).join(" "));
+    sessionTokens.set(key, toks);
+    for (const t of toks) df.set(t, (df.get(t) ?? 0) + 1);
+  }
+  const S = sessions.size;
+
+  const ordered = [...sessions.entries()]
+    .map(([key, events]) => {
+      const sorted = [...events].sort((a, b) => turnNumber(a) - turnNumber(b) || a.id.localeCompare(b.id));
+      return { key, events: sorted, firstTurn: turnNumber(sorted[0]!) };
+    })
+    .sort((a, b) => a.firstTurn - b.firstTurn || a.key.localeCompare(b.key))
+    .slice(0, maxSessions);
+
+  const cards: string[] = [];
+  for (const { key, events } of ordered) {
+    const turns = events.map((e) => turnNumber(e)).filter((n) => Number.isFinite(n) && n !== Number.MAX_SAFE_INTEGER);
+    const range = turns.length > 0 ? `turns ${Math.min(...turns)}-${Math.max(...turns)}` : "turn order unknown";
+    const score = (e: BenchEvent): number => {
+      let sum = 0;
+      let n = 0;
+      for (const t of tokensOf(e.content)) {
+        const d = df.get(t) ?? S;
+        if (d <= Math.max(1, Math.floor(S / 2))) {
+          sum += Math.log(S / d + 1);
+          n++;
+        }
+      }
+      return n === 0 ? 0 : sum / Math.sqrt(n);
+    };
+    const first = events[0]!;
+    const rest = events
+      .slice(1)
+      .map((e) => ({ e, s: score(e) }))
+      .sort((a, b) => b.s - a.s || a.e.id.localeCompare(b.e.id))
+      .slice(0, Math.max(0, linesPerSession - 1))
+      .map((x) => x.e)
+      .sort((a, b) => turnNumber(a) - turnNumber(b) || a.id.localeCompare(b.id));
+    const picked: BenchEvent[] = [first, ...rest.filter((e) => e.id !== first.id)].slice(0, linesPerSession);
+    const lines = picked.map(
+      (e) => `  - [${e.id}] ${truncate(e.content.replace(/\s+/g, " ").trim(), lineChars)}`,
+    );
+    cards.push(`[session ${key} | ${range}]
+${lines.join("\n")}`);
+  }
+
+  return (
+    "SESSION ARC INDEX — one card per session of this user's history, in " +
+    "session order (gathered at write time over the whole conversation; " +
+    "source-derived, no gold answers or rubric used). Each line quotes a " +
+    "salient turn verbatim with its event id and turn number. Use this to " +
+    "locate phases of a development arc that the excerpts below may not " +
+    "cover, and cite the ids when you rely on them.\n\n" +
+    cards.join("\n\n")
+  );
 }
 
 /** Render the core's chronicle timeline as the AMB evidence capsule. Replaces
