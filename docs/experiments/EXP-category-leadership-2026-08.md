@@ -410,3 +410,29 @@ category read at n=59).
 **Standing verdict for 500K: directionally ahead on both categories and the
 combined set, replicated cross-reader, uncertifiable on any free instrument at
 full n. The official Gemini ladder (P7) is the only remaining certifier.**
+
+## Session arc index: paired WASH — and the class lesson that closes it
+
+The absence-targeting lever (per-session digest cards folded into the capsule,
+`CSM_AMB_SESSION_DIGESTS`) measured a dead wash on its pre-registered arm:
+paired vs the frozen control at 1M event_ordering n=70, delta **−0.0067**
+(CI [−0.043,+0.029], MDE 0.052, 33W/33L/4T). Stays default-OFF.
+
+The intermediate variable explains it and is worth more than the lever. A
+gold-side diagnostic over the same 70 paired answers: lexical rubric-item
+coverage rose from 0.289 to 0.335 (+0.045, 32 improved / 21 worsened) — the
+cards DO inject the missing milestones into answers — while the tau-b score
+did not move. Injected items arrive at weak relative positions: an absent item
+costs only a tie-group entry, a misplaced one is charged discordant against
+every covered item. Mention-coverage without order-fidelity is worth nothing
+under Kendall scoring.
+
+**Class conclusion (three levers, one mechanism):** ordered capsule (−0.024),
+fold-placement digests (−0.007 with +0.045 coverage), and by extension any
+capsule-resident index: on a tau-b category these can change what the reader
+MENTIONS but not what it correctly SEQUENCES. Separate-document placement
+would not help — coverage is no longer the blocker; ordering conversion is.
+event_ordering's remaining −0.023 gap is not reachable from presentation, and
+retrieval-coverage was already recovered by the accumulated defaults
+(−0.216 → −0.023). The next 1M candidate is knowledge_update (−0.111) via the
+mechanism-matched R2 supersession store, not another ordering lever.
