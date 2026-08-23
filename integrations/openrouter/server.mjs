@@ -165,6 +165,35 @@ const server = createServer(async (req, res) => {
   }
 });
 
+// A daemon that dies silently is indistinguishable from one that never ran:
+// the 2026-08-23 500K replication failed 139/140 pairs with "fetch failed"
+// because the shim had vanished with nothing in its log. Log every exit path
+// and never let a stray rejection take the process down mid-run.
+process.on("uncaughtException", (err) => {
+  process.stderr.write(`[shim] uncaughtException: ${redact(err?.stack ?? err)}
+`);
+});
+process.on("unhandledRejection", (err) => {
+  process.stderr.write(`[shim] unhandledRejection: ${redact(err?.stack ?? err)}
+`);
+});
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(sig, () => {
+    process.stderr.write(`[shim] received ${sig}, exiting
+`);
+    process.exit(0);
+  });
+}
+process.on("exit", (code) => {
+  process.stderr.write(`[shim] exit code ${code} at ${new Date().toISOString()}
+`);
+});
+server.on("clientError", (err, socket) => {
+  process.stderr.write(`[shim] clientError: ${redact(err?.message ?? err)}
+`);
+  socket.destroy();
+});
+
 server.listen(PORT, "127.0.0.1", () => {
   process.stdout.write(`openrouter shim on http://127.0.0.1:${PORT} (model ${DEFAULT_MODEL})\n`);
 });
