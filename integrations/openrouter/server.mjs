@@ -86,7 +86,13 @@ async function complete({ system, prompt, model, maxTokens, jsonMode }) {
 }
 
 async function completeOnce({ system, prompt, model, maxTokens, jsonMode, started }) {
-  const res = await fetch(`${BASE}/chat/completions`, {
+  let res;
+  try {
+    res = await fetch(`${BASE}/chat/completions`, {
+    // A request that never completes would freeze a jobs=1 pipeline forever —
+    // observed 2026-08-23: 24 minutes of silence on one hung upstream call.
+    // Timeouts are retryable, same as 429s.
+    signal: AbortSignal.timeout(120_000),
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -105,7 +111,15 @@ async function completeOnce({ system, prompt, model, maxTokens, jsonMode, starte
       ],
     }),
   });
-  const bodyText = await res.text();
+  } catch (err) {
+    return { retryable: true, error: `upstream ${err?.name ?? "error"}: ${redact(err?.message ?? err).slice(0, 200)}` };
+  }
+  let bodyText;
+  try {
+    bodyText = await res.text();
+  } catch (err) {
+    return { retryable: true, error: `body read failed: ${redact(err?.message ?? err).slice(0, 200)}` };
+  }
   if (!res.ok) {
     const error = `openrouter HTTP ${res.status}: ${redact(bodyText).slice(0, 400)}`;
     return {
