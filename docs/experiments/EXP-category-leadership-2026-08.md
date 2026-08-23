@@ -328,3 +328,37 @@ default-on now — doing what it was built for.
 3. **Levers do not transfer across tiers.** lean K=16, the needle net, and
    contradiction_resolution's gain all held at one tier and vanished at
    another. Every default flip now requires cross-tier evidence.
+
+## repeats=3 at 500K: the variance is heterogeneity, not noise
+
+`--repeats 3` averages three independent answer+judge draws per pair, built on
+the hypothesis (from the retraction) that answer/judge stochasticity sets the
+MDE. Result, full n=70, sonnet-5 instrument:
+
+| category | single-draw delta | rep3 delta | rep3 MDE | verdict |
+|---|---:|---:|---:|---|
+| contradiction_resolution | −0.0964 | −0.0994 | 0.1478 | tie (38W/24L) |
+| preference_following | −0.0750 | −0.0748 | 0.1153 | tie (22W/10L) |
+| ALL | −0.0857 | **−0.0871** | **0.0935** | tie — misses by 0.006 (60W/34L) |
+
+Two findings:
+
+1. **The deltas are remarkably stable** — preference_following reproduced to
+   three decimal places across independent draw sets. These are real,
+   persistent effects, not judge flutter.
+2. **The MDE barely moved**, because the per-pair variance is dominated by
+   genuine query heterogeneity (some contexts win big, some lose big), which
+   repeats cannot average away. The retraction's arm-level 0.06 swing was
+   real, but at the pair level the heterogeneity term dominates the noise term.
+
+A sign test on 60W/34L would read p<0.01 — but the pre-registered criterion is
+mean-delta > MDE, and switching tests after seeing the data is how false
+results get manufactured. The criterion stands; 500K stays **directionally
+ahead on both categories and their combined set, uncertified on this
+instrument**. Certification remains a job for the official Gemini ladder (P7).
+
+Poisoned-artifact note: the first rep3 file on disk (31/140 pairs, 109
+excluded by a dying sidecar) was survivorship-biased garbage and has been
+overwritten by this clean run. Free-tier 429s produce the same poison, which
+is why the OpenRouter shim now absorbs them with backoff instead of surfacing
+errors that become exclusions.

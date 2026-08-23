@@ -1,0 +1,848 @@
+{
+  "reader": "claude-sonnet-5",
+  "judgePromptVersion": "v2",
+  "n": 140,
+  "excluded": 0,
+  "results": [
+    {
+      "id": "10_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "10_preference_following_0",
+      "category": "preference_following",
+      "a": 0.9166666666666666,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "10_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7083333333333334,
+      "b": 0.5833333333333334
+    },
+    {
+      "id": "10_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "11_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.5,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "11_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.4583333333333333,
+      "b": 0.375
+    },
+    {
+      "id": "11_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "11_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "12_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.6666666666666666,
+      "b": 0.4583333333333333
+    },
+    {
+      "id": "12_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "12_preference_following_0",
+      "category": "preference_following",
+      "a": 0.9166666666666666,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "12_preference_following_1",
+      "category": "preference_following",
+      "a": 0.9166666666666666,
+      "b": 1
+    },
+    {
+      "id": "13_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.2916666666666667,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "13_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.5833333333333334,
+      "b": 0.125
+    },
+    {
+      "id": "13_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.9583333333333334
+    },
+    {
+      "id": "13_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "14_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.875
+    },
+    {
+      "id": "14_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "14_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "14_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "15_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.625
+    },
+    {
+      "id": "15_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.75,
+      "b": 0.25
+    },
+    {
+      "id": "15_preference_following_0",
+      "category": "preference_following",
+      "a": 0,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "15_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 0.4444444444444444
+    },
+    {
+      "id": "16_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "16_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.08333333333333333
+    },
+    {
+      "id": "16_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "16_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "17_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "17_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.375,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "17_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 0.5833333333333334
+    },
+    {
+      "id": "17_preference_following_0",
+      "category": "preference_following",
+      "a": 0.8333333333333334,
+      "b": 0.08333333333333333
+    },
+    {
+      "id": "18_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "18_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.041666666666666664,
+      "b": 0.25
+    },
+    {
+      "id": "18_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "19_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "18_preference_following_0",
+      "category": "preference_following",
+      "a": 0.8333333333333334,
+      "b": 1
+    },
+    {
+      "id": "19_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0
+    },
+    {
+      "id": "19_preference_following_0",
+      "category": "preference_following",
+      "a": 0.9583333333333334,
+      "b": 0.9583333333333334
+    },
+    {
+      "id": "1_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.125
+    },
+    {
+      "id": "19_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "1_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.875
+    },
+    {
+      "id": "1_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "1_preference_following_0",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "20_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.08333333333333333,
+      "b": 0.875
+    },
+    {
+      "id": "20_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0
+    },
+    {
+      "id": "20_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.20833333333333334,
+      "b": 0.9583333333333334
+    },
+    {
+      "id": "21_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.875
+    },
+    {
+      "id": "21_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "22_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.2916666666666667,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "22_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.20833333333333334
+    },
+    {
+      "id": "22_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.5,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "22_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.125
+    },
+    {
+      "id": "23_preference_following_0",
+      "category": "preference_following",
+      "a": 0.8333333333333334,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "23_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "24_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.875
+    },
+    {
+      "id": "24_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "24_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "25_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.625,
+      "b": 0.375
+    },
+    {
+      "id": "25_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.75,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "24_preference_following_1",
+      "category": "preference_following",
+      "a": 0.9166666666666666,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "25_preference_following_0",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.5555555555555555
+    },
+    {
+      "id": "25_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.5833333333333334,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "26_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "26_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "27_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "26_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "27_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.375,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "27_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.9166666666666666
+    },
+    {
+      "id": "28_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.75,
+      "b": 0
+    },
+    {
+      "id": "27_preference_following_0",
+      "category": "preference_following",
+      "a": 0.7777777777777778,
+      "b": 0
+    },
+    {
+      "id": "28_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.08333333333333333
+    },
+    {
+      "id": "28_preference_following_0",
+      "category": "preference_following",
+      "a": 0.27777777777777773,
+      "b": 0.7777777777777778
+    },
+    {
+      "id": "28_preference_following_1",
+      "category": "preference_following",
+      "a": 0.75,
+      "b": 0.75
+    },
+    {
+      "id": "29_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "29_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.125
+    },
+    {
+      "id": "29_preference_following_0",
+      "category": "preference_following",
+      "a": 0.16666666666666666,
+      "b": 0
+    },
+    {
+      "id": "29_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "2_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.75,
+      "b": 0.375
+    },
+    {
+      "id": "2_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.875
+    },
+    {
+      "id": "2_preference_following_0",
+      "category": "preference_following",
+      "a": 0.38888888888888884,
+      "b": 0.05555555555555555
+    },
+    {
+      "id": "30_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.2916666666666667,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "30_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.5416666666666666,
+      "b": 0.08333333333333333
+    },
+    {
+      "id": "2_preference_following_1",
+      "category": "preference_following",
+      "a": 0.888888888888889,
+      "b": 1
+    },
+    {
+      "id": "30_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "31_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "30_preference_following_1",
+      "category": "preference_following",
+      "a": 0.3333333333333333,
+      "b": 1
+    },
+    {
+      "id": "31_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7083333333333334,
+      "b": 0.5
+    },
+    {
+      "id": "31_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "31_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.5,
+      "b": 0.4583333333333333
+    },
+    {
+      "id": "32_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "32_preference_following_1",
+      "category": "preference_following",
+      "a": 0.9444444444444445,
+      "b": 1
+    },
+    {
+      "id": "33_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.7083333333333334,
+      "b": 0.625
+    },
+    {
+      "id": "32_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "33_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7083333333333334,
+      "b": 0.7083333333333334
+    },
+    {
+      "id": "33_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "33_preference_following_0",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 0
+    },
+    {
+      "id": "34_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.9583333333333334,
+      "b": 0
+    },
+    {
+      "id": "34_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.875,
+      "b": 0.75
+    },
+    {
+      "id": "34_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "34_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "35_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.5,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "35_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.5833333333333334,
+      "b": 0.7083333333333334
+    },
+    {
+      "id": "35_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "35_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "3_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "3_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.9166666666666666,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "3_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "4_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.625,
+      "b": 0.625
+    },
+    {
+      "id": "3_preference_following_0",
+      "category": "preference_following",
+      "a": 0.5833333333333334,
+      "b": 0.5833333333333334
+    },
+    {
+      "id": "4_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.3333333333333333,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "4_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "4_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.125,
+      "b": 0.875
+    },
+    {
+      "id": "5_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7083333333333334,
+      "b": 0.75
+    },
+    {
+      "id": "5_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "6_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.3333333333333333
+    },
+    {
+      "id": "6_preference_following_0",
+      "category": "preference_following",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "6_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.8333333333333334,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "7_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.041666666666666664
+    },
+    {
+      "id": "7_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.7916666666666666
+    },
+    {
+      "id": "6_preference_following_1",
+      "category": "preference_following",
+      "a": 0.5555555555555555,
+      "b": 0.5555555555555555
+    },
+    {
+      "id": "7_preference_following_1",
+      "category": "preference_following",
+      "a": 0.8333333333333334,
+      "b": 0.8333333333333334
+    },
+    {
+      "id": "7_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "8_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "8_preference_following_0",
+      "category": "preference_following",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "8_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.625,
+      "b": 0.08333333333333333
+    },
+    {
+      "id": "8_preference_following_1",
+      "category": "preference_following",
+      "a": 1,
+      "b": 0.16666666666666666
+    },
+    {
+      "id": "9_contradiction_resolution_0",
+      "category": "contradiction_resolution",
+      "a": 0.25,
+      "b": 0.2916666666666667
+    },
+    {
+      "id": "9_contradiction_resolution_1",
+      "category": "contradiction_resolution",
+      "a": 0.7916666666666666,
+      "b": 0.875
+    },
+    {
+      "id": "9_preference_following_0",
+      "category": "preference_following",
+      "a": 0.5,
+      "b": 0.16666666666666666
+    },
+    {
+      "id": "9_preference_following_1",
+      "category": "preference_following",
+      "a": 0.6666666666666666,
+      "b": 0.3333333333333333
+    }
+  ]
+}
