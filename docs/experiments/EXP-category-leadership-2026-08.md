@@ -362,3 +362,30 @@ excluded by a dying sidecar) was survivorship-biased garbage and has been
 overwritten by this clean run. Free-tier 429s produce the same poison, which
 is why the OpenRouter shim now absorbs them with backoff instead of surfacing
 errors that become exclusions.
+
+## Cross-reader replication on ox-alpha: the abstention lead is NOT a reader artifact
+
+The doc above flagged abstention as the category most sensitive to the reader's
+willingness to say "I don't know" — the one certified CSM lead sat in exactly
+the category where a reader swap could flip the sign. So the 1M n=70 contexts
+(frozen on disk, identical bytes) were re-judged END TO END on a second,
+independent reader via the OpenRouter shim: answers AND judge both on
+`stealth/ox-alpha`, so the comparison is self-consistent on that instrument.
+
+| reader | n | CSM | Hindsight | delta | MDE | W/L/T | verdict |
+|---|---:|---:|---:|---:|---:|---|---|
+| claude-sonnet-5 | 70 | 0.679 | 0.486 | +0.193 | 0.167 | 23/8/39 | **CSM** |
+| **stealth/ox-alpha** | 69 | **0.717** | 0.533 | **+0.185** | 0.136 | **21/4/44** | **CSM** |
+| *knowledge_update, sonnet-5* | 70 | 0.639 | 0.750 | −0.111 | 0.149 | 10/19 | tie |
+| *knowledge_update, ox-alpha* | 70 | 0.636 | 0.768 | −0.132 | 0.164 | 8/19 | tie |
+
+Two independent readers certify the same lead at nearly the same magnitude,
+and the control category (knowledge_update) reproduces its deficit to within
+0.02 as well. This is the first claim in the campaign to survive a deliberate
+falsification attempt, and it upgrades the 1M abstention lead from "certified
+on one instrument" to "certified on two independent instruments". One pair was
+excluded on ox-alpha (a retries-exhausted upstream call), reported as-is.
+
+Instrument note: ox-alpha's absolute levels sit ~0.04 above sonnet-5's on
+both arms — a reader offset, which is precisely why only WITHIN-instrument
+deltas are ever compared and cross-instrument numbers are never pooled.
