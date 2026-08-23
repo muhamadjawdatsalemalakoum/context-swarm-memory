@@ -58,8 +58,34 @@ function redact(s) {
   return String(s).replaceAll(KEY, "sk-or-***");
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function complete({ system, prompt, model, maxTokens, jsonMode }) {
   const started = Date.now();
+  // Free-tier providers rate-limit aggressively. A 429 surfaced to the gate
+  // scripts becomes an EXCLUDED pair, and selective exclusion is survivorship
+  // bias — the poison that invalidated the first rep3 artifact. So the shim
+  // absorbs 429/5xx with capped exponential backoff (Retry-After honoured)
+  // and only fails after the retries are spent.
+  const MAX_TRIES = 6;
+  let lastErr = "";
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const out = await completeOnce({ system, prompt, model, maxTokens, jsonMode, started });
+    if (!out.retryable) {
+      if (out.error) throw new Error(out.error);
+      return out.value;
+    }
+    lastErr = out.error;
+    const retryAfter = Number(out.retryAfter);
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? Math.min(retryAfter * 1000, 60_000)
+      : Math.min(2000 * 2 ** attempt, 60_000);
+    await sleep(waitMs);
+  }
+  throw new Error(`retries exhausted: ${lastErr}`);
+}
+
+async function completeOnce({ system, prompt, model, maxTokens, jsonMode, started }) {
   const res = await fetch(`${BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -80,16 +106,26 @@ async function complete({ system, prompt, model, maxTokens, jsonMode }) {
     }),
   });
   const bodyText = await res.text();
-  if (!res.ok) throw new Error(`openrouter HTTP ${res.status}: ${redact(bodyText).slice(0, 400)}`);
+  if (!res.ok) {
+    const error = `openrouter HTTP ${res.status}: ${redact(bodyText).slice(0, 400)}`;
+    return {
+      retryable: res.status === 429 || res.status >= 500,
+      error,
+      retryAfter: res.headers.get("retry-after"),
+    };
+  }
   const j = JSON.parse(bodyText);
   const text = j.choices?.[0]?.message?.content ?? "";
   return {
-    text,
-    usage: {
-      inputTokens: j.usage?.prompt_tokens ?? null,
-      outputTokens: j.usage?.completion_tokens ?? null,
+    retryable: false,
+    value: {
+      text,
+      usage: {
+        inputTokens: j.usage?.prompt_tokens ?? null,
+        outputTokens: j.usage?.completion_tokens ?? null,
+      },
+      latencyMs: Date.now() - started,
     },
-    latencyMs: Date.now() - started,
   };
 }
 
