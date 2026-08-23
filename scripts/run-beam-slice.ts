@@ -69,6 +69,10 @@ import {
   preferenceProfileActive,
 } from "./amb-preference-profile.js";
 import {
+  factFoldActive,
+  loadOrBuildFactRegistry,
+} from "./amb-fact-registry.js";
+import {
   resolveProbeBatch,
   resolveProbeLocalKeep,
   resolveProbeShrink,
@@ -171,6 +175,7 @@ const ECHOED_ENV_VARS = [
   "CSM_AMB_COVERAGE_RERANK",
   "CSM_AMB_ORDERED_CAPSULE",
   "CSM_AMB_SESSION_DIGESTS",
+  "CSM_AMB_FACT_FOLD",
 ];
 
 export async function runBeamSlice(
@@ -433,11 +438,45 @@ export async function runBeamSlice(
 
   {
     // Appends are chained so two workers can never interleave a JSONL line.
+  const factEnabled = factFoldActive();
+  const factRegistries = new Map<string, Promise<string | undefined>>();
+  const getFactRegistry = (
+    userId: string,
+    corpus: ReturnType<typeof buildCorpus>,
+  ): Promise<string | undefined> => {
+    if (!factEnabled) return Promise.resolve(undefined);
+    const hit = factRegistries.get(userId);
+    if (hit) return hit;
+    const built: Promise<string | undefined> = loadOrBuildFactRegistry({
+      baseline,
+      eventContents: corpus.events.map((e) => e.content),
+      split: opts.split,
+      userId,
+      model: writeTimeModel,
+      onProgress: (msg) => process.stdout.write(`    [fact] unit ${userId} ${msg}` + String.fromCharCode(10)),
+    })
+      .then((r) => {
+        process.stdout.write(
+          (r.fromCache
+            ? `    [fact] unit ${userId} registry from cache`
+            : `    [fact] unit ${userId} registry ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))`) + String.fromCharCode(10),
+        );
+        return r.text as string | undefined;
+      })
+      .catch((err) => {
+        process.stdout.write(`    [fact] unit ${userId} FAILED: ${String(err).slice(0, 120)}` + String.fromCharCode(10));
+        return undefined;
+      });
+    factRegistries.set(userId, built);
+    return built;
+  };
+
     const runOne = async (task: SliceTask): Promise<void> => {
       const q = task.query;
       const corpus = getCorpus(task.userId);
       const t0 = Date.now();
       const preferenceProfile = await getPreferenceProfile(q.userId, corpus);
+      const factRegistry = await getFactRegistry(q.userId, corpus);
       const payload = await executeAmbRetrieve({
         baseline,
         providerName: provider.name,
@@ -445,6 +484,7 @@ export async function runBeamSlice(
         request: { query: q.question, k: requestedK, user_id: q.userId },
         opts: bridgeOpts,
         preferenceProfile,
+        factRegistry,
       });
       const wallMs = Date.now() - t0;
       totalLatencyMs += wallMs;

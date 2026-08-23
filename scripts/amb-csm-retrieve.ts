@@ -23,6 +23,7 @@ import {
   resolveProviderModel,
   selectProviderName,
 } from "../src/providers/LlmProvider.js";
+import { factFoldActive, renderFactFoldBlock } from "./amb-fact-registry.js";
 import { envFlag, envInt, envPositiveInt } from "../src/utils/env.js";
 import { escapeRegExp, truncate } from "../src/utils/text.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
@@ -372,6 +373,12 @@ export async function executeAmbRetrieve(input: {
   const obsActive = typeof observation === "string" && observation.length > 0;
   // Write-time fact registry (passed by the warm server for aggregation intent).
   const factActive = typeof factRegistry === "string" && factRegistry.length > 0;
+  // CSM_AMB_FACT_FOLD: the registry rides INSIDE the capsule (fold site below)
+  // instead of replacing it. Only the REPLACE mode may trigger the reduced
+  // raw-doc cut and the replacement branch -- folding must not shrink the raw
+  // docs (the count-slice is the measured breadth killer).
+  const factFold = factFoldActive();
+  const factReplace = factActive && !factFold;
 
   // Coverage ORDER applied once, up front, so every downstream return path
   // slices from coverage order instead of raw retrieval order.
@@ -404,7 +411,7 @@ export async function executeAmbRetrieve(input: {
       )
     : baseIds;
 
-  const ids = synthActive || obsActive || factActive
+  const ids = synthActive || obsActive || factReplace
     ? dedupeInOrder(orderedBaseIds).slice(0, envPositiveInt(process.env.CSM_AMB_SYNTH_RAW_DOCS, { name: "CSM_AMB_SYNTH_RAW_DOCS", fallback: 10 }))
     : coverageFired
       ? coverageRerankActive()
@@ -437,7 +444,7 @@ export async function executeAmbRetrieve(input: {
   // answer model report rather than synthesize from a raw event pile (how
   // Hindsight wins summarization / event_ordering). The raw events still follow.
   let capsule: AmbDocument | null;
-  if (factActive) {
+  if (factReplace) {
     // Write-time fact registry: value histories with LATEST markers, so
     // aggregation questions combine CURRENT values instead of stale ones.
     if (factBuildCost) {
@@ -559,6 +566,24 @@ export async function executeAmbRetrieve(input: {
       timestamp: null,
       context: "CSM standing preference profile",
     };
+  }
+
+  // CURRENT VALUES (fact registry) -- same fold-not-append rule; the header
+  // licenses the reader to COMMIT to the latest value (measured: hedged
+  // correct answers score 0.5 where crisp commitment scores 1.0).
+  if (factFold && factActive) {
+    const factBlock = renderFactFoldBlock(factRegistry as string);
+    if (capsule) {
+      capsule = { ...capsule, content: `${factBlock}\n\n---\n\n${capsule.content}` };
+    } else {
+      capsule = {
+        id: "csm-fact-registry",
+        content: factBlock,
+        user_id: request.user_id ?? null,
+        timestamp: null,
+        context: "CSM current values",
+      };
+    }
   }
 
   // SESSION ARC INDEX — same fold-not-append rule as the preference profile.
