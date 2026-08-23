@@ -118,6 +118,11 @@ const ECHOED_ENV_VARS = [
   "CSM_MODEL",
   "CSM_GEMINI_MODEL",
   "CSM_AMB_MODEL_CONTEXT",
+  // OpenRouter dev path (2026-08-23): base URL + model make an arm run through
+  // the OpenAI-compatible endpoint distinguishable in its manifest — an arm
+  // whose provider config is invisible is the F7/F11 failure again.
+  "CSM_OPENAI_BASE_URL",
+  "CSM_OPENAI_MODEL",
   "CSM_AMB_MAX_OUTPUT_TOKENS",
   "CSM_AMB_RETURN_K",
   "CSM_AMB_SUMMARY_RETURN_K",
