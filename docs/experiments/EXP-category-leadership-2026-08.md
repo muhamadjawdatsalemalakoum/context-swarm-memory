@@ -436,3 +436,33 @@ event_ordering's remaining −0.023 gap is not reachable from presentation, and
 retrieval-coverage was already recovered by the accumulated defaults
 (−0.216 → −0.023). The next 1M candidate is knowledge_update (−0.111) via the
 mechanism-matched R2 supersession store, not another ordering lever.
+
+## R2 mechanism arm: the fact fold CONVERTS — knowledge_update flips sign at 1M
+
+The diagnosis said 16 of 19 losses were ingest-reachable absences (drive-by
+updates in topically unrelated sessions) plus hedging where the value WAS
+present. `CSM_AMB_FACT_FOLD` answers both: the write-time fact registry
+(value chains with LATEST markers, built over every chunk at ingest, disk-
+cached per unit) folded INTO the capsule under a commitment-licensing header.
+
+**Paired arm vs the frozen control (sonnet-5, n=70):**
+control 0.657 → fold **0.771**, delta **+0.114**, CI **[0.018, 0.211]** —
+excludes zero — 19W/8L/43T. Formally 0.025 under the strict MDE (0.139):
+strong directional, near-certified, and the largest positive paired delta any
+lever has produced in this campaign.
+
+**Head-to-head vs Hindsight (same reader, full n=70):**
+CSM **0.782** vs Hindsight 0.750 — the category moves from **−0.111 to
++0.032** (16W/11L, below MDE 0.124). knowledge_update at 1M is now
+directionally CSM's, on the instrument where it was previously a clear loss.
+
+Write-time economics: one registry build per unit (map-reduce over the full
+conversation, ~2–4 min on the sidecar), amortized across every query and every
+future arm via the disk cache — the same trade Hindsight makes in retain().
+
+Remaining honesty: neither number is certified (paired misses MDE by 0.025;
+h2h lead is inside noise), and the ox-alpha replication of the paired verdict
+is running under heavy free-tier throttling (exclusions will be reported
+as-is). The full typed store (R2 proper: machine-readable
+entity/attribute/value + validity stamps at the Committer) remains open — this
+arm proves the MECHANISM with existing prose machinery.
