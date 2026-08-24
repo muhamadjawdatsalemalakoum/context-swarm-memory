@@ -478,3 +478,33 @@ how much licensing they need. Claim discipline: the fold is a real,
 sonnet-5-certified-adjacent gain and a directional-only gain on ox-alpha —
 never quote the +0.114 without this caveat. Both gate files are kept per
 reader (`answer-gate-v2-sonnet5.json` / `-oxalpha.json`).
+
+## 500K fact fold: knowledge_update is a CERTIFIED CSM lead — the largest of the campaign
+
+Head-to-head, full n=70, same reader both arms:
+
+| category | CSM (fold) | Hindsight | delta | MDE | W/L/T | verdict |
+|---|---:|---:|---:|---:|---|---|
+| **knowledge_update** | **0.7583** | 0.3762 | **+0.3821** | 0.1732 | **37/6**/27 | **CSM — CERTIFIED** |
+| information_extraction | 0.7363 | 0.8606 | −0.1244 | 0.1282 | 8/16/46 | tie (was 0.675 at n=25) |
+| ALL (the pair) | 0.7473 | 0.6184 | +0.1289 | 0.1231 | 45/22/73 | **CSM — CERTIFIED** |
+
+The official ladder had this category at CSM 0.324 vs Hindsight 0.479. With
+ingest-time fact extraction folded into the capsule, current-value questions
+become near-mechanical for the reader — the LATEST value is stated, licensed,
+and cited — while the comparison reader must reconstruct update chains from
+Hindsight's card pile. 37W/6L is far outside the ±0.05 arm-noise band the
+retraction established.
+
+Caveats attached at birth: single instrument (sonnet-5 reader; ox-alpha
+replication launched, exclusions to be reported as-is); no same-instrument
+no-fold control exists at 500K n=70 for these categories, so the vs-Hindsight
+position is certified but the LEVER attribution at 500K is inferred from the
+1M paired arm (+0.114, CI excluding zero) rather than measured here; and the
+official Gemini ladder remains the publishable instrument.
+
+Scoreboard consequence (free instrument, full-n, today's config):
+- **500K**: knowledge_update **certified**; preference_following and
+  contradiction_resolution directional on two readers. ALL-of-pair certified.
+- **1M**: abstention **certified on two readers**; knowledge_update flipped to
+  +0.032 directional.
