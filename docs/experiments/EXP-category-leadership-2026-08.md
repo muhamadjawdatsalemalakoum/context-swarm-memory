@@ -466,3 +466,15 @@ is running under heavy free-tier throttling (exclusions will be reported
 as-is). The full typed store (R2 proper: machine-readable
 entity/attribute/value + validity stamps at the Committer) remains open — this
 arm proves the MECHANISM with existing prose machinery.
+
+### Fact-fold cross-reader replication: direction holds, magnitude is reader-sensitive
+
+Same frozen arms, paired end-to-end on ox-alpha: **+0.022** (13W/11L, n=67 —
+3 pairs excluded by free-tier 429s, reported as-is) against sonnet-5's
+**+0.114** (19W/8L, CI excluding zero). The lever's direction replicates on
+the second reader; its magnitude does not. Plausible mechanism: the fold's
+commitment-licensing header changes reader behaviour, and readers differ in
+how much licensing they need. Claim discipline: the fold is a real,
+sonnet-5-certified-adjacent gain and a directional-only gain on ox-alpha —
+never quote the +0.114 without this caveat. Both gate files are kept per
+reader (`answer-gate-v2-sonnet5.json` / `-oxalpha.json`).
