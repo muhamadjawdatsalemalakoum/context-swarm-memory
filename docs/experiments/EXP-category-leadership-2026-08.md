@@ -538,3 +538,23 @@ Gemini ladder (P7) — where the fold's effect size makes the run far more
 likely to certify than when P7 was first staged. The free instrument has now
 done everything an unpaid instrument can do: every claim above is full-n,
 cross-reader where certified, with exclusions and caveats attached at birth.
+
+### Abstention guard: the fold does NOT damage the certified lead
+
+Paired, fold vs the frozen control, 1M abstention n=70: **−0.0179**
+(6W/6L/**58T**, CI [−0.086, +0.046], MDE 0.097) — a symmetric wash. The
+needle-net failure shape does not recur: that lever injected the most
+similar-LOOKING turns, giving the reader plausible material on truly-absent
+facts; the registry only carries values the user actually STATED, so an absent
+fact has no entry to mislead with.
+
+Token cost measured: answer-context neutral (control 7106 → fold 7080 on
+abstention; 7010 → 7074 on knowledge_update). The fold's cost is the one-time
+per-unit ingest build, disk-cached.
+
+Default-flip status: score certified ×2 readers (500K ku), paired-positive at
+1M, guard-clean on the crown jewel, token-neutral at answer time. Remaining
+per the composition standard that governed the 2026-08-01 defaults fold: the
+effect on 500K's two directional leads (preference_following,
+contradiction_resolution) — that arm is running (g500k-pfcr-factfold-v1,
+n=35/category paired against the n=70 control rows).
