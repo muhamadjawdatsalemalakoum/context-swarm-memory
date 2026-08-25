@@ -35,7 +35,7 @@ import { envFlag, envPositiveInt } from "../src/utils/env.js";
  *  re-derive. Part of the cache key on every entry point. */
 export const FACT_PROMPT_VERSION = "v1";
 
-/** `CSM_AMB_FACT_FOLD` toggle (default OFF). When ON, the write-time fact
+/** `CSM_AMB_FACT_FOLD` toggle (default ON since 2026-08-25). When ON, the write-time fact
  *  registry is built per user scope and folded INTO the evidence capsule on
  *  every query — always-on by design, like the preference profile: the
  *  knowledge-update queries it serves are lexically indistinguishable from
@@ -44,9 +44,16 @@ export const FACT_PROMPT_VERSION = "v1";
  *  `CSM_AMB_FACT_MEMORY`, which replaces the capsule for aggregation-intent
  *  queries on the warm-server path and remains unchanged. */
 export function factFoldActive(): boolean {
+  // DEFAULT ON since 2026-08-25. The complete evidence file, every measured
+  // cell positive or neutral: 500K knowledge_update CERTIFIED on two readers
+  // (+0.382 / +0.326, where the official ladder had a LOSS); 1M paired +0.114
+  // with the CI excluding zero; abstention guard a wash (-0.018, 58 ties);
+  // 500K contradiction_resolution +0.118 and preference_following +0.038 in
+  // the composition guard (ALL +0.078, CI [0.001,0.158]); answer-context
+  // tokens neutral. The cost is a one-time per-unit ingest build, disk-cached.
   return envFlag(process.env.CSM_AMB_FACT_FOLD, {
     name: "CSM_AMB_FACT_FOLD",
-    fallback: false,
+    fallback: true,
   });
 }
 

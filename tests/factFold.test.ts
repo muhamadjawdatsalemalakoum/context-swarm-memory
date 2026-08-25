@@ -30,7 +30,12 @@ afterEach(() => {
 });
 
 describe("factFoldActive", () => {
-  it("defaults OFF and rejects garbage", () => {
+  // DEFAULT FLIPPED OFF -> ON on 2026-08-25 after the full guard file: 500K
+  // knowledge_update certified on two readers, abstention guard a wash, the
+  // PF/CR composition guard positive, answer tokens neutral.
+  it("defaults ON, keeps explicit off byte-reachable, rejects garbage", () => {
+    expect(factFoldActive()).toBe(true);
+    process.env.CSM_AMB_FACT_FOLD = "0";
     expect(factFoldActive()).toBe(false);
     process.env.CSM_AMB_FACT_FOLD = "1";
     expect(factFoldActive()).toBe(true);

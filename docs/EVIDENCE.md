@@ -139,6 +139,7 @@ key-based Gemini path. The ~105 other `CSM_*` variables are tuning knobs
 | `CSM_AMB_LEGACY_VOCAB` | OFF | benchmark-fitted term tables removed at **zero cost** (+0.0037) | sidecar, arm I |
 | `CSM_AMB_LEGACY_INTENT` | OFF | benchmark-tuned intent regexes moved off the default path; legacy kept reproducible | not yet A/B'd |
 | Gemini context caching | n/a | **NO-GO**, degrades with scale | `EXP-T4-gemini-caching.md` |
+| `CSM_AMB_FACT_FOLD` | **ON** (2026-08-25) | **CERTIFIED x2 readers**: 500K knowledge_update +0.382/+0.326 (37W/6L, 31W/10L) vs official-ladder LOSS; 1M paired +0.114 CI>0; abstention guard wash; PF/CR guard positive (ALL +0.078, CI [0.001,0.158]); answer tokens neutral | sidecar, both readers |
 | `CSM_AMB_ORDERED_CAPSULE` | OFF | **NEVER VALIDLY MEASURED** — capsule-resident, so the render gap measured it as a content no-op | pending |
 | `CSM_AMB_OBSERVE_MEMORY` | OFF | same — never validly measured | pending |
 | `CSM_AMB_FACT_MEMORY` | OFF | same — never validly measured | pending |
