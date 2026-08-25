@@ -43,8 +43,9 @@ unmodified public runner, plus the submitted **100K official-runner rerun**
 (`docs/AMB_BEAM_LADDER_2026_06_18.md`, `docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`).
 CSM edges Hindsight only at 100K (within single-trial noise) and trails at
 500K/1M/10M; its **all-in token cost (~36–38K input/query) stays flat** across
-the 100× range. None of it is an official leaderboard placement (PR #19 is
-pending acceptance) and none is claimed as SOTA. The synthetic PaySwift scaling
+the 100× range. None of it is an official leaderboard placement (PR #19 was
+author-closed on 2026-06-22 without being merged; any future submission will
+be a NEW PR against the post-#20 runner) and none is claimed as SOTA. The synthetic PaySwift scaling
 studies, the LightRAG head-to-head, the Gemini cross-model check, and BABILong
 are **supporting / R&D evidence kept in the deep docs**, no longer featured as
 public headline claims; Mem0/HippoRAG are documented as blocked, not beaten. The
@@ -65,7 +66,7 @@ npm run verify:published
 |---|---|---|
 | Full BEAM ladder 100K→10M (single-trial): CSM 0.7367/0.6589/0.5693/0.5616 vs Hindsight 0.7337/0.7112/0.7386/0.6408 — CSM leads only at 100K, trails above | `docs/AMB_BEAM_LADDER_2026_06_18.md`; raw run dirs `data/eval/runs/amb-beam-{100k-official-v2,500k-official-v1,1m-official-v1,10m-official-v1}/` (large, gitignored) | `npm run verify:published` (recomputes all four tiers + LF-SHA-256, SKIP if raw absent); `node scripts/verify-hindsight-ladder.mjs` |
 | CSM all-in token cost stays flat at ~36–38K input/query (answer-visible 27.0/26.6/28.2/32.5K + internal 8.8/9.6/9.9/3.4K → 35.8/36.2/38.1/35.9K) across the 100× range | `docs/AMB_BEAM_LADDER_2026_06_18.md` (all-in column + telemetry hash table), CSM telemetry sidecars | `npm run verify:published` (pins answer-visible + internal per tier) |
-| BEAM 100K official-runner rerun (submitted as PR #19, pending acceptance, not official, not SOTA): CSM 0.743110 / 337-400, 3.47s retrieve, 1.84× faster than Hindsight | `docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`, `data/eval/runs/amb-beam-100k-official-v1/` | `npm run verify:published` |
+| BEAM 100K official-runner rerun (was PR #19, author-closed 2026-06-22 unmerged; produced on the PRE-#20 runner, so not comparable to post-#20 runs; not official, not SOTA): CSM 0.743110 / 337-400, 3.47s retrieve, 1.84× faster than Hindsight | `docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`, `data/eval/runs/amb-beam-100k-official-v1/` | `npm run verify:published` |
 
 **Supporting / R&D evidence (synthetic + diagnostic — kept in deep docs, not the public headline):**
 
