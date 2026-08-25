@@ -54,6 +54,11 @@ $env:CSM_AMB_MODEL           = 'gemini-3.5-flash'
 $env:CSM_GEMINI_THINKING     = 'low'
 $env:CSM_GEMINI_TIMEOUT_MS   = '600000'
 $env:CSM_GEMINI_MAX_RETRIES  = '2'
+# Cache namespace per tier (BLOCKER fix, 2026-08-25): user_ids are literally
+# 1..N in EVERY BEAM tier, and the server keys its write-time disk caches
+# (preference profiles, fact registries) by split|user|model. Without this,
+# tier 2+ would silently serve tier 1's artifacts for same-numbered units.
+$env:CSM_AMB_SPLIT           = $Split
 $env:CSM_AMB_MODEL_CONTEXT   = '8192'
 $env:CSM_AMB_MAX_OUTPUT_TOKENS = '512'
 $env:CSM_AMB_RETURN_K          = '24'

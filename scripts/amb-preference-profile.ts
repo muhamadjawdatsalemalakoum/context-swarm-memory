@@ -38,7 +38,17 @@ export const PREF_PROMPT_VERSION = "v1";
  *  serves never mention the preference they test, so no query-conditioned gate
  *  can exist; see docs/experiments/EXP-preference-write-time.md). */
 export function preferenceProfileActive(): boolean {
-  // DEFAULT ON since 2026-08-01: the lever that wins knowledge_update at 1M.
+  // DEFAULT OFF — deliberately, since the 2026-08-25 pre-flight audit.
+  //
+  // History that must not be re-lost: commit e18606e (2026-08-01) added a
+  // "DEFAULT ON" comment here WITHOUT flipping the fallback, and the docs
+  // repeated the claim. The audit found the mismatch — and found that every
+  // certified 2026-08 full-n arm (the fold campaign, both readers) actually
+  // ran with the profile resolved OFF. The certified configuration is
+  // therefore profile-OFF, and the fold alone produced the knowledge_update
+  // results once attributed to the profile. Fold+profile COMPOSED has its own
+  // measured verdict (g1m-ku70-foldpref-v1); this default follows that
+  // evidence, not the stale comment. Explicit =1 remains fully supported.
   return envFlag(process.env.CSM_AMB_PREFERENCE_PROFILE, {
     name: "CSM_AMB_PREFERENCE_PROFILE",
     fallback: false,

@@ -49,7 +49,7 @@ import {
 } from "../src/eval/corpus/beam.js";
 import { execSync } from "node:child_process";
 
-import { envPositiveInt } from "../src/utils/env.js";
+import { envFlag, envPositiveInt } from "../src/utils/env.js";
 import { loadLocalEnv } from "../src/utils/loadEnv.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import {
@@ -176,6 +176,17 @@ const ECHOED_ENV_VARS = [
   "CSM_AMB_ORDERED_CAPSULE",
   "CSM_AMB_SESSION_DIGESTS",
   "CSM_AMB_FACT_FOLD",
+  "CSM_AMB_FACT_CHUNK_TOKENS",
+  "CSM_AMB_FACT_SINGLE_PASS_TOKENS",
+  "CSM_AMB_FACT_CHUNK_OUTPUT",
+  "CSM_AMB_FACT_MAX_OUTPUT",
+  "CSM_AMB_FACT_MAP_CONCURRENCY",
+  "CSM_AMB_LEGACY_INTENT",
+  "CSM_HYBRID_RERANK",
+  "CSM_EMBED_ALWAYS_K",
+  "CSM_EMBED_ALWAYS_MIN_COS",
+  "CSM_EMBED_ALWAYS_BEATS_BEST",
+  "CSM_AMB_SPLIT",
 ];
 
 export async function runBeamSlice(
@@ -250,6 +261,11 @@ export async function runBeamSlice(
     probeShrink: resolveProbeShrink(),
     probeLocalKeep: resolveProbeLocalKeep(),
     preferenceProfile: preferenceProfileActive(),
+    // Added 2026-08-25 (pre-flight audit): factFold defaulted ON that day and
+    // idRepair has defaulted ON since F12 -- an unset var in a manifest must
+    // never be ambiguous across a default flip.
+    factFold: factFoldActive(),
+    idRepair: envFlag(process.env.CSM_AMB_ID_REPAIR, { name: "CSM_AMB_ID_REPAIR", fallback: true }),
     leanReturn: resolveLeanReturn(),
   };
   // Provenance (audit P4/F7): the F11 false conclusion happened because a

@@ -126,11 +126,11 @@ key-based Gemini path. The ~105 other `CSM_*` variables are tuning knobs
 |---|---|---|---|
 | `CSM_ROUTER_HYBRID` | ON | **CONVERTS** +0.365 answer, 26W/5L at 1M — the embedding leg does the work | gemini, 1M ladder |
 | `CSM_AMB_ID_REPAIR` | ON | **worth ~0.20**; default flipped after it was found missing from a manifest (F11→F12) | gemini |
-| `CSM_AMB_PREFERENCE_PROFILE` | ON | wins knowledge_update at 1M | gemini |
+| `CSM_AMB_PREFERENCE_PROFILE` | **OFF** (2026-08-25 audit: the 2026-08-01 "ON" flip landed as a comment only, never in code — and every certified 2026-08 full-n arm ran profile-OFF, so the CERTIFIED config is profile-OFF; the r1m-era profile-only wins stand as their own record) | profile-only: wins ku (r1m arms); fold+profile composed: g1m-ku70-foldpref-v1 | gemini + sidecar |
 | `CSM_SHARD_DESCRIPTORS` | ON | flat on its own — kept because the hybrid router consumes it | gemini |
-| `CSM_AMB_LEAN_K=16` | OFF→pending | **PASS** −32% answer payload, −0.0009 (CI [−0.051,+0.050], 35/45 ties) | sidecar, minted arms |
+| `CSM_AMB_LEAN_K=16` | **REVERTED to OFF** (flipped 2026-08-01, reverted 2026-08-02: 500K lean-off won all three wider categories) | **PASS then cross-category FAIL** −32% answer payload, −0.0009 (CI [−0.051,+0.050], 35/45 ties) | sidecar, minted arms |
 | `CSM_AMB_LEAN_K=12` | never | **FAIL** −0.0759, CI excludes 0, instruction_following 0W/5L | sidecar, minted arms |
-| `CSM_PROBE_BATCH` | OFF→pending | **PASS** −21% internal input, +0.0315 (below MDE), no witness dropped | sidecar, r1mJ |
+| `CSM_PROBE_BATCH` | **ON for hosted** (since 2026-08-01; local providers keep solo probes) | **PASS** −21% internal input, +0.0315 (below MDE), no witness dropped | sidecar, r1mJ |
 | `CSM_PROBE_LOCAL_KEEP` | OFF | **KILLED** monotone 3-point dose-response; recalls and knowledge_update fall with it | sidecar, r1mK/r1mL |
 | `CSM_PROBE_SHRINK` | OFF | **SHELVED** same drop-a-witness family; best-case sizing below the bar | reasoned from L3 |
 | `CSM_AMB_COVERAGE_RERANK` | OFF | **anti-correlated**: +11.6 coverage proxy but LOST answers 4W/13L (p=0.049) | gemini |
