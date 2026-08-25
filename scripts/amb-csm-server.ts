@@ -38,6 +38,10 @@ import {
   preferenceProfileActive,
 } from "./amb-preference-profile.js";
 import {
+  factFoldActive,
+  loadOrBuildFactRegistry,
+} from "./amb-fact-registry.js";
+import {
   type AmbBridgeOptions,
   type AmbDocument,
   type AmbRetrievePayload,
@@ -126,6 +130,10 @@ export interface AmbServerState {
    *  slice-harness runs reuse each other's builds. */
   preferenceCache: Map<string, { version: number; text: string }>;
   preferenceInflight: Map<string, Promise<string>>;
+  /** Fold-mode fact registries (CSM_AMB_FACT_FOLD) — distinct from the legacy
+   *  aggregation-intent factCache so the two modes can never serve each other. */
+  factFoldCache: Map<string, { version: number; text: string }>;
+  factFoldInflight: Map<string, Promise<string>>;
   baseline: CsmBaseline;
   providerName: string;
   defaults: AmbBridgeOptions;
@@ -144,6 +152,8 @@ export function createAmbServerState(provider?: LlmProvider): AmbServerState {
     factInflight: new Map(),
     preferenceCache: new Map(),
     preferenceInflight: new Map(),
+    factFoldCache: new Map(),
+    factFoldInflight: new Map(),
     baseline: new CsmBaseline({ provider: resolved }),
     providerName: resolved.name,
     defaults: defaultBridgeOptions(),
@@ -313,6 +323,67 @@ export async function getScopedObservation(
         }
       : null,
   };
+}
+
+/** Fold-mode fact registry (CSM_AMB_FACT_FOLD, default ON): same contract as
+ *  getScopedPreferenceProfile — versioned in-RAM cache + single-flight with
+ *  the SHARED disk cache (scripts/amb-fact-registry.ts) underneath, so server
+ *  and slice runs reuse each other's builds when split+model+prompt match
+ *  (set CSM_AMB_SPLIT on official runs). No intent gate: the queries the
+ *  registry serves are lexically indistinguishable from extraction ones.
+ *  Failure degrades the QUERY to no-registry, never fails it. Distinct from
+ *  the legacy aggregation-intent path below, which is unchanged. */
+export async function getScopedFactRegistryFolded(
+  state: AmbServerState,
+  userId: string | null | undefined,
+  corpus: Corpus,
+): Promise<string | undefined> {
+  const key = userId ?? "__all__";
+  const version = scopeVersion(state, key);
+  const hit = state.factFoldCache.get(key);
+  if (hit && hit.version === version) return hit.text;
+
+  const inflightKey = `${key}@${version}`;
+  let inflight = state.factFoldInflight.get(inflightKey);
+  if (!inflight) {
+    inflight = loadOrBuildFactRegistry({
+      baseline: state.baseline,
+      eventContents: corpus.events.map((e) => e.content),
+      split: resolvePreferenceSplit(),
+      userId: key,
+      model: resolveProviderModel(state.providerName),
+      onProgress: (msg) => process.stderr.write(`[fact-fold] user=${key} ${msg}
+`),
+    }).then((r) => {
+      process.stderr.write(
+        r.fromCache
+          ? `[fact-fold] user=${key} registry from disk cache
+`
+          : `[fact-fold] user=${key} registry ready (${r.outputTokens} out-tok, ${r.chunks} chunk(s))
+`,
+      );
+      return r.text;
+    });
+    state.factFoldInflight.set(inflightKey, inflight);
+    inflight.catch(() => state.factFoldInflight.delete(inflightKey));
+  }
+
+  let text: string;
+  try {
+    text = await inflight;
+  } catch (err) {
+    process.stderr.write(`[fact-fold] user=${key} FAILED: ${String(err).slice(0, 200)}
+`);
+    return undefined;
+  }
+  state.factFoldInflight.delete(inflightKey);
+
+  state.factFoldCache.set(key, { version, text });
+  for (const [k, v] of state.factFoldCache) {
+    if (state.factFoldCache.size <= PREFERENCE_CACHE_MAX) break;
+    if (k !== key && v.version !== scopeVersion(state, k)) state.factFoldCache.delete(k);
+  }
+  return text;
 }
 
 /** Build (or reuse) the write-time FACT REGISTRY for a user scope — mirror of
@@ -498,6 +569,13 @@ export async function handleRetrieve(
   const preferenceProfile = preferenceProfileActive()
     ? await getScopedPreferenceProfile(state, request.user_id, corpus)
     : undefined;
+  // Fold-mode registry (CSM_AMB_FACT_FOLD, default ON) — always-on like the
+  // profile. Without this the certified knowledge_update lever existed ONLY on
+  // the slice harness: the official AMB path would have silently run without
+  // it, the same class of gap the preference profile once had.
+  const foldedFactRegistry = factFoldActive()
+    ? await getScopedFactRegistryFolded(state, request.user_id, corpus)
+    : undefined;
   return executeAmbRetrieve({
     baseline: state.baseline,
     providerName: state.providerName,
@@ -506,7 +584,7 @@ export async function handleRetrieve(
     opts: state.defaults,
     observation: observation?.text,
     observationBuildCost: observation?.buildCost ?? null,
-    factRegistry: fact?.text,
+    factRegistry: foldedFactRegistry ?? fact?.text,
     factBuildCost: fact?.buildCost ?? null,
     preferenceProfile,
   });
@@ -562,6 +640,10 @@ async function prewarmScope(state: AmbServerState, userId: string): Promise<void
     jobs.push(
       getScopedFactRegistry(state, userId, corpus).catch(logFailure("fact-registry")),
     );
+  }
+  if (factFoldActive()) {
+    // getScopedFactRegistryFolded already degrades + logs on failure.
+    jobs.push(getScopedFactRegistryFolded(state, userId, corpus));
   }
   if (preferenceProfileActive()) {
     // getScopedPreferenceProfile already degrades + logs on failure.
@@ -654,6 +736,7 @@ async function routeRequest(
       state.factCache.clear();
       state.factInflight.clear();
       state.preferenceCache.clear();
+      state.factFoldCache.clear();
       state.preferenceInflight.clear();
       // scopeVersions deliberately NOT cleared: versions stay monotonic so an
       // in-flight build that raced this reset can never be re-read as fresh.

@@ -16,6 +16,7 @@ import {
   observationQueryIntent,
 } from "../scripts/amb-csm-retrieve.js";
 import { preferenceProfileCachePath } from "../scripts/amb-preference-profile.js";
+import { factRegistryCachePath } from "../scripts/amb-fact-registry.js";
 import { resolveProviderModel } from "../src/providers/LlmProvider.js";
 import { MockProvider } from "../src/providers/MockProvider.js";
 
@@ -365,6 +366,100 @@ describe("amb-csm-server", () => {
       else process.env.CSM_AMB_PREFERENCE_PROFILE = prevFlag;
       if (prevCacheDir === undefined) delete process.env.CSM_AMB_PREF_CACHE_DIR;
       else process.env.CSM_AMB_PREF_CACHE_DIR = prevCacheDir;
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
+  it("amb_server_folds_fact_registry_when_flag_on_and_omits_when_explicitly_off", async () => {
+    // THE test whose absence let this gap exist: the fold (default ON,
+    // certified knowledge_update lever) was wired on the slice harness while
+    // the official AMB server path only passed the registry under the legacy
+    // aggregation-intent gate — the same silently-missing-lever class the
+    // preference profile once had. Mirrors the profile test above.
+    const prevFlag = process.env.CSM_AMB_FACT_FOLD;
+    const prevCacheDir = process.env.CSM_AMB_FACT_CACHE_DIR;
+    const cacheDir = mkdtempSync(join(tmpdir(), "csm-fact-test-"));
+    const registryText = "typing speed | 75 wpm -> 78 wpm; LATEST: 78 wpm";
+    const spy = vi
+      .spyOn(state.baseline, "organizeFactsScaled")
+      .mockResolvedValue({
+        text: registryText,
+        inputTokens: 10,
+        outputTokens: 5,
+        latencyMs: 1,
+        chunks: 1,
+      });
+    try {
+      process.env.CSM_AMB_FACT_FOLD = "1";
+      process.env.CSM_AMB_FACT_CACHE_DIR = cacheDir;
+
+      const ingest = await fetch(`${base}/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documents: [DOCS[0]] }),
+      });
+      expect(ingest.status).toBe(200);
+
+      const retrieveOnce = () =>
+        fetch(`${base}/retrieve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: "What password hashing algorithm did we choose?",
+            k: 5,
+            user_id: "u1",
+          }),
+        });
+
+      const on = await retrieveOnce();
+      expect(on.status).toBe(200);
+      const onPayload = (await on.json()) as {
+        documents: Array<{ id: string; content: string }>;
+      };
+      // The registry rides in exactly ONE returned document under the
+      // commitment-licensing header.
+      const carriers = onPayload.documents.filter((d) =>
+        d.content.includes(registryText),
+      );
+      expect(carriers.length).toBe(1);
+      expect(carriers[0]!.content).toContain("CURRENT VALUES");
+      // Pre-warm build + joined query = exactly one build.
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Memoized per (user, scope version): no rebuild on a second retrieve.
+      const again = await retrieveOnce();
+      expect(again.status).toBe(200);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Disk cache uses the slice-compatible key scheme.
+      const files = readdirSync(cacheDir);
+      expect(files.length).toBe(1);
+      const expectedPath = factRegistryCachePath({
+        split: "amb",
+        userId: "u1",
+        model: resolveProviderModel("mock"),
+      });
+      expect(join(cacheDir, files[0]!)).toBe(expectedPath);
+
+      // EXPLICIT off (the default is ON): no registry text, no header.
+      process.env.CSM_AMB_FACT_FOLD = "0";
+      const off = await retrieveOnce();
+      expect(off.status).toBe(200);
+      const offPayload = (await off.json()) as {
+        documents: Array<{ id: string; content: string }>;
+      };
+      expect(offPayload.documents.length).toBeGreaterThan(0);
+      for (const doc of offPayload.documents) {
+        expect(doc.content.includes(registryText)).toBe(false);
+        expect(doc.content.includes("CURRENT VALUES")).toBe(false);
+      }
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+      if (prevFlag === undefined) delete process.env.CSM_AMB_FACT_FOLD;
+      else process.env.CSM_AMB_FACT_FOLD = prevFlag;
+      if (prevCacheDir === undefined) delete process.env.CSM_AMB_FACT_CACHE_DIR;
+      else process.env.CSM_AMB_FACT_CACHE_DIR = prevCacheDir;
       rmSync(cacheDir, { recursive: true, force: true });
     }
   });
