@@ -508,3 +508,33 @@ Scoreboard consequence (free instrument, full-n, today's config):
   contradiction_resolution directional on two readers. ALL-of-pair certified.
 - **1M**: abstention **certified on two readers**; knowledge_update flipped to
   +0.032 directional.
+
+### Cross-reader falsification of the 500K lead: CERTIFIED ON BOTH READERS
+
+| reader | n | CSM | Hindsight | delta | MDE | W/L/T | verdict |
+|---|---:|---:|---:|---:|---:|---|---|
+| claude-sonnet-5 | 70 | 0.758 | 0.376 | +0.382 | 0.173 | 37/6/27 | **CSM** |
+| stealth/ox-alpha | 67 | 0.709 | 0.383 | **+0.326** | 0.187 | 31/10/26 | **CSM** |
+
+Hindsight's absolute level reproduces to within 0.007 across readers;
+information_extraction also improves on both (−0.124 / −0.093, still behind).
+7 pairs excluded on ox by free-tier throttling, reported as-is.
+
+## STANDING SCOREBOARD (2026-08-25) — the strongest true statement per tier
+
+On the nearest available data, CSM is ahead in ≥2 categories at every tier:
+
+| tier | certified (both readers where tested) | replicated directional |
+|---|---|---|
+| 100K | 7 leads — official Gemini ladder | — |
+| 500K | **knowledge_update** (+0.382 / +0.326, both certified) | preference_following, contradiction_resolution (2 readers each) |
+| 1M | **abstention** (+0.193 / +0.185, both certified) | knowledge_update (flipped −0.111 → +0.032) |
+| 10M | 4 leads — official Gemini ladder | — |
+
+What separates this from a publishable "CSM leads ≥2 everywhere": the
+directional cells sit under instrument MDEs that no free reader can beat at
+max n, and 100K/10M certification under TODAY'S config needs the official
+Gemini ladder (P7) — where the fold's effect size makes the run far more
+likely to certify than when P7 was first staged. The free instrument has now
+done everything an unpaid instrument can do: every claim above is full-n,
+cross-reader where certified, with exclusions and caveats attached at birth.

@@ -1,0 +1,806 @@
+{
+  "reader": "stealth/ox-alpha",
+  "judgePromptVersion": "v2",
+  "n": 133,
+  "excluded": 7,
+  "results": [
+    {
+      "id": "10_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "10_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.75,
+      "b": 0.75
+    },
+    {
+      "id": "10_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "10_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "11_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "11_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "11_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "11_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.25
+    },
+    {
+      "id": "12_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "12_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.08333333333333333,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "12_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "12_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "13_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "13_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "13_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "13_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "14_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "14_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.6666666666666666,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "14_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "14_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0.6666666666666666
+    },
+    {
+      "id": "15_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "15_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "15_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "16_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "16_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "16_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "16_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "17_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "17_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "17_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "17_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "18_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "18_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "18_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "18_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "19_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "19_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "19_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "19_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "1_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "1_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.1,
+      "b": 0.4
+    },
+    {
+      "id": "1_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "1_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "20_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "20_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "21_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "21_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "21_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "22_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "22_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 1
+    },
+    {
+      "id": "22_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "22_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "23_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "23_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "24_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "24_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "24_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "24_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "25_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "25_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "25_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "25_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "26_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "26_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0.8
+    },
+    {
+      "id": "26_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "26_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "27_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "27_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 0.875
+    },
+    {
+      "id": "27_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "27_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "28_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0.8333333333333334,
+      "b": 1
+    },
+    {
+      "id": "28_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "29_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "29_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "29_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "29_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "2_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 0.875
+    },
+    {
+      "id": "2_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "2_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "2_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "30_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "30_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "30_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "30_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "31_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "31_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "31_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "31_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "32_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "32_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "33_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "33_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "33_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0.5
+    },
+    {
+      "id": "34_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 0.25
+    },
+    {
+      "id": "34_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "34_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0
+    },
+    {
+      "id": "34_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "35_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "35_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "35_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "35_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "3_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "3_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "3_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "3_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "4_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0.5714285714285714,
+      "b": 0.42857142857142855
+    },
+    {
+      "id": "4_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "4_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "4_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_information_extraction_1",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "5_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "6_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0.5
+    },
+    {
+      "id": "6_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 1
+    },
+    {
+      "id": "6_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "7_information_extraction_0",
+      "category": "information_extraction",
+      "a": 1,
+      "b": 0.5
+    },
+    {
+      "id": "7_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.8333333333333334,
+      "b": 0
+    },
+    {
+      "id": "7_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "7_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "8_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0.75
+    },
+    {
+      "id": "8_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "8_knowledge_update_0",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "8_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 1,
+      "b": 0
+    },
+    {
+      "id": "9_information_extraction_0",
+      "category": "information_extraction",
+      "a": 0,
+      "b": 0
+    },
+    {
+      "id": "9_information_extraction_1",
+      "category": "information_extraction",
+      "a": 0.5,
+      "b": 1
+    },
+    {
+      "id": "9_knowledge_update_1",
+      "category": "knowledge_update",
+      "a": 0.5,
+      "b": 0.75
+    }
+  ]
+}
