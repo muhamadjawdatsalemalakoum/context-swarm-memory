@@ -15,7 +15,17 @@
 .EXAMPLE
   pwsh scripts/run-beam-ladder.ps1
 #>
-param([int]$MaxAttemptsPerTier = 8)
+# -Tag names this ladder attempt (run dirs become amb-beam-<split>-<tag>).
+# BLOCKER fix (2026-08-25 pre-flight audit): the tier names were hardcoded to
+# the COMPLETED June run dirs, so a re-run would have judged every tier
+# "already complete" and done nothing. -SkipTenM holds the 10M tier: upstream
+# PR #38 documents the 10M loader as broken (the published 10M results
+# measured a 0.27%-loaded corpus) -- run 10M only after that fix merges.
+param(
+  [int]$MaxAttemptsPerTier = 8,
+  [Parameter(Mandatory = $true)][ValidatePattern("^[a-z0-9-]+$")][string]$Tag,
+  [switch]$SkipTenM = $true
+)
 $ErrorActionPreference = 'Continue'
 
 # Keep the machine awake for the duration of the ladder. Repeated idle
@@ -53,11 +63,15 @@ $repo = 'C:\Users\Keonm\OneDrive\Documents\GitHub\context-swarm-memory'
 $tierScript = Join-Path $repo 'scripts\run-beam-tier.ps1'
 
 $tiers = @(
-  [pscustomobject]@{ Split = '100k'; Name = 'amb-beam-100k-official-v2'; Target = 400 },
-  [pscustomobject]@{ Split = '500k'; Name = 'amb-beam-500k-official-v1'; Target = 700 },
-  [pscustomobject]@{ Split = '1m';   Name = 'amb-beam-1m-official-v1';   Target = 700 },
-  [pscustomobject]@{ Split = '10m';  Name = 'amb-beam-10m-official-v1';  Target = 200 }
+  [pscustomobject]@{ Split = '100k'; Name = "amb-beam-100k-$Tag"; Target = 400 },
+  [pscustomobject]@{ Split = '500k'; Name = "amb-beam-500k-$Tag"; Target = 700 },
+  [pscustomobject]@{ Split = '1m';   Name = "amb-beam-1m-$Tag";   Target = 700 }
 )
+if (-not $SkipTenM) {
+  $tiers += [pscustomobject]@{ Split = '10m'; Name = "amb-beam-10m-$Tag"; Target = 200 }
+} else {
+  "[$([DateTime]::UtcNow.ToString('HH:mm:ssZ'))] 10M tier HELD (upstream loader broken, PR #38) - pass -SkipTenM:`$false only after the fix merges"
+}
 
 function Get-SavedCount {
   param([string]$Name, [string]$Split)

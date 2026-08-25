@@ -30,6 +30,8 @@ import { resolveSignalsRanker } from "../src/core/digestSelection.js";
 import { resolveProbeFullScan } from "../src/core/probe.js";
 import { resolveRouterHybrid, resolveShardDescriptors } from "../src/eval/baselines/csm.js";
 import { rerankerEnabled } from "../src/eval/rerank.js";
+import { factFoldActive } from "../scripts/amb-fact-registry.js";
+import { preferenceProfileActive } from "../scripts/amb-preference-profile.js";
 import { EnvConfigError, envFlag, envInt, envPositiveInt } from "../src/utils/env.js";
 
 describe("envFlag", () => {
@@ -172,6 +174,16 @@ describe("every CSM boolean flag now shares one vocabulary", () => {
     { name: "CSM_SHARD_DESCRIPTORS", read: (v) => resolveShardDescriptors(v), defaultOn: true },
     { name: "CSM_ROUTER_HYBRID", read: (v) => resolveRouterHybrid(v), defaultOn: true },
     { name: "CSM_HYBRID_RERANK", read: (v) => rerankerEnabled(v), defaultOn: false },
+    // CERTIFIED-CONFIG pins (2026-08-25 pre-flight audit). The profile default
+    // was once flipped in a comment but not in code, and the docs repeated the
+    // claim for three weeks — every certified full-n arm actually ran
+    // profile-OFF. These rows make any future silent flip a test failure.
+    {
+      name: "CSM_AMB_PREFERENCE_PROFILE",
+      read: (v) => preferenceProfileActive(v),
+      defaultOn: false,
+    },
+    { name: "CSM_AMB_FACT_FOLD", read: (v) => factFoldActive(v), defaultOn: true },
     { name: "CSM_COVERAGE", read: (v) => resolveCoverageMode(v), defaultOn: true },
     {
       name: "CSM_PROBE_BATCH (hosted: gemini)",

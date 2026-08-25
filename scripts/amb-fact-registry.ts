@@ -43,7 +43,9 @@ export const FACT_PROMPT_VERSION = "v1";
  *  P2 intent-regex audit measured exactly that). Distinct from the older
  *  `CSM_AMB_FACT_MEMORY`, which replaces the capsule for aggregation-intent
  *  queries on the warm-server path and remains unchanged. */
-export function factFoldActive(): boolean {
+export function factFoldActive(
+  raw: string | undefined = process.env.CSM_AMB_FACT_FOLD,
+): boolean {
   // DEFAULT ON since 2026-08-25. The complete evidence file, every measured
   // cell positive or neutral: 500K knowledge_update CERTIFIED on two readers
   // (+0.382 / +0.326, where the official ladder had a LOSS); 1M paired +0.114
@@ -51,7 +53,7 @@ export function factFoldActive(): boolean {
   // 500K contradiction_resolution +0.118 and preference_following +0.038 in
   // the composition guard (ALL +0.078, CI [0.001,0.158]); answer-context
   // tokens neutral. The cost is a one-time per-unit ingest build, disk-cached.
-  return envFlag(process.env.CSM_AMB_FACT_FOLD, {
+  return envFlag(raw, {
     name: "CSM_AMB_FACT_FOLD",
     fallback: true,
   });

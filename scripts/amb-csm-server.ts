@@ -608,14 +608,37 @@ export function prewarmIngestedScopes(
 ): void {
   const users = new Set<string>();
   for (const doc of ingested) if (doc.user_id) users.add(doc.user_id);
-  for (const userId of users) {
-    void prewarmScope(state, userId).catch((err) => {
-      // Belt-and-braces: prewarmScope already catches per-build.
-      process.stderr.write(
-        `[prewarm] user=${userId} failed: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-    });
-  }
+  const queue = [...users];
+  // THROTTLE (2026-08-25 pre-flight audit): an AMB 1M ingest delivers ~35
+  // units in one batch, and firing every scope at once meant up to 35 units
+  // x 2 write-time artifacts x mapConcurrency 4 = ~280 concurrent
+  // ~100K-token calls (~28M tokens in flight) -- past any Gemini TPM tier;
+  // sustained 429s exhaust CSM_GEMINI_MAX_RETRIES and push builds onto the
+  // query path, where a 10M-scale build blows the AMB provider 600s
+  // retrieve timeout with no retry. Bounded workers over a queue instead;
+  // early queries still JOIN in-flight builds via the single-flight maps.
+  const width = Math.min(
+    envPositiveInt(process.env.CSM_AMB_PREWARM_SCOPES, {
+      name: "CSM_AMB_PREWARM_SCOPES",
+      fallback: 2,
+    }),
+    Math.max(1, queue.length),
+  );
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const userId = queue.shift();
+      if (userId === undefined) return;
+      try {
+        await prewarmScope(state, userId);
+      } catch (err) {
+        // Belt-and-braces: prewarmScope already catches per-build.
+        process.stderr.write(
+          `[prewarm] user=${userId} failed: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+      }
+    }
+  };
+  for (let i = 0; i < width; i++) void worker();
 }
 
 async function prewarmScope(state: AmbServerState, userId: string): Promise<void> {

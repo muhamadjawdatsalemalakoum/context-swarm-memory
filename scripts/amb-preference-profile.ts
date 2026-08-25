@@ -37,7 +37,9 @@ export const PREF_PROMPT_VERSION = "v1";
  *  `executeAmbRetrieve` on EVERY query (always-on by design — the queries it
  *  serves never mention the preference they test, so no query-conditioned gate
  *  can exist; see docs/experiments/EXP-preference-write-time.md). */
-export function preferenceProfileActive(): boolean {
+export function preferenceProfileActive(
+  raw: string | undefined = process.env.CSM_AMB_PREFERENCE_PROFILE,
+): boolean {
   // DEFAULT OFF — deliberately, since the 2026-08-25 pre-flight audit.
   //
   // History that must not be re-lost: commit e18606e (2026-08-01) added a
@@ -49,7 +51,7 @@ export function preferenceProfileActive(): boolean {
   // results once attributed to the profile. Fold+profile COMPOSED has its own
   // measured verdict (g1m-ku70-foldpref-v1); this default follows that
   // evidence, not the stale comment. Explicit =1 remains fully supported.
-  return envFlag(process.env.CSM_AMB_PREFERENCE_PROFILE, {
+  return envFlag(raw, {
     name: "CSM_AMB_PREFERENCE_PROFILE",
     fallback: false,
   });

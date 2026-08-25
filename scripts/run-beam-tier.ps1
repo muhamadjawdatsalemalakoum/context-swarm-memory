@@ -59,6 +59,11 @@ $env:CSM_GEMINI_MAX_RETRIES  = '2'
 # (preference profiles, fact registries) by split|user|model. Without this,
 # tier 2+ would silently serve tier 1's artifacts for same-numbered units.
 $env:CSM_AMB_SPLIT           = $Split
+# Retrieve timeout must cover a worst-case QUERY-TIME write-time build (a 10M
+# unit is ~117 map calls/artifact if the prewarm has not finished): the AMB
+# provider raises with NO retry past this. Prewarm + disk pre-build make this
+# a belt-and-braces ceiling, not the plan.
+$env:CSM_AMB_RETRIEVE_TIMEOUT_SEC = if ($Split -eq '10m') { '3600' } else { '1200' }
 $env:CSM_AMB_MODEL_CONTEXT   = '8192'
 $env:CSM_AMB_MAX_OUTPUT_TOKENS = '512'
 $env:CSM_AMB_RETURN_K          = '24'
@@ -82,6 +87,18 @@ $env:OMB_JUDGE_MODEL  = 'gemini-2.5-flash-lite'
 # --- runtime safety ---
 $env:PYTHONUTF8   = '1'                          # AMB rich console vs cp1252
 $env:NODE_OPTIONS = '--max-old-space-size=8192'  # headroom for large units
+
+# GUARD (2026-08-25 audit): AMB cli.py loads the AMB repo .env with
+# override=True, so stale CSM_* entries there silently override everything
+# exported here on the server path only. Refuse to run if any exist.
+$ambEnv = Join-Path $Amb ".env"
+if (Test-Path $ambEnv) {
+  $csmLines = Select-String -Path $ambEnv -Pattern "^\s*CSM_" -ErrorAction SilentlyContinue
+  if ($csmLines) {
+    Write-Error "ABORT: $ambEnv contains CSM_* entries that would override this script exports (AMB loads it with override=True): $($csmLines.Line -join '; '). Remove them and re-run."
+    exit 2
+  }
+}
 
 $ombArgs = @(
   'run', '--no-sync', 'omb', 'run',
