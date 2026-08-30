@@ -1,10 +1,16 @@
 # AMB Officialization: Status and Resume Runbook
 
-Status: **COMPLETE 2026-06-10** — the official-runner rerun is done (0.743110, 337/400, retrieval 1.84x faster than Hindsight; docs/AMB_BEAM_100K_OFFICIAL_RERUN.md) and submitted as [vectorize-io/agent-memory-benchmark#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19), pending maintainer acceptance. The notes below are the historical runbook that got us here.
-(latency first: warm-service architecture, then token cost, then the
-summarization/event-ordering score gaps). The full official BEAM 100K run is
-deliberately deferred so that the one run we submit certifies the *improved*
-CSM, not the current 29 s/query bridge.
+> **SUPERSEDED — read [STATUS.md](STATUS.md) first.** This page is the historical
+> runbook for the June 2026 officialization attempt. That attempt is **over**:
+> PR #19 was **author-closed on 2026-06-22, unmerged**, and the upstream runner
+> has since changed (post-PR-#20: mem0-parity prompt, nugget judge, temp 0,
+> `event_ordering` no longer Kendall τ-b), so the numbers below are not
+> comparable to a current run. CSM has **no official standing**. A future
+> submission is a NEW PR against the post-#20 runner with Hindsight re-scored on
+> the same pinned commit; its pre-flight lives in
+> [PREFLIGHT_OFFICIAL_LADDER.md](PREFLIGHT_OFFICIAL_LADDER.md).
+
+Historical status (2026-06-10): the official-runner rerun was done (0.743110, 337/400, retrieval 1.84x faster than Hindsight; docs/AMB_BEAM_100K_OFFICIAL_RERUN.md) and submitted as [vectorize-io/agent-memory-benchmark#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19). The notes below are the runbook that got us there.
 
 This page is the complete handover for resuming the mission. It records what
 was verified against AMB HEAD on 2026-06-09 so none of that research has to be

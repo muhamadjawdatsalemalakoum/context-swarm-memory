@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/tests-368%20passing-brightgreen.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-549%20passing-brightgreen.svg" alt="Tests">
   <img src="https://img.shields.io/badge/node-%E2%89%A522-339933.svg" alt="Node">
   <img src="https://img.shields.io/badge/status-R%26D%20prototype-orange.svg" alt="Status">
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg" alt="Website"></a>
@@ -24,35 +24,46 @@
 
 CSM is an R&D memory system for LLM agents. Memory is a swarm of **bounded,
 immutable, read-only shards**. A Memory Manager routes a query to candidate
-shards (zero-LLM keyword/tag scoring), probes them cheaply, recalls only from
-the useful ones, and synthesizes a compact answer cited down to **shard,
-snapshot, and event IDs**. Querying memory never mutates it; durable memory
-changes only through an explicit Committer protocol. It's an alternative to /
-complement of classic RAG, built for narrative, evolving project memory.
+shards, probes them cheaply, recalls only from the useful ones, and synthesizes
+a compact answer cited down to **shard, snapshot, and event IDs**. Querying
+memory never mutates it; durable memory changes only through an explicit
+Committer protocol.
 
-The point of the design: **CSM's total retrieval cost per query stays bounded
-no matter how large the underlying memory gets** — ~36–38K input tokens all-in
-(what the answer model sees, plus CSM's own probe/recall/synthesize calls),
-flat as history grows. Cost doesn't balloon with memory.
+Two claims carry the project, and they are different kinds of claim:
+
+1. **Cost is bounded by construction.** CSM's total per-query input —
+   the packet the answer model sees *plus* CSM's own probe/recall/synthesize
+   calls — stays at **~36–38K tokens** whether the underlying memory holds
+   100K or 10M tokens. Measured across a 100× range on the public benchmark.
+   This is a property of the architecture, not a win over anyone.
+2. **Accuracy is a live, partly-unsettled question.** CSM has **certified
+   category-level leads** over the strongest published competitor on a
+   calibrated instrument — and it has a longer list of levers that were
+   measured, failed, and got published anyway. Both are below.
+
+> **Status, plainly (2026-08-30).** CSM has **no official leaderboard
+> placement** and has never had one. The upstream submission
+> ([PR&nbsp;#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19))
+> was **author-closed on 2026-06-22, unmerged**. The June 2026 ladder below is
+> preserved as an honest historical record, but it is **twice stale** — it
+> measured a CSM configuration that no longer exists, and the upstream runner
+> has since changed in ways that make pre-change scores non-comparable. The
+> re-run that would settle it is staged and blocked; see
+> [Where this actually stands](#where-this-actually-stands).
 
 ---
 
-## Headline result — the BEAM scaling ladder
+## The flat-cost result (June 2026, official AMB runner)
 
 Run through the **unmodified public Agent Memory Benchmark (AMB) runner** at
-every BEAM split from 100K to 10M tokens (their CLI, their scoring, their judge
-path; a 3-file CSM provider and nothing else). Answer model
-`gemini-3.1-pro-preview`, judge `gemini-2.5-flash-lite` — the same path as the
-accepted Hindsight artifact. Frozen CSM pipeline, single-trial, 2,000 graded
-queries.
+every BEAM split from 100K to 10M tokens — their CLI, their scoring, their
+judge path, a 3-file CSM provider and nothing else. Answer model
+`gemini-3.1-pro-preview`, judge `gemini-2.5-flash-lite`, matching the Hindsight
+artifact. Frozen pipeline, single-trial, 2,000 graded queries.
 
 <p align="center"><img src="docs/assets/beam-token-cost.svg" width="760" alt="Input tokens per query (log scale), BEAM 100K to 10M. A brute-force full-context line climbs ~100x from ~100K to ~11.7M tokens and crosses the ~1-2M model context window; CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K) and Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K)."></p>
 
-<p align="center"><em>The headline, drawn: as the haystack grows 100×, full-context input explodes past the model's context window while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat — retrieval cost does not scale with the corpus.</em></p>
-
-<p align="center"><img src="docs/assets/beam-ladder.svg" width="760" alt="CSM vs Hindsight on BEAM 100K to 10M: CSM 0.737, 0.659, 0.569, 0.562; Hindsight 0.734, 0.711, 0.739, 0.641. CSM trails above 100K but stays flat from 1M to 10M while Hindsight drops, narrowing the gap."></p>
-
-<p align="center"><em>Accuracy, the honest other half: CSM trails Hindsight above 100K, then holds flat from 1M→10M while Hindsight drops — the gap more than halves (+0.17 → +0.08).</em></p>
+<p align="center"><em>As the haystack grows 100×, full-context input explodes past the model's context window while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat. Retrieval cost does not scale with the corpus.</em></p>
 
 | BEAM tier | CSM score | Hindsight score | CSM answer-ctx | Hindsight answer-ctx | CSM all-in input¹ |
 |---|---:|---:|---:|---:|---:|
@@ -63,121 +74,183 @@ queries.
 
 <sup>¹ CSM all-in input = answer-visible context **plus** CSM's own
 probe/recall/synthesize tokens — the honest per-query total. Hindsight
-discloses no internal-pipeline cost and synthesizes memory at ingest, so it has
-no comparable all-in figure; its column is answer-context only.</sup>
+discloses no internal-pipeline cost and distills memory at ingest, so it has no
+comparable all-in figure; its column is answer-context only. On the
+apples-to-apples answer slice **Hindsight is leaner**.</sup>
 
-Read straight, three things:
+**What survives from this run:** the flat-cost property. All-in input is
+~36–38K per query whether the per-unit haystack is 154K or 11.7M tokens. The
+internal pipeline is ~25% of the token *count* but runs on models ~10× cheaper,
+so ~7% of the dollars.
 
-1. **Total cost stays flat across a 100× range.** CSM's *all-in* input — what
-   the answer model sees **plus** CSM's own probe/recall/synthesize calls — is
-   **~36–38K tokens per query** whether the per-unit haystack is 154K (100K) or
-   **11.7M** (10M). Retrieval cost does not scale with corpus size. The
-   answer-visible slice alone is ~26–33K; the internal pipeline adds ~3–10K
-   (≈25% of the token count, but on models ~10× cheaper, so ~7% of dollars).
-   Apples-to-apples on the answer context Hindsight is leaner (17.7–27.3K vs our
-   26–33K); on *total* cost Hindsight reports no internal figure and distills
-   memory at ingest, so its all-in is unstated — CSM's accounting is the
-   complete one.
-2. **CSM trails Hindsight above 100K — stated plainly.** CSM edges Hindsight at
-   100K (0.7367 vs 0.7337, within single-trial noise); Hindsight leads at
-   500K/1M/10M, most at 1M (+0.17).
-3. **But CSM degrades gracefully and stabilizes at the extreme, while Hindsight
-   drops.** From 1M→10M CSM is essentially flat (−0.008; it *improves* in 7 of
-   10 categories) while Hindsight takes its single biggest drop (−0.098,
-   declining in 9 of 10) — so the gap **more than halves, +0.169 → +0.079.** At
-   the hardest tier (one ~11.7M-token document) CSM's bounded-retrieval design
-   holds where Hindsight's begins to slip. Both collapse on
-   `multi_session_reasoning` at 10M (0.12 vs 0.17) — the shared unsolved frontier.
+**What does not survive:** the scores, as a statement about CSM today. Read the
+next section before quoting any number in that table.
 
-Honest caveats: single-trial on both sides; 10M is 200 queries (higher
-variance); **CSM still trails Hindsight at every tier above 100K**; two points
-don't prove the trend continues — *"does CSM overtake beyond 10M?"* is the open
-question, not a settled win. (The 100K artifact submitted as
-[PR&nbsp;#19](https://github.com/vectorize-io/agent-memory-benchmark/pull/19),
-pending acceptance, scored 0.743110; the ladder reproduces 100K at 0.7367.)
+## Where this actually stands
 
-Hindsight's numbers are recomputed from Vectorize's own committed AMB artifacts
-(`outputs/beam/hindsight/single-query/*.json.gz`), same answer/judge models —
-re-verify with `node scripts/verify-hindsight-ladder.mjs`. Full per-category
-analysis and sources:
-[`docs/AMB_BEAM_LADDER_2026_06_18.md`](docs/AMB_BEAM_LADDER_2026_06_18.md).
+The June ladder is stale in two independent ways, and both matter.
+
+**1. It measures a CSM that no longer exists.** It ran 2026-06-18, before every
+lever that has since been certified and turned on:
+
+| lever | default | why it is on |
+|---|---|---|
+| hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project |
+| ID repair | **ON** | ~0.20 |
+| batched probe (hosted) | **ON** | −21% internal input tokens, score-neutral |
+| fact fold (write-time fact registry) | **ON** | 500K `knowledge_update` **certified on two independent readers** (+0.382 / +0.326); 1M paired +0.114 with CI above zero; token-neutral at answer time |
+| preference profile | OFF | composed with the fold it measured **−0.036** (4W/9L) versus the fold alone |
+| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage rerank, virtual shards | OFF | each measured negative, non-replicating, or a wash |
+
+The gap between that config and the ladder's config is not cosmetic. On the
+same 1M queries, re-measured at full category size:
+
+| category @1M | June ladder | today's defaults |
+|---|---:|---:|
+| `event_ordering` | −0.216 | **−0.023** |
+| `knowledge_update` | −0.435 | **−0.111** |
+| `abstention` | +0.086 | **+0.193 (certified)** |
+
+**2. The upstream runner changed, so old scores are not comparable to new
+ones.** After upstream PR #20 the benchmark switched to a mem0-parity prompt, a
+nugget judge, and temperature 0; `event_ordering` is no longer scored by
+Kendall τ-b. Pre-change numbers — Hindsight's committed April artifacts *and*
+this project's June ladder — cannot be set against a post-change run. Any
+future submission is a **new PR against the post-#20 runner, with Hindsight
+re-scored on the same pinned commit**.
+
+The official re-run is fully staged (frozen config, eight pre-flight blockers
+found and fixed, launch recipe) and blocked on two things outside the code:
+API credit, and an upstream 10M loader fix. See
+[`docs/PREFLIGHT_OFFICIAL_LADDER.md`](docs/PREFLIGHT_OFFICIAL_LADDER.md).
+
+## The free instrument, and what it certified
+
+Waiting on a blocked official run is not a measurement strategy, so the August
+2026 campaign ran on a **free apples-to-apples instrument**
+([`scripts/headtohead-arms.ts`](scripts/headtohead-arms.ts)): one answer model
+and one judge serve **both** arms, the same queries and prompts,
+and **the retrieved context is the only variable**. Hindsight's arm is replayed
+from its own published BEAM contexts, so its system never has to be re-run.
+
+The instrument was calibrated before it was trusted: holdout **ρ 0.864 /
+MAE 0.077** against the official Gemini judge, and it reproduced the official
+tie at 100K and loss at 1M.
+
+Its discipline, which bounds every number below: a delta smaller than its
+**minimum detectable effect (MDE)** is *not an effect*, and n=25 is a pointer,
+not a verdict.
+
+**Certified — clears MDE, CI excludes zero, replicated on a second independent reader:**
+
+| tier | category | n | CSM | Hindsight | delta | MDE | second reader |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 500K | `knowledge_update` (fact fold) | 70 | 0.758 | 0.376 | **+0.382** | 0.173 | **+0.326** |
+| 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | **+0.185** |
+
+**Directional, full-n, replicated — but below MDE, so not claimed as leads:**
+500K `contradiction_resolution` (+0.096, 38W/21L) and `preference_following`
+(+0.075, 18W/10L).
+
+**The goal was two certified categories at every tier. It was not met, and it
+cannot be settled on this instrument.** n=70 is the *entire* category — there is
+no more sample to draw. The MDE is set by the free reader/judge's per-query
+variance, so a ~0.09 effect is unresolvable at maximum n. That is a
+procurement blocker, not an engineering one.
+
+## What was measured and failed
+
+This list is the point, not an appendix. Every entry cost real money and is
+published with the same weight as the wins.
+
+- **The +0.068 "displacement" result — retracted.** The arm was graded on a
+  context that could not be reproduced byte-for-byte: the capsule rendered as a
+  placeholder string. Rule adopted: never grade an arm on a context you cannot
+  re-render. Synthesized text is now persisted per run.
+- **Coverage proxy is anti-correlated with answers.** A reranker gained +11.6
+  on retrieval coverage and *lost* answers on `event_ordering` (4W/13L,
+  p=0.049). Order-changing levers are now gated on the answer metric only.
+- **Component gains do not survive assembly.** A router bench predicted +0.24;
+  the assembled system delivered −0.12. Benchmark the unit production
+  conserves, not the unit that is convenient.
+- **Levers do not transfer across tiers.** The needle net worked at 500K and
+  did not replicate at 1M; lean-return K=16 regressed 500K
+  `information_extraction`. Every default flip now requires cross-tier evidence.
+- **Cheapening the witness fails; cheapening the question works.** A local
+  pre-gate (L3) that skipped witnesses lost `knowledge_update` on a 3-point
+  dose-response and was killed. Batching the probe question (L2b) keeps every
+  witness at −21% input and shipped.
+- **Gemini context caching — falsified.** A projected 40–60% cost cut died on a
+  measured 4,096-token implicit-cache floor: every CSM call is sub-floor, so the
+  pipeline gets exactly zero caching.
+- **Mem0 and HippoRAG are blocked, not beaten.** They could not be run on the
+  available hardware. That is documented as a gap, never as a win.
+
+Full ledgers: [`docs/experiments/`](docs/experiments/).
 
 ## How it works
 
 ```mermaid
 flowchart TD
     Q[User query] --> D[Memory Directory<br/>read-only manifest of shards]
-    D --> R[Router · keyword + tag scorer<br/>no LLM]
-    R --> P[Probe · cheap relevance pass per shard]
+    D --> R[Router · lexical + embedding hybrid<br/>no LLM]
+    R --> P[Probe · one batched relevance pass]
     P --> RC[Recall · structured answer from selected shards]
     RC --> S[Synthesize · merge, dedupe, flag conflicts]
     S --> MP([MemoryPacket → agent])
     C[Committer · explicit, gated] -. new immutable snapshot .-> D
 ```
 
-- **Read path is branch-and-discard.** `ask()` never mutates durable memory — it only appends a query-run log. Enforced by `tests/mutationSafety.test.ts` with SHA-256 file hashes.
-- **Writes are Committer-gated.** Durable memory changes only via `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision` (Committer). Snapshots are immutable and versioned; the storage layer refuses overwrites.
-- **Indexing is LLM-free.** Keyword/tag routing plus a local `all-MiniLM-L6-v2` embedding recall floor; no LLM-generated index is ever built, so adding memory costs no API tokens.
-- **Coverage queries get a deterministic chronicle.** Summary/ordering/temporal queries attach a date-ordered, fully-cited timeline to the MemoryPacket, assembled with no extra LLM calls. Date arithmetic is computed, never delegated to the model.
+- **Read path is branch-and-discard.** `ask()` never mutates durable memory — it
+  only appends a query-run log. Enforced by `tests/mutationSafety.test.ts` with
+  SHA-256 file hashes.
+- **Writes are Committer-gated.** Durable memory changes only via
+  `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision`.
+  Snapshots are immutable and versioned; the storage layer refuses overwrites.
+- **Indexing is LLM-free.** Hybrid lexical + local `all-MiniLM-L6-v2` routing;
+  no LLM-generated index is ever built, so adding memory costs no API tokens.
+- **A component that cannot discriminate says so.** Ranking goes through
+  `select()`, which reports degeneracy rather than returning a confident-looking
+  arbitrary order.
+- **Unrecognised configuration is an error, never a default.** Every `CSM_*`
+  read goes through `src/utils/env.ts` and throws on a value it does not know —
+  the fix for a silent `CSM_ROUTER_HYBRID=off` that once turned the router *on*.
+- **Coverage queries get a deterministic chronicle.** Summary/ordering/temporal
+  queries attach a date-ordered, fully-cited timeline assembled with no extra
+  LLM calls. Date arithmetic is computed, never delegated to the model.
+- **Write-time artifacts fold, never append.** The fact registry folds *into*
+  the capsule rather than adding a document — measured four separate times,
+  displacement is fatal.
 
-Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`specs/`](specs/).
+Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
+[`specs/`](specs/).
 
 ## Honest limitations
 
-- **Single-trial.** Each BEAM tier is one run; Gemini at temperature 0 is not
-  bitwise-deterministic (100K reproduced at 0.7367 here vs 0.743110 in the
-  submitted rerun — ~±0.01 variance).
-- **Accuracy declines with BEAM scale**, concentrated in multi-hop categories;
-  `multi_session_reasoning` at 10M (0.12) is the clearest gap. The flat-cost
-  property is the durable claim, not absolute accuracy at extreme scale.
-- **No *official-runner* Hindsight comparison beyond 100K.** The 500K/1M/10M
-  Hindsight numbers are recomputed from Vectorize's own committed AMB artifacts,
-  not a fresh official run; and CSM has no "official" status until the
-  maintainers accept the provider/result.
-- **Multi-call by design — costs latency and internal tokens.** CSM runs
-  probe → recall → synthesize rather than one retrieval call. The June 2026
-  rebuild cut average BEAM retrieval ~8× (29.2s → 3.47s at 100K on the PR&nbsp;#19
-  official-runner rerun); the frozen-ladder run measured 4.5/7.5/5.6/11.9s across
-  100K→10M (non-monotonic, peaking at 10M) — so the 100K tier is ~4.5s on the
-  ladder run vs 3.47s on the rerun, two separate single-trial runs. Either way it
-  remains heavier than single-call retrieval. It also spends ~3–10K internal input
-  tokens/query on top of the answer context — counted in the all-in ~36–38K above,
-  on models ~10× cheaper. Hindsight's single-call design carries less of this tax
-  (though it pays an undisclosed ingest-time distillation cost).
-- **Mem0 and HippoRAG are documented as blocked on local hardware, not beaten.**
-
-## New: write-time memory (July 2026)
-
-Reading the ladder's failed answers showed **two distinct failure mechanisms**
-— "the context lacks the information" (summarization / event_ordering: the
-needed facts were never retrieved) and confidently-wrong stale aggregates
-(multi_session: the model sums outdated values). One write-time lever was built
-for each, both **off by default** behind intent gates validated on all 2,000
-BEAM queries (zero fires on the eight categories CSM already wins — winner
-regression is structurally impossible, not just unlikely):
-
-| Result (BEAM 100K, official config, paired 40q) | baseline | + Observation |
-|---|---:|---:|
-| **summarization** | 0.714 | **0.936** (+0.222) |
-| answer-visible context | 26.2K tok | **15.1K tok** (−43%) |
-
-The same lever is a **wash on event_ordering score** (+0.008, paired on a
-separate mechanism-lab stack) while still cutting context 58% — published as a
-cost lever there, not a score lever. The second lever (a fact registry with
-per-metric value histories for aggregation queries) is built and gated but not
-yet score-measured. The hierarchical build that scales the Observation past the
-model context window is validated live on a full 1M-token conversation
-(316-entry faithful chronology, ~$0.35).
-
-Full write-up — designs, gates, the results that *didn't* work, cost
-disclosures, artifacts + hashes:
-[`docs/WRITE_TIME_MEMORY_2026_07.md`](docs/WRITE_TIME_MEMORY_2026_07.md).
+- **No official standing.** Not on any leaderboard, not accepted upstream, not
+  SOTA. The one submission was author-closed unmerged.
+- **The headline ladder is single-trial and superseded.** Gemini at temperature
+  0 is not bitwise-deterministic (~±0.01 across reruns), and the config it
+  measured is two months out of date.
+- **The certified leads come from a free instrument, not the official one.**
+  They are cross-reader replicated and MDE-gated, which is the strongest an
+  unpaid instrument can be — and still weaker than an official run.
+- **Two categories at every tier is not achieved.** 500K and 1M each certify
+  one. The remaining candidates sit under the instrument's resolving power at
+  maximum sample size.
+- **Multi-call by design.** CSM runs probe → recall → synthesize rather than one
+  retrieval call. The June 2026 rebuild cut average BEAM retrieval ~8×
+  (29.2s → 3.47s at 100K); the frozen-ladder run measured 4.5/7.5/5.6/11.9s
+  across 100K→10M. Still heavier than single-call retrieval.
+- **10M needs an upstream fix.** A maintainer-reported loader defect
+  (upstream PR #38) means the 10M tier is held until it merges and is re-staged
+  as its own run.
 
 ## Quickstart
 
 ```bash
 npm install
-npm test                       # 368 tests, no API keys (deterministic MockProvider)
+npm test                       # 549 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
@@ -194,15 +267,15 @@ setup: [`docs/GEMINI.md`](docs/GEMINI.md). Local Gemma-on-4090 reproduction:
 Don't trust the README — recompute it:
 
 ```bash
-npm test                  # 368 offline tests (MockProvider, no keys)
-npm run verify:published  # re-hash committed artifacts + recompute every headline number
+npm run verify:published
 ```
 
-`verify:published` recomputes the BEAM ladder (all four tiers), the submitted
-100K rerun, citation F1, and McNemar checks directly from the saved rows, and
-checks the LF-normalized SHA-256 of each artifact. Raw AMB outputs are large and
-gitignored, so it verifies them when present and prints an explicit SKIP
-otherwise.
+It recomputes the BEAM ladder (all four tiers), the 100K rerun, citation F1, and
+McNemar checks directly from the saved rows, and checks the LF-normalized
+SHA-256 of each artifact. Raw AMB outputs are large and gitignored, so it
+verifies them when present and prints an explicit SKIP otherwise. Hindsight's
+side re-derives from its own published artifacts with
+`node scripts/verify-hindsight-ladder.mjs`.
 
 ## Tech stack
 
@@ -217,15 +290,17 @@ verification.
 
 | Doc | What |
 |---|---|
-| [`docs/AMB_BEAM_LADDER_2026_06_18.md`](docs/AMB_BEAM_LADDER_2026_06_18.md) | The full BEAM scaling ladder (100K→10M): per-category table, findings, artifact hashes |
-| [`docs/AMB_BEAM_100K_OFFICIAL_RERUN.md`](docs/AMB_BEAM_100K_OFFICIAL_RERUN.md) | BEAM 100K vs Hindsight via the official runner — submitted as PR #19 |
+| [`docs/STATUS.md`](docs/STATUS.md) | **Start here** — what is true today, what is stale, what is blocked |
+| [`docs/PREFLIGHT_OFFICIAL_LADDER.md`](docs/PREFLIGHT_OFFICIAL_LADDER.md) | The frozen config for the official re-run, blockers fixed, residual unknowns |
+| [`docs/experiments/EXP-category-leadership-2026-08.md`](docs/experiments/EXP-category-leadership-2026-08.md) | The August campaign: certified leads, retractions, method lessons |
+| [`docs/experiments/EXP-token-efficiency-2026-08.md`](docs/experiments/EXP-token-efficiency-2026-08.md) | Token-cost anatomy and the levers that shipped or died |
+| [`docs/AMB_BEAM_LADDER_2026_06_18.md`](docs/AMB_BEAM_LADDER_2026_06_18.md) | The June BEAM ladder (100K→10M): per-category table, artifact hashes |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architecture overview |
 | [`docs/EVIDENCE.md`](docs/EVIDENCE.md) | Claim-to-artifact map, hashes, verifier command |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Methodology + threats to validity |
 | [`docs/PERF_BREAKDOWN.md`](docs/PERF_BREAKDOWN.md) | Latency rebuild ledger (29.2s → 3.47s) |
+| [`docs/WRITE_TIME_MEMORY_2026_07.md`](docs/WRITE_TIME_MEMORY_2026_07.md) | Write-time memory: Observation lever, fact registry, gates |
 | [`docs/RD_PORTFOLIO_2026_06.md`](docs/RD_PORTFOLIO_2026_06.md) | June 2026 R&D wave (incl. falsified hypotheses) |
-| [`docs/WRITE_TIME_MEMORY_2026_07.md`](docs/WRITE_TIME_MEMORY_2026_07.md) | July 2026 write-time memory wave: Observation lever (summarization 0.714→0.936), fact registry, gates, artifacts |
-| [`SOTA_COMPARISON.md`](SOTA_COMPARISON.md) · [`PHASE_30Q_RESULTS.md`](PHASE_30Q_RESULTS.md) | Synthetic-corpus comparison + full per-query results |
 | [`integrations/amb/README.md`](integrations/amb/README.md) | Running CSM as an AMB / BEAM memory provider |
 | [`docs/REPRODUCING.md`](docs/REPRODUCING.md) · [`docs/REPLICATION_KIT.md`](docs/REPLICATION_KIT.md) | Reproduction + third-party replication |
 

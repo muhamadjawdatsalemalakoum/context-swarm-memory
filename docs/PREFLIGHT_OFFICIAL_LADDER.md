@@ -67,10 +67,16 @@ factFold and idRepair.
   free-instrument comparisons are unaffected (they re-scored both sides'
   CONTEXTS under one reader), but every OFFICIAL score comparison must be
   same-commit.
-- **10M is broken upstream** (maintainer PR #38, 2026-08-25): the published
-  10M results — CSM's and Hindsight's — measured a ~0.27%-loaded corpus. The
-  ladder holds 10M until the fix merges, then 10M is re-staged on the fixed
-  loader as its own run.
+- **10M has an upstream loader defect** (maintainer PR #38, 2026-08-25). The
+  report implies the published 10M results — CSM's and Hindsight's — measured a
+  ~0.27%-loaded corpus. **An empirical check of the committed artifacts does not
+  support that reading for the published run**: Hindsight's 10M contexts
+  reference turns spanning 98-99.9% of each unit's full turn range, which is not
+  what a 0.27%-loaded corpus would produce. (An earlier version of this document
+  asserted the 0.27% figure as established fact; that was wrong and is corrected
+  here.) Both facts are recorded because they conflict and the conflict is
+  upstream's to resolve. Either way the ladder holds 10M until the fix merges,
+  then re-stages it on the fixed loader as its own run.
 - **PR #19 is closed** (author-closed 2026-06-22, unmerged). Any submission is
   a NEW PR against the post-#20 runner. Note for the PR body: Hindsight's
   current site "rag" numbers are self-labeled leak-prompt runs under a

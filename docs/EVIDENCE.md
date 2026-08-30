@@ -1,5 +1,13 @@
 # Evidence and Reproducibility
 
+> **Read [STATUS.md](STATUS.md) first.** This page maps claims to artifacts. It
+> does not decide which claims are *current* — STATUS.md does. In particular:
+> the June 2026 BEAM ladder's **scores** are historical (older CSM config, and
+> the upstream runner has since changed its prompt/judge/temperature); its
+> **cost** measurement is still current. PR #19 is **closed, unmerged**. The
+> live accuracy claims are the two certified category leads from the August
+> 2026 campaign, listed below.
+
 This document maps the public CSM claims to the artifacts that back them. It is
 written for skeptical readers: every headline number should have a file, a
 command, and a limitation attached to it.
@@ -60,7 +68,40 @@ npm run verify:published
 
 ## Claim-to-artifact map
 
-**Headline (public) claims — the BEAM ladder:**
+**Current accuracy claims — the August 2026 category campaign (free instrument):**
+
+Instrument: `scripts/headtohead-arms.ts` — one answer model and one judge serve
+both arms; the retrieved context is the only variable; Hindsight's arm is
+replayed from its own published BEAM contexts. Judge calibrated against the
+official Gemini judge at holdout ρ 0.864 / MAE 0.077
+(`docs/experiments/EXP-judge-calibration.md`), and it reproduced the official
+tie@100K and loss@1M before being trusted.
+
+"Certified" = delta exceeds its MDE **and** the CI excludes zero, at n=70 (the
+entire category), **and** the result replicates end-to-end on a second
+independent reader.
+
+| Public claim | Backing artifact | Limitation attached |
+|---|---|---|
+| 500K `knowledge_update` **CSM +0.382** (0.758 vs 0.376, MDE 0.173, 37W/6L/27T); second reader **+0.326** | `docs/experiments/EXP-category-leadership-2026-08.md` § "500K fact fold" | Free instrument, not the official runner. No same-instrument no-fold control exists at 500K n=70, so the *vs-Hindsight position* is certified but the *lever attribution* at 500K is inferred from the 1M paired arm (+0.114, CI > 0). |
+| 1M `abstention` **CSM +0.193** (0.679 vs 0.486, MDE 0.167, 23W/8L/39T); second reader **+0.185** | `docs/experiments/EXP-category-leadership-2026-08.md` § "FINAL: full-power (n=70)" and § "Cross-reader replication" | Free instrument. Abstention levels do not match official levels (official 500K abstention is CSM 0.971 vs 0.660 here), which is why only *within-instrument* deltas are compared. |
+| 500K `contradiction_resolution` +0.096 and `preference_following` +0.075 | same doc, § "FINAL" and § "500K cross-reader replication" | **DIRECTIONAL ONLY — below MDE at n=70, the maximum sample.** Explicitly not claimed as leads. |
+| Hybrid router: **+0.365 answer at 1M**, 26W/5L | `docs/experiments/EXP-router-1m-hybrid.md` | The embedding leg does the work; descriptors are flat. Missed for months because 100K probes 8 of 8.5 shards (94%) — the lever is untestable at that tier. |
+| Batched probe: **−21% internal input**, score-neutral | `docs/experiments/EXP-token-efficiency-2026-08.md` § L2b | Sidecar-measured token arithmetic; publishable token numbers must come from the Gemini path. |
+| Two-certified-categories-at-every-tier goal **NOT met** | `docs/experiments/EXP-category-leadership-2026-08.md` § "The verdict" | Stated as a failure, not softened. n=70 is the whole category; a ~0.09 effect is unresolvable on this instrument at max n. |
+
+**Retracted and falsified claims (kept in the record):**
+
+| Claim | Status | Artifact |
+|---|---|---|
+| Displacement / fold-vs-append **+0.068** | **RETRACTED** — harness artifact; the capsule rendered as a placeholder string, so the graded context was not byte-reproducible | `docs/experiments/EXP-capsule-render-gap.md` |
+| Coverage-proxy reranker (+11.6 proxy) | **REJECTED** — lost answers on `event_ordering` (4W/13L, p=0.049); the proxy is anti-correlated | `docs/experiments/EXP-coverage-rerank-conversion.md` |
+| Router component bench **+0.24 predicted** | **DID NOT SURVIVE ASSEMBLY** — system delivered −0.12 | `docs/experiments/EXP-router-component-bench.md` |
+| Gemini caching **40–60% cut** | **FALSIFIED** — measured 4,096-token implicit-cache floor; every CSM call is sub-floor | `docs/experiments/EXP-T4-gemini-caching.md` |
+| Virtual shards | **REGRESSION** — coverage 0.743 → 0.620 | `docs/experiments/EXP-virtual-shards-system.md` |
+| Mem0, HippoRAG | **BLOCKED, NOT BEATEN** — could not be run on available hardware | `docs/BENCHMARK_METHODOLOGY.md` |
+
+**Historical claims — the June 2026 BEAM ladder:**
 
 | Public claim | Backing artifacts | Rebuild/check command |
 |---|---|---|

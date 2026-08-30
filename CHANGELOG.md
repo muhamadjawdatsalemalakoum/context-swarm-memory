@@ -6,6 +6,72 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Documentation reset to the August 2026 reality (2026-08-30)
+
+The README, the GitHub Pages site, `llms.txt`, and the evidence map described a
+project that had moved on. All four are rewritten against what is actually true
+today, and a new `docs/STATUS.md` becomes the single page that says so — when
+any other document disagrees with it, STATUS wins and the other one is history.
+
+Corrected claims that were stale or wrong:
+
+- **PR #19 is closed, unmerged** (author-closed 2026-06-22). The README, site
+  hero, metric note, FAQ, JSON-LD, `llms.txt` and
+  `AMB_OFFICIALIZATION_STATUS.md` all still said "pending acceptance". CSM has
+  no official standing and never had any.
+- **The June 2026 BEAM ladder's scores are historical**, for two independent
+  reasons now stated wherever the table appears: it measured a configuration
+  that predates the hybrid router, ID repair, the batched probe and the fact
+  fold; and the upstream runner changed after PR #20 (mem0-parity prompt,
+  nugget judge, temp 0, `event_ordering` no longer Kendall τ-b), so pre-change
+  scores are not comparable to post-change ones on either side. The ladder's
+  **cost** measurement stands, because a token count does not depend on the
+  prompt or the judge.
+- **The site claimed the hybrid router was "proven, then shelved honestly."**
+  It is now the strongest lever measured on this project (+0.365 answer at 1M,
+  26W/5L) and default ON.
+- **Test count** 333/368 → 549 across README badge, site metric, terminal
+  block, and `llms.txt`.
+- **The 10M "0.27%-loaded corpus" claim in the pre-flight was asserted as
+  established fact and is corrected.** An empirical check of the committed
+  artifacts contradicts that reading: Hindsight's 10M contexts reference turns
+  spanning 98–99.9% of each unit's full turn range. The upstream report and the
+  empirical check are both recorded, because they conflict and the conflict is
+  upstream's to resolve.
+
+Added, because they were the actual news and appeared nowhere public:
+
+- The **two certified category leads** (500K `knowledge_update` +0.382, 1M
+  `abstention` +0.193), each replicated on a second independent reader, with
+  the certification bar stated *before* the numbers.
+- The **free head-to-head instrument** and its calibration (ρ 0.864 / MAE 0.077
+  against the official judge), plus the rule that numbers from different
+  instruments are never pooled.
+- A **falsification record** as a first-class section of both the README and
+  the site: the retracted +0.068 displacement result, the anti-correlated
+  coverage proxy, the router bench that predicted +0.24 and delivered −0.12,
+  the falsified caching projection, the non-replicating levers, and Mem0 /
+  HippoRAG recorded as blocked rather than beaten.
+- The explicit statement that the **two-categories-at-every-tier goal is not
+  met**, and cannot be settled on the free instrument at maximum sample size.
+
+`AGENTS.md` gains the measurement-discipline rules those failures forced.
+
+### Removed — the OpenRouter second-reader shim (2026-08-30)
+
+`stealth/ox-alpha` was a time-boxed free preview and is no longer available, so
+`integrations/openrouter/server.mjs` and its `.env` / `.env.example` blocks are
+removed, along with two partial ladder runs that depended on it.
+`scripts/free-ladder-tier.sh` now takes the reader model and base URL as
+arguments (defaulting to the Claude sidecar) instead of hardcoding the dead
+shim. The ox-alpha *evidence* is deliberately kept, under a retirement banner
+marking it frozen and not re-runnable: every number it produced was a
+within-instrument paired delta over contexts still on disk byte-for-byte.
+
+Credential audit across all 203 commits found no real key has ever been
+committed. Ignore rules added for the regenerable write-time artifact caches,
+local publishing drafts, and vendored integration dependencies.
+
 ### Write-time memory wave — the Observation lever + fact registry (2026-06/07)
 
 Root-cause pass over the BEAM ladder's failed answers found two distinct
