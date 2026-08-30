@@ -771,13 +771,13 @@
 
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption><strong>Certified</strong> &mdash; clears MDE, CI excludes zero, replicated on a second independent reader</caption>
+            <caption><strong>Certified</strong> &mdash; clears MDE, CI excludes zero, replicated on a second independent reader. The second reader ran at a <em>smaller</em> n (67 and 69, not 70): free-tier throttling exhausted retries on 7 and 1 pairs, which are excluded and reported as-is, never backfilled.</caption>
             <thead>
               <tr><th scope="col">Tier</th><th scope="col">Category</th><th scope="col">n</th><th scope="col">CSM</th><th scope="col">Hindsight</th><th scope="col">Delta</th><th scope="col">MDE</th><th scope="col">W/L/T</th><th scope="col">Reader 2</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">500K</th><td><code>knowledge_update</code></td><td>70</td><td class="hl-cell">0.758</td><td>0.376</td><td class="hl-cell"><strong>+0.382</strong></td><td>0.173</td><td>37/6/27</td><td class="hl-cell"><strong>+0.326</strong></td></tr>
-              <tr><th scope="row">1M</th><td><code>abstention</code></td><td>70</td><td class="hl-cell">0.679</td><td>0.486</td><td class="hl-cell"><strong>+0.193</strong></td><td>0.167</td><td>23/8/39</td><td class="hl-cell"><strong>+0.185</strong></td></tr>
+              <tr><th scope="row">500K</th><td><code>knowledge_update</code></td><td>70</td><td class="hl-cell">0.758</td><td>0.376</td><td class="hl-cell"><strong>+0.382</strong></td><td>0.173</td><td>37/6/27</td><td class="hl-cell"><strong>+0.326</strong> <small>(n=67)</small></td></tr>
+              <tr><th scope="row">1M</th><td><code>abstention</code></td><td>70</td><td class="hl-cell">0.679</td><td>0.486</td><td class="hl-cell"><strong>+0.193</strong></td><td>0.167</td><td>23/8/39</td><td class="hl-cell"><strong>+0.185</strong> <small>(n=69)</small></td></tr>
             </tbody>
           </table>
         </div>
@@ -888,7 +888,7 @@
               <tr><th scope="col">Cost</th><th scope="col">Flat?</th><th scope="col">Figure</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Per-query retrieval (answer packet + internal pipeline)</th><td class="hl-cell"><strong>Yes</strong></td><td>~36&ndash;38K input tokens across a 76&times; haystack range (154K &rarr; 11.7M per unit)</td></tr>
+              <tr><th scope="row">Per-query retrieval (answer packet + internal pipeline)</th><td class="hl-cell"><strong>Yes</strong></td><td>~36&ndash;38K input tokens across a 76&times; haystack range (avg per-unit 154,431 &rarr; 11,707,222; census-sourced)</td></tr>
               <tr><th scope="row">Per-query, with the fact fold on</th><td class="hl-cell"><strong>Yes</strong></td><td>token-neutral at answer time: 7,106 &rarr; 7,080 (abstention), 7,010 &rarr; 7,074 (knowledge_update)</td></tr>
               <tr><th scope="row">Ingest (write-time fact extraction)</th><td><strong>No &mdash; O(corpus)</strong></td><td>the registry chunks each unit at 100K tokens and reads <em>every</em> chunk</td></tr>
             </tbody>
@@ -897,22 +897,23 @@
 
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption>First-ingest cost, amortized over each tier&rsquo;s query budget. Disk-cached, so re-runs pay nothing.</caption>
+            <caption>First-ingest cost, amortized over each tier&rsquo;s query budget. Disk-cached, so re-runs pay nothing. Figures from the benchmark&rsquo;s own corpus census (<code>data/eval/corpus-beam-slice/census.json</code>), not estimated.</caption>
             <thead>
-              <tr><th scope="col">Tier</th><th scope="col">Per-unit haystack</th><th scope="col">Units</th><th scope="col">First-ingest input</th><th scope="col">Queries</th><th scope="col">Amortized/query</th></tr>
+              <tr><th scope="col">Tier</th><th scope="col">Per-unit haystack (avg)</th><th scope="col">Units</th><th scope="col">First-ingest input</th><th scope="col">Queries</th><th scope="col">Amortized/query</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">100K</th><td>~154K</td><td>20</td><td>~3.1M</td><td>400</td><td>~7.7K</td></tr>
-              <tr><th scope="row">1M</th><td>~800K</td><td>35</td><td>~28M <small>(&asymp;280 &times; 100K calls)</small></td><td>700</td><td><strong>~40K</strong></td></tr>
-              <tr><th scope="row">10M</th><td>~11.7M</td><td>&mdash;</td><td>~117 chunk calls <strong>per unit</strong></td><td>200</td><td>dominates all query spend</td></tr>
+              <tr><th scope="row">100K</th><td>154,431</td><td>20</td><td>3,088,625</td><td>400</td><td>~7.7K</td></tr>
+              <tr><th scope="row">500K</th><td>560,086</td><td>35</td><td>19,602,995</td><td>700</td><td>~28K</td></tr>
+              <tr><th scope="row">1M</th><td>1,155,117</td><td>35</td><td>40,429,107</td><td>700</td><td><strong>~58K</strong></td></tr>
+              <tr><th scope="row">10M</th><td>11,707,222</td><td>10</td><td>117,072,219</td><td>200</td><td><strong>~585K</strong></td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="fact-row" data-reveal>
           <div class="fact">
-            <strong>~40K</strong>
-            <span>1M-tier ingest, amortized per query &mdash; roughly the same order as the entire per-query retrieval spend for that run</span>
+            <strong>~58K</strong>
+            <span>1M-tier ingest, amortized per query &mdash; <em>larger</em> than that tier&rsquo;s ~38K per-query retrieval cost. At 10M it is ~585K, about 16&times; larger</span>
           </div>
           <div class="fact">
             <strong>one-time</strong>
@@ -1078,9 +1079,12 @@
             <span class="rd-id">F2</span>
             <h3>Component gains vanish in assembly</h3>
             <p>
-              A router component benchmark predicted <strong>+0.24</strong>; the assembled system delivered
-              <strong>&minus;0.12</strong>. <strong>Rule adopted:</strong> benchmark the unit production
-              conserves, not the unit that is convenient to isolate.
+              A router component benchmark predicted <strong>+0.24 retrieval coverage</strong>; wired into the
+              real pipeline the same change delivered <strong>&minus;0.12 coverage</strong>, with retrieved
+              evidence down <strong>55%</strong> because every downstream stage is calibrated in units of
+              <em>shards</em>, not events. Both figures are coverage, <strong>not</strong> answer score &mdash;
+              see F1 for why those are not interchangeable. <strong>Rule adopted:</strong> benchmark the unit
+              production conserves, not the unit that is convenient to isolate.
             </p>
           </article>
           <article class="rd-card card falsified" data-reveal style="--d:0.21s">
@@ -1128,17 +1132,18 @@
         <h3 class="sub-title" data-reveal>What did work, and is on by default</h3>
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption>The certified configuration. The official re-run uses code defaults; <code>tests/env.test.ts</code> pins the decisive ones so a silent flip is a test failure.</caption>
+            <caption>The certified configuration. The official re-run uses code defaults; <code>tests/env.test.ts</code> pins <strong>twelve</strong> flag rows so a silent flip is a test failure.</caption>
             <thead>
               <tr><th scope="col">Lever</th><th scope="col">Default</th><th scope="col">Evidence</th></tr>
             </thead>
             <tbody>
               <tr><th scope="row">Hybrid router + descriptors</th><td class="hl-cell"><strong>ON</strong></td><td>+0.365 answer at 1M, 26W/5L &mdash; the strongest single effect measured on this project</td></tr>
               <tr><th scope="row">ID repair</th><td class="hl-cell"><strong>ON</strong></td><td>~0.20</td></tr>
-              <tr><th scope="row">Batched probe (hosted)</th><td class="hl-cell"><strong>ON</strong></td><td>&minus;21% internal input tokens, score-neutral</td></tr>
+              <tr><th scope="row">Batched probe <small>(hosted providers only)</small></th><td class="hl-cell"><strong>ON</strong></td><td>&minus;21% internal input by arithmetic (one shared scaffold replaces 8); score delta +0.032, <strong>below its 0.079 MDE</strong>. Local providers stay OFF &mdash; the evidence is from one hosted model family</td></tr>
               <tr><th scope="row">Fact fold (write-time registry)</th><td class="hl-cell"><strong>ON</strong></td><td>500K <code>knowledge_update</code> certified on two readers; 1M paired +0.114 with CI above zero; token-neutral at answer time</td></tr>
               <tr><th scope="row">Preference profile</th><td>OFF</td><td>composed with the fold it measured <strong>&minus;0.036</strong> (4W/9L) versus the fold alone</td></tr>
-              <tr><th scope="row">Lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage rerank, virtual shards</th><td>OFF</td><td>each measured negative, non-replicating, or a wash</td></tr>
+              <tr><th scope="row">Coverage mode + chronicle <code>CSM_COVERAGE</code></th><td class="hl-cell"><strong>ON</strong></td><td>deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10</td></tr>
+              <tr><th scope="row">Lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage <em>reranker</em> <code>CSM_HYBRID_RERANK</code>, virtual shards</th><td>OFF</td><td>each measured negative, non-replicating, or a wash. The reranker is a different thing from coverage mode above</td></tr>
             </tbody>
           </table>
         </div>

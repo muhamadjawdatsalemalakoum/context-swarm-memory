@@ -70,11 +70,14 @@ factFold and idRepair.
 - **10M has an upstream loader defect** (maintainer PR #38, 2026-08-25). The
   report implies the published 10M results — CSM's and Hindsight's — measured a
   ~0.27%-loaded corpus. **An empirical check of the committed artifacts does not
-  support that reading for the published run**: Hindsight's 10M contexts
-  reference turns spanning 98-99.9% of each unit's full turn range, which is not
-  what a 0.27%-loaded corpus would produce. (An earlier version of this document
-  asserted the 0.27% figure as established fact; that was wrong and is corrected
-  here.) Both facts are recorded because they conflict and the conflict is
+  support that reading for the published run** — but the figure this document
+  first gave for it (98-99.9%) was itself wrong, and is corrected here.
+  Recomputed by `scripts/measure-hindsight-10m-span.mjs`: Hindsight's 10M
+  contexts reach turn indices spanning **64.3%-89.7%** of each unit's full turn
+  range, surfacing **11.6%-15.9%** of its turns. Reaching across 64-90% of a
+  unit's timeline is still not what a 0.27%-loaded corpus would produce.
+  (This document also once asserted the 0.27% figure itself as established
+  fact; that was wrong too.) Both facts are recorded because they conflict and the conflict is
   upstream's to resolve. Either way the ladder holds 10M until the fix merges,
   then re-stages it on the fixed loader as its own run.
 - **PR #19 is closed** (author-closed 2026-06-22, unmerged). Any submission is

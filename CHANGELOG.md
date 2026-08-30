@@ -6,6 +6,70 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### End-to-end claim audit — 11 findings, 2 of them wrong numbers (2026-08-30)
+
+Every quantitative and comparative claim on the four public surfaces (README,
+site, llms.txt, STATUS) was extracted and checked against a primary source.
+406 candidate lines, 159 distinct numeric tokens. Most verified. These did not:
+
+**Wrong numbers, now corrected:**
+
+1. **The 1M ingest row was fabricated by inference.** It was derived from a
+   pre-flight sentence ("~280 concurrent ~100K-token build calls") rather than
+   looked up, giving ~800K tokens/unit, ~28M total, ~40K/query. The benchmark's
+   own corpus census (`data/eval/corpus-beam-slice/census.json`) says
+   **1,155,117/unit, 40,429,107 total, ~58K/query** — 44% higher. The whole
+   table is now census-sourced, gains the missing **500K** row, and fills in
+   10M's unit count (10) and amortized figure (**~585K/query**). The corrected
+   numbers make the point *stronger*: at 1M the one-time build now exceeds
+   per-query retrieval; at 10M it is ~16x larger.
+2. **"Hindsight's 10M contexts span 98-99.9% of each unit's turn range" was
+   wrong.** It was never computed by any committed script — it was recalled.
+   Recomputed from primary artifacts: **span coverage 64.3%-89.7%**, ref
+   density 11.6%-15.9%. The conclusion it supports (retrieval reaching across
+   most of each unit is hard to square with a ~0.27%-loaded corpus) survives,
+   but the number was wrong by a wide margin. New
+   `scripts/measure-hindsight-10m-span.mjs` makes it a re-runnable computation
+   so it can never be a recollection again.
+
+**Misleading presentation, now fixed:**
+
+3. Second-reader replications were shown under an `n` column reading 70. They
+   actually ran at **n=67** and **n=69** — free-tier throttling exhausted
+   retries on 7 and 1 pairs. Both figures now carry their own n, with the
+   exclusions stated.
+4. `+0.24 predicted / -0.12 delivered` are **retrieval coverage**, and sat
+   unlabeled beside answer-score deltas of similar size — on the same page that
+   teaches coverage is anti-correlated with answers. Both are now labeled
+   coverage, with the 55% drop in retrieved evidence that explains them.
+5. That same -0.12 was attributed to `EXP-router-component-bench.md`, which
+   does not contain it. The assembled result is in
+   `EXP-virtual-shards-system.md`; both docs are now cited for their own halves.
+6. "Batched probe: -21% internal input, score-neutral" read as measured. The
+   -21% is **arithmetic** (one shared scaffold replaces 8) and the score arm is
+   **+0.032, below its 0.079 MDE** — neutral by the gate's own rule, not by
+   measurement. Also now says **hosted providers only**; local stays OFF.
+7. `tests/env.test.ts` was said to pin "the two decisive defaults". It pins
+   **twelve** flag rows.
+8. The defaults tables listed "coverage rerank OFF" without listing **coverage
+   mode ON** — two different flags one letter apart in prose. Both now listed,
+   with the distinction called out.
+9-11. Minor: 76x now cites the census averages it comes from; the ingest table
+   names its source file; the fold's whole-corpus read is cited to the line of
+   `amb-csm-server.ts` that feeds it.
+
+**Verified correct and left alone:** all certified deltas (0.758/0.376/+0.382/
+0.173/37W6L27T and 0.679/0.486/+0.193/0.167/23W8L39T), the pair result
+(+0.129, MDE 0.123, 45W/22L), judge calibration (rho 0.864 / MAE 0.077), the
+router lever (+0.365, 26W/5L), the fold's 1M paired arm (+0.114, CI [0.018,
+0.211]) and token neutrality (7106->7080, 7010->7074), every failure-record
+figure (+0.068 retraction, +11.6 proxy with 4W/13L p=0.049, the 4,096-token
+cache floor, virtual shards 0.743->0.620), the latency ladder, the BEAM ladder
+table (recomputed by `verify:published`), all twelve code defaults (checked
+against the pinned test, not the docs), the 8 pre-flight blockers, and the
+budget figures.
+
+
 ### Correction — the flat-cost headline was overclaimed (2026-08-30)
 
 Caught on review the same day it shipped. "The haystack grows 100x. The cost

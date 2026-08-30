@@ -87,7 +87,7 @@ independent reader.
 | 1M `abstention` **CSM +0.193** (0.679 vs 0.486, MDE 0.167, 23W/8L/39T); second reader **+0.185** | `docs/experiments/EXP-category-leadership-2026-08.md` § "FINAL: full-power (n=70)" and § "Cross-reader replication" | Free instrument. Abstention levels do not match official levels (official 500K abstention is CSM 0.971 vs 0.660 here), which is why only *within-instrument* deltas are compared. |
 | 500K `contradiction_resolution` +0.096 and `preference_following` +0.075 | same doc, § "FINAL" and § "500K cross-reader replication" | **DIRECTIONAL ONLY — below MDE at n=70, the maximum sample.** Explicitly not claimed as leads. |
 | Hybrid router: **+0.365 answer at 1M**, 26W/5L | `docs/experiments/EXP-router-1m-hybrid.md` | The embedding leg does the work; descriptors are flat. Missed for months because 100K probes 8 of 8.5 shards (94%) — the lever is untestable at that tier. |
-| Batched probe: **−21% internal input**, score-neutral | `docs/experiments/EXP-token-efficiency-2026-08.md` § L2b | Sidecar-measured token arithmetic; publishable token numbers must come from the Gemini path. |
+| Batched probe: **−21% internal input** (arithmetic — one shared scaffold replaces 8), score delta **+0.032, below its 0.079 MDE** | `docs/experiments/EXP-token-efficiency-2026-08.md` § L2b | The −21% is by construction, not a measurement; the score arm is sidecar-only. Publishable token numbers must come from the Gemini path. Default is ON for **hosted** providers only. |
 | Two-certified-categories-at-every-tier goal **NOT met** | `docs/experiments/EXP-category-leadership-2026-08.md` § "The verdict" | Stated as a failure, not softened. n=70 is the whole category; a ~0.09 effect is unresolvable on this instrument at max n. |
 
 **Retracted and falsified claims (kept in the record):**
@@ -96,7 +96,7 @@ independent reader.
 |---|---|---|
 | Displacement / fold-vs-append **+0.068** | **RETRACTED** — harness artifact; the capsule rendered as a placeholder string, so the graded context was not byte-reproducible | `docs/experiments/EXP-capsule-render-gap.md` |
 | Coverage-proxy reranker (+11.6 proxy) | **REJECTED** — lost answers on `event_ordering` (4W/13L, p=0.049); the proxy is anti-correlated | `docs/experiments/EXP-coverage-rerank-conversion.md` |
-| Router component bench **+0.24 predicted** | **DID NOT SURVIVE ASSEMBLY** — system delivered −0.12 | `docs/experiments/EXP-router-component-bench.md` |
+| Router component bench **+0.24 coverage predicted** | **DID NOT SURVIVE ASSEMBLY** — the assembled system delivered **−0.12 coverage** (retrieved evidence −55%). Both figures are retrieval coverage, **not** answer score | `docs/experiments/EXP-virtual-shards-system.md` (the assembled result) · `docs/experiments/EXP-router-component-bench.md` (the isolated bench) |
 | Gemini caching **40–60% cut** | **FALSIFIED** — measured 4,096-token implicit-cache floor; every CSM call is sub-floor | `docs/experiments/EXP-T4-gemini-caching.md` |
 | Virtual shards | **REGRESSION** — coverage 0.743 → 0.620 | `docs/experiments/EXP-virtual-shards-system.md` |
 | Mem0, HippoRAG | **BLOCKED, NOT BEATEN** — could not be run on available hardware | `docs/BENCHMARK_METHODOLOGY.md` |

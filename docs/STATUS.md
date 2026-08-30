@@ -32,8 +32,12 @@ survived.
 
 | tier | category | n | CSM | Hindsight | delta | MDE | W/L/T | second reader |
 |---|---|---:|---:|---:|---:|---:|---|---:|
-| 500K | `knowledge_update` (with fact fold) | 70 | 0.758 | 0.376 | **+0.382** | 0.173 | 37/6/27 | **+0.326** |
-| 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | 23/8/39 | **+0.185** |
+| 500K | `knowledge_update` (with fact fold) | 70 | 0.758 | 0.376 | **+0.382** | 0.173 | 37/6/27 | **+0.326** (n=67) |
+| 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | 23/8/39 | **+0.185** (n=69) |
+
+The second reader ran at a *smaller* n than the primary — 67 and 69 rather than
+70 — because free-tier throttling exhausted retries on 7 and 1 pairs
+respectively. Those pairs are excluded and reported as-is, never backfilled.
 
 Also certified as a pair at 500K: `knowledge_update` + `information_extraction`
 combined, +0.129 (45W/22L/73T, MDE 0.123).
@@ -77,32 +81,45 @@ the post-#20 runner**, with Hindsight re-scored on the same pinned commit.
 ### The 10M tier
 
 The maintainer reported a 10M loader defect (upstream PR #38, 2026-08-25)
-implying the published 10M results measured a barely-loaded corpus. **An
-empirical check of the committed artifacts does not support that reading for
-the published run**: Hindsight's 10M contexts reference turns spanning
-98–99.9% of each unit's full turn range. Both facts are recorded because they
-conflict, and the conflict is not ours to resolve — the tier is held until the
-upstream fix merges, then re-staged as its own run under the fixed loader.
+implying the published 10M results measured a barely-loaded corpus.
+
+**Correction (2026-08-30).** An earlier version of this page put that figure at
+"98–99.9% of each unit's full turn range". That number was never computed by any
+committed script and is **wrong**. Recomputed from primary artifacts by
+`scripts/measure-hindsight-10m-span.mjs`:
+
+| measure | across the 10 units |
+|---|---|
+| span coverage — highest turn index reached / unit's last turn | **64.3% – 89.7%** |
+| ref density — distinct turns retrieved / unit's total turns | **11.6% – 15.9%** |
+
+Retrieval reaching across 64–90% of each unit's timeline is still hard to
+reconcile with a ~0.27%-loaded corpus, so the tension with the upstream report
+stands — but the honest number is 64–90%, not 98–99.9%, and it is now a
+computation anyone can re-run rather than a recollection. The tier is held until
+the upstream fix merges, then re-staged under the fixed loader.
 
 ## The cost claim, precisely
 
 | what | flat? | figure |
 |---|---|---|
-| **Per-query retrieval** (answer packet + internal pipeline) | **yes** | ~36–38K input tokens across a 76× haystack range (154K → 11.7M per unit) |
+| **Per-query retrieval** (answer packet + internal pipeline) | **yes** | ~36–38K input tokens across a 76× haystack range (avg per-unit 154,431 → 11,707,222; census-sourced) |
 | **Per-query, with the fact fold on** | **yes** | fold measured token-neutral at answer time: 7,106 → 7,080 (abstention), 7,010 → 7,074 (knowledge_update) |
 | **Ingest (write-time fact extraction)** | **no — O(corpus)** | the registry chunks each unit at 100K tokens and reads every chunk |
 
 First-ingest cost, amortized over each tier's query budget:
 
-| tier | per-unit haystack | units | first-ingest input | queries | amortized/query |
+| tier | per-unit haystack (avg) | units | first-ingest input | queries | amortized/query |
 |---|---:|---:|---:|---:|---:|
-| 100K | ~154K | 20 | ~3.1M | 400 | ~7.7K |
-| 1M | ~800K | 35 | ~28M (≈280 × 100K calls) | 700 | **~40K** |
-| 10M | ~11.7M | — | ~117 chunk calls **per unit** | 200 | dominates all query spend |
+| 100K | 154,431 | 20 | 3,088,625 | 400 | ~7.7K |
+| 500K | 560,086 | 35 | 19,602,995 | 700 | ~28K |
+| 1M | 1,155,117 | 35 | 40,429,107 | 700 | **~58K** |
+| 10M | 11,707,222 | 10 | 117,072,219 | 200 | **~585K** |
 
-At 1M the one-time build is roughly the same order as the entire per-query
-retrieval spend for the run; at 10M it is larger by an order of magnitude (the
-pre-flight budgets it as most of a $750–960 tier estimate).
+Source: `data/eval/corpus-beam-slice/census.json` — the benchmark's own corpus
+census, not an estimate. At **1M the one-time build (~58K/query) exceeds the
+per-query retrieval cost (~38K)**; at **10M (~585K/query) it is ~16× larger**.
+The pre-flight budgets the 10M tier as most of a $750–960 estimate.
 
 What keeps this honest rather than fatal: it is **one-time and disk-cached**
 (keyed `split|user|model|promptVersion`), it runs on the **cheap model tier**,
@@ -117,17 +134,19 @@ that, is the difference worth stating.
 ## Current defaults — the certified configuration
 
 The official re-run uses **code defaults**; no behavioural `CSM_*` flag is set
-in the environment. `tests/env.test.ts` pins the two decisive ones so a silent
-flip is a test failure.
+in the environment. `tests/env.test.ts` pins **twelve** flag rows — including
+coverage mode (ON), the profile (OFF) and the fact fold (ON) — so a silent flip
+is a test failure.
 
 | lever | default | evidence |
 |---|---|---|
 | hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project |
 | ID repair | **ON** | ~0.20 |
-| batched probe (hosted) | **ON** | −21% internal input, score-neutral |
+| batched probe (hosted only) | **ON** | −21% internal input (arithmetic: one shared scaffold replaces 8); score delta +0.032, below its 0.079 MDE. Local (ollama, llama-server) stays OFF — the evidence is from one hosted model family |
 | fact fold | **ON** | 500K `knowledge_update` certified ×2 readers; 1M paired +0.114 (CI > 0); abstention guard a symmetric wash; token-neutral at answer time |
 | preference profile | **OFF** | every certified full-n arm ran profile-OFF; composed with the fold it measured **−0.036** (4W/9L) versus fold alone |
-| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage rerank, virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash |
+| coverage mode + chronicle (`CSM_COVERAGE`) | **ON** | deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10 |
+| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage **reranker** (`CSM_HYBRID_RERANK`), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash. Note the reranker is a different thing from coverage mode above |
 
 A residual-loss audit confirmed nothing measured-positive is switched off under
 the one-config-for-all-tiers constraint.
@@ -153,7 +172,7 @@ the wins credible.
 |---|---|---|
 | Displacement / fold-vs-append **+0.068** | **RETRACTED** | a harness artifact — the capsule rendered as a placeholder string. Rule: never grade an arm on a context you cannot byte-reproduce. Synthesized text is now persisted per run. |
 | Coverage-proxy reranker (+11.6 proxy) | **rejected** | *lost* answers on `event_ordering` (4W/13L, p=0.049). The proxy is anti-correlated; order-changing levers are gated on the answer metric only. |
-| Router component bench (+0.24 predicted) | **did not survive assembly** | the assembled system delivered −0.12. Benchmark the unit production conserves. |
+| Router component bench (+0.24 **coverage** predicted) | **did not survive assembly** | wired into the real pipeline it delivered **−0.12 coverage**; retrieved evidence fell 55% because downstream stages are calibrated in shards, not events. Both figures are coverage, not answer score. Artifact: `EXP-virtual-shards-system.md` (the assembly), `EXP-router-component-bench.md` (the isolated bench). |
 | Needle net | **non-replicating** | worked at 500K, vanished at 1M. Cross-tier evidence is now required for any default flip. |
 | Lean return K=16 | **reverted same day** | 500K `information_extraction` regression. |
 | L3 local pre-gate | **killed** | a 3-point dose-response showed it drops witnesses and loses `knowledge_update`. Cheapen the question, not the witness. |

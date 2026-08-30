@@ -98,22 +98,24 @@ config turns the fact fold on, and that changes the accounting in a way worth
 stating plainly rather than burying.
 
 **Per query, retrieval cost is flat.** ~36–38K all-in input across a 76×
-haystack range. The fold does not change this — measured token-neutral at
+haystack range (average per-unit 154,431 → 11,707,222 tokens; census-sourced). The fold does not change this — measured token-neutral at
 answer time (7,106 → 7,080 on abstention; 7,010 → 7,074 on knowledge_update).
 
 **At ingest, cost is not flat — it is O(corpus).** The fact registry chunks each
 unit at 100K tokens and reads *every* chunk, so a first ingest reads the entire
 corpus once:
 
-| tier | per-unit haystack | units | first-ingest input | queries | amortized/query |
+| tier | per-unit haystack (avg) | units | first-ingest input | queries | amortized/query |
 |---|---:|---:|---:|---:|---:|
-| 100K | ~154K | 20 | ~3.1M | 400 | ~7.7K |
-| 1M | ~800K | 35 | ~28M (≈280 × 100K calls) | 700 | **~40K** |
-| 10M | ~11.7M | — | ~117 chunk calls **per unit** | 200 | dominates everything else |
+| 100K | 154,431 | 20 | 3,088,625 | 400 | ~7.7K |
+| 500K | 560,086 | 35 | 19,602,995 | 700 | ~28K |
+| 1M | 1,155,117 | 35 | 40,429,107 | 700 | **~58K** |
+| 10M | 11,707,222 | 10 | 117,072,219 | 200 | **~585K** |
 
-At the 1M tier the one-time build is roughly the *same order* as the entire
-per-query retrieval spend across the run. At 10M it is larger by an order of
-magnitude — the pre-flight budgets it as most of a $750–960 tier estimate.
+Figures are from `data/eval/corpus-beam-slice/census.json` (the benchmark's own
+corpus census), not estimated. At **1M the one-time build (~58K/query) exceeds
+the per-query retrieval cost (~38K)**; at **10M (~585K/query) it is ~16× larger**
+— the pre-flight budgets that tier as most of a $750–960 estimate.
 
 **Three things keep this honest rather than fatal:**
 
@@ -144,7 +146,7 @@ lever that has since been certified and turned on:
 |---|---|---|
 | hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project |
 | ID repair | **ON** | ~0.20 |
-| batched probe (hosted) | **ON** | −21% internal input tokens, score-neutral |
+| batched probe (hosted only) | **ON** | −21% internal input (arithmetic: one shared scaffold replaces 8), score delta +0.032 — below its 0.079 MDE, i.e. neutral. Local providers stay OFF. |
 | fact fold (write-time fact registry) | **ON** | 500K `knowledge_update` **certified on two independent readers** (+0.382 / +0.326); 1M paired +0.114 with CI above zero; token-neutral at answer time |
 | preference profile | OFF | composed with the fold it measured **−0.036** (4W/9L) versus the fold alone |
 | lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage rerank, virtual shards | OFF | each measured negative, non-replicating, or a wash |
@@ -190,10 +192,14 @@ not a verdict.
 
 **Certified — clears MDE, CI excludes zero, replicated on a second independent reader:**
 
-| tier | category | n | CSM | Hindsight | delta | MDE | second reader |
-|---|---|---:|---:|---:|---:|---:|---:|
-| 500K | `knowledge_update` (fact fold) | 70 | 0.758 | 0.376 | **+0.382** | 0.173 | **+0.326** |
-| 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | **+0.185** |
+| tier | category | n | CSM | Hindsight | delta | MDE | W/L/T | second reader |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| 500K | `knowledge_update` (fact fold) | 70 | 0.758 | 0.376 | **+0.382** | 0.173 | 37/6/27 | **+0.326** (n=67) |
+| 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | 23/8/39 | **+0.185** (n=69) |
+
+The second reader ran at a *smaller* n than the primary — 67 and 69 rather than
+70 — because free-tier throttling exhausted retries on 7 and 1 pairs
+respectively. Those pairs are excluded and reported as-is, never backfilled.
 
 **Directional, full-n, replicated — but below MDE, so not claimed as leads:**
 500K `contradiction_resolution` (+0.096, 38W/21L) and `preference_following`
@@ -217,9 +223,12 @@ published with the same weight as the wins.
 - **Coverage proxy is anti-correlated with answers.** A reranker gained +11.6
   on retrieval coverage and *lost* answers on `event_ordering` (4W/13L,
   p=0.049). Order-changing levers are now gated on the answer metric only.
-- **Component gains do not survive assembly.** A router bench predicted +0.24;
-  the assembled system delivered −0.12. Benchmark the unit production
-  conserves, not the unit that is convenient.
+- **Component gains do not survive assembly.** A router bench predicted **+0.24
+  retrieval coverage**; wired into the real pipeline the same change delivered
+  **−0.12 coverage** — retrieved evidence fell 55% because every downstream
+  stage is calibrated in units of *shards*, not events. (Both numbers are
+  coverage, not answer score; see the finding directly above for why those are
+  not interchangeable.)
 - **Levers do not transfer across tiers.** The needle net worked at 500K and
   did not replicate at 1M; lean-return K=16 regressed 500K
   `information_extraction`. Every default flip now requires cross-tier evidence.
