@@ -8,9 +8,13 @@ them disagrees with this page, this page wins and the other one is history.
 
 ## The one-paragraph version
 
-CSM keeps its **total per-query cost flat** — ~36–38K input tokens all-in —
-across a 100× range of memory size, and that property is measured on the public
-benchmark's own runner. On **accuracy**, CSM has two **certified** category
+CSM keeps its **per-query retrieval cost flat** — ~36–38K input tokens all-in
+— as the per-unit haystack grows **76×**, and that property is measured on the
+public benchmark's own runner. Its *ingest* cost is not flat: the default
+write-time fact extraction reads the whole corpus once, which is O(corpus) and
+at the top tier dominates query spend (see **The cost claim, precisely**).
+
+On **accuracy**, CSM has two **certified** category
 leads over Hindsight on a calibrated free instrument (500K `knowledge_update`,
 1M `abstention`, both replicated on a second independent reader), a handful of
 directional-but-unresolvable leads, and no official standing of any kind. The
@@ -55,8 +59,13 @@ claimed as leads:** 500K `contradiction_resolution` (+0.096, 38W/21L) and
    Kendall τ-b. Pre-change numbers — Hindsight's committed April artifacts
    *and* our June ladder — cannot be placed beside a post-change run.
 
-**The flat-cost measurement from that ladder does survive**, because it is a
-token count, not a judged score, and it does not depend on the prompt or judge.
+**The ladder's cost measurement mostly survives**, because a token count does
+not depend on the prompt or the judge. Two caveats, since the config-change
+objection applies to tokens as well as to scores: the batched probe (now
+default) cuts internal input ~21%, so today's per-query figure is probably
+nearer ~34–36K and is **projected, not measured**, on the official path; and
+the config that produced the ladder had **no write-time stage at all**, so its
+accounting excludes an ingest cost that today's default config incurs.
 
 ### The upstream submission
 
@@ -74,6 +83,36 @@ the published run**: Hindsight's 10M contexts reference turns spanning
 98–99.9% of each unit's full turn range. Both facts are recorded because they
 conflict, and the conflict is not ours to resolve — the tier is held until the
 upstream fix merges, then re-staged as its own run under the fixed loader.
+
+## The cost claim, precisely
+
+| what | flat? | figure |
+|---|---|---|
+| **Per-query retrieval** (answer packet + internal pipeline) | **yes** | ~36–38K input tokens across a 76× haystack range (154K → 11.7M per unit) |
+| **Per-query, with the fact fold on** | **yes** | fold measured token-neutral at answer time: 7,106 → 7,080 (abstention), 7,010 → 7,074 (knowledge_update) |
+| **Ingest (write-time fact extraction)** | **no — O(corpus)** | the registry chunks each unit at 100K tokens and reads every chunk |
+
+First-ingest cost, amortized over each tier's query budget:
+
+| tier | per-unit haystack | units | first-ingest input | queries | amortized/query |
+|---|---:|---:|---:|---:|---:|
+| 100K | ~154K | 20 | ~3.1M | 400 | ~7.7K |
+| 1M | ~800K | 35 | ~28M (≈280 × 100K calls) | 700 | **~40K** |
+| 10M | ~11.7M | — | ~117 chunk calls **per unit** | 200 | dominates all query spend |
+
+At 1M the one-time build is roughly the same order as the entire per-query
+retrieval spend for the run; at 10M it is larger by an order of magnitude (the
+pre-flight budgets it as most of a $750–960 tier estimate).
+
+What keeps this honest rather than fatal: it is **one-time and disk-cached**
+(keyed `split|user|model|promptVersion`), it runs on the **cheap model tier**,
+and in a real deployment memory arrives incrementally so facts are extracted per
+turn — the whole-corpus read is a **backfill**, not a recurring cost.
+
+**That last point is also Hindsight's defense**, which is why this repo no
+longer claims its own accounting is "the complete one." Both systems distill at
+ingest. CSM's ingest cost is disclosed above; Hindsight's is not. That, and only
+that, is the difference worth stating.
 
 ## Current defaults — the certified configuration
 

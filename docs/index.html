@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Context Swarm Memory (CSM) — Cited, Auditable LLM Agent Memory</title>
-  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Its total retrieval cost stays flat at ~36–38K input tokens/query across a 100× range of memory size (AMB BEAM, 100K→10M). Two category-level leads over Hindsight are certified on a calibrated instrument and replicated on a second reader; no official leaderboard placement is claimed.">
+  <meta name="description" content="Open-source LLM agent memory with cited recall and Committer-gated writes. Its per-query retrieval cost stays flat at ~36–38K input tokens as the haystack grows 76× (AMB BEAM, 100K→10M); its write-time ingest cost is O(corpus) and disclosed separately. Two category-level leads over Hindsight are certified on a calibrated instrument and replicated on a second reader; no official leaderboard placement is claimed.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="Muhamad J. Akoum">
   <meta name="application-name" content="Context Swarm Memory">
@@ -21,7 +21,7 @@
   <meta property="og:site_name" content="Context Swarm Memory">
   <meta property="og:locale" content="en_US">
   <meta property="og:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta property="og:description" content="Cited, auditable LLM agent memory whose total retrieval cost stays flat (~36–38K input tokens/query) as memory grows 100×. Two certified category leads over Hindsight, cross-reader replicated — and a published record of every lever that failed. No official leaderboard placement.">
+  <meta property="og:description" content="Cited, auditable LLM agent memory whose per-query retrieval cost stays flat (~36–38K input tokens) as memory grows 76×. Two certified category leads over Hindsight, cross-reader replicated — and a published record of every lever that failed. No official leaderboard placement.">
   <meta property="og:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1916">
@@ -31,7 +31,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Context Swarm Memory — cited, auditable LLM agent memory">
-  <meta name="twitter:description" content="CSM's total retrieval cost stays flat at ~36–38K input tokens/query as the haystack grows 100×. Two certified category leads over Hindsight, replicated on a second reader — plus the full list of levers that were measured and failed.">
+  <meta name="twitter:description" content="CSM's per-query retrieval cost stays flat at ~36–38K input tokens as the haystack grows 76×. Two certified category leads over Hindsight, replicated on a second reader — plus the full list of levers that were measured and failed.">
   <meta name="twitter:image" content="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/assets/context-swarm-memory-cover.png">
   <meta name="twitter:image:alt" content="Context Swarm Memory cover: memory shards passing through the CSM memory lens into a cited memory packet">
 
@@ -352,7 +352,7 @@
         "url": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/",
         "name": "Context Swarm Memory",
         "alternateName": ["CSM", "Context Swarm Memory (CSM)"],
-        "description": "Open-source LLM agent memory system with bounded read-only shards, cited recall, and Committer-gated writes. Its total retrieval cost stays flat (~36-38K input tokens per query, answer model plus internal pipeline) across a 100x range of memory size on the AMB BEAM ladder. Two category-level leads over Hindsight are certified on a calibrated instrument and replicated on a second independent reader; no official leaderboard placement is claimed.",
+        "description": "Open-source LLM agent memory system with bounded read-only shards, cited recall, and Committer-gated writes. Its per-query retrieval cost stays flat (~36-38K input tokens, answer model plus internal pipeline) as the per-unit haystack grows 76x on the AMB BEAM ladder; its write-time ingest cost is O(corpus) and disclosed separately. Two category-level leads over Hindsight are certified on a calibrated instrument and replicated on a second independent reader; no official leaderboard placement is claimed.",
         "inLanguage": "en",
         "publisher": { "@id": "https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/#person" }
       },
@@ -401,7 +401,7 @@
         "programmingLanguage": "TypeScript",
         "runtimePlatform": "Node.js 22+",
         "license": "https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/LICENSE",
-        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the AMB BEAM ladder (100K to 10M) its total cost per query stays flat at roughly 36 to 38K input tokens (a 26 to 33K answer packet plus its internal probe/recall/synthesize calls) even as the corpus grows 100x. On a calibrated head-to-head instrument it holds two certified category-level leads over Hindsight, each replicated on a second independent reader: knowledge_update at 500K (+0.382) and abstention at 1M (+0.193). It has no official leaderboard placement and does not claim state of the art.",
+        "description": "Context Swarm Memory is an open-source LLM memory system using bounded read-only memory shards, manager routing, probe/recall/synthesis, answers cited down to shard, snapshot, and event IDs, and explicit Committer-gated writes. Across the AMB BEAM ladder (100K to 10M) its per-query retrieval cost stays flat at roughly 36 to 38K input tokens (a 26 to 33K answer packet plus its internal probe/recall/synthesize calls) even as the per-unit corpus grows 76x. That is a query-cost claim: its default write-time fact extraction has an ingest cost that is O(corpus) and is disclosed separately. On a calibrated head-to-head instrument it holds two certified category-level leads over Hindsight, each replicated on a second independent reader: knowledge_update at 500K (+0.382) and abstention at 1M (+0.193). It has no official leaderboard placement and does not claim state of the art.",
         "keywords": [
           "LLM memory",
           "agent memory",
@@ -466,7 +466,7 @@
             "name": "What is the honest tradeoff versus Hindsight?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "On the apples-to-apples answer-context slice Hindsight is leaner: 17.7 to 27.3K tokens versus CSM's 26 to 33K. CSM publishes an all-in figure instead, roughly 36 to 38K input tokens per query, which adds its own probe, recall and synthesize calls to the answer packet. Hindsight discloses no internal-pipeline cost and distills memory at ingest, so its all-in total is unstated and the two all-in numbers are not directly comparable. CSM's internal tokens run on models about ten times cheaper, so they are about 25 percent of the token count but about 7 percent of the dollars."
+              "text": "On the apples-to-apples answer-context slice Hindsight is leaner: 17.7 to 27.3K tokens versus CSM's 26 to 33K. CSM publishes a per-query all-in figure instead, roughly 36 to 38K input tokens, which adds its own probe, recall and synthesize calls to the answer packet; Hindsight discloses no internal-pipeline figure, so the two all-in numbers are not directly comparable. CSM's internal tokens run on models about ten times cheaper, so they are about 25 percent of the token count but about 7 percent of the dollars. Neither figure includes ingest-time cost, and both systems now distill at ingest: CSM's ingest cost is O(corpus) and disclosed, Hindsight's is not."
             }
           },
           {
@@ -498,6 +498,7 @@
     <nav class="site-nav" id="site-nav" data-nav aria-label="Primary">
       <a href="#status">Status</a>
       <a href="#certified">Certified</a>
+      <a href="#cost">Cost</a>
       <a href="#how">How it works</a>
       <a href="#failed">What failed</a>
       <a href="#faq">FAQ</a>
@@ -514,14 +515,15 @@
           two certified category leads, cross-reader replicated ·
           <a href="#status">what that means</a></span>
       </p>
-      <h1 id="hero-title">The haystack grows 100×. The cost stays <span class="hl">flat</span>.</h1>
+      <h1 id="hero-title">The haystack grows 76×. The cost per query stays <span class="hl">flat</span>.</h1>
       <p class="hero-lede">
-        Context Swarm Memory (CSM) is open-source agent memory whose <strong>total cost per query
+        Context Swarm Memory (CSM) is open-source agent memory whose <strong>retrieval cost per query
         stays flat</strong> — about <strong>36–38K input tokens</strong> all-in (the small, fully-<strong>cited</strong>
         packet the answer model sees, plus CSM's own probe/recall/synthesize calls) — whether the
         underlying memory holds 100K or <strong>10M</strong> tokens. That is a property of the architecture,
-        measured across a 100× range. Accuracy is the live question, and this page reports both the
-        leads that survived falsification and the levers that did not.
+        measured across a 76× range — and it is a claim about <em>query</em> cost specifically, since
+        CSM’s write-time stage has an <a href="#cost">ingest cost that is not flat</a>. Accuracy is the live
+        question, and this page reports both the leads that survived falsification and the levers that did not.
       </p>
       <div class="hero-actions">
         <a class="button button-primary" href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory">View on GitHub</a>
@@ -639,8 +641,8 @@
         <div class="metric-grid" data-reveal>
           <div class="metric-card">
             <strong class="metric-num">36–38<em>K</em></strong>
-            <span class="metric-label">total input tokens/query, 100K → 10M</span>
-            <span class="metric-sub">all-in cost flat as the haystack grows 100×</span>
+            <span class="metric-label">retrieval input tokens/query, 100K → 10M</span>
+            <span class="metric-sub">flat as the haystack grows 76× · ingest cost is separate</span>
           </div>
           <div class="metric-card">
             <strong class="metric-num"><span data-count="2">2</span></strong>
@@ -659,8 +661,10 @@
           </div>
         </div>
         <p class="metric-note" data-reveal>
-          The flat-cost figure comes from the <strong>unmodified public AMB runner</strong> across all four
-          BEAM tiers (their CLI, scoring and judge path), single-trial. The certified leads come from a
+          The flat per-query figure comes from the <strong>unmodified public AMB runner</strong> across all four
+          BEAM tiers (their CLI, scoring and judge path), single-trial, on a configuration that had
+          <strong>no write-time stage</strong> — today’s default does, and its ingest cost is
+          <a href="#cost">disclosed separately</a>. The certified leads come from a
           <strong>calibrated head-to-head instrument</strong> where one reader and one judge serve both arms
           and only the retrieved context differs. Numbers from the two instruments are reported separately and
           <strong>never pooled</strong>. CSM has <strong>no official leaderboard placement</strong> and does not
@@ -687,12 +691,12 @@
         <div class="rd-grid">
           <article class="rd-card card" data-reveal>
             <span class="rd-id">1</span>
-            <h3>Flat cost &mdash; measured, durable</h3>
+            <h3>Flat per-query cost &mdash; measured</h3>
             <p>
-              Total per-query input stays at <strong>36&ndash;38K tokens</strong> whether the per-unit haystack is
-              154K or <strong>11.7M</strong> tokens. It is a token count, not a judged score, so it does not
-              depend on the benchmark's prompt or judge &mdash; which is why it is the one number from the June
-              ladder that is still quotable today.
+              Per-query input stays at <strong>36&ndash;38K tokens</strong> whether the per-unit haystack is
+              154K or <strong>11.7M</strong>. A token count does not depend on the prompt or judge, which is why
+              this is the one figure from the June ladder still worth quoting — with two corrections attached
+              <a href="#cost">below</a>.
             </p>
           </article>
           <article class="rd-card card falsified" data-reveal style="--d:0.07s">
@@ -822,14 +826,14 @@
         <div class="chart-stack" data-reveal>
           <figure class="paper-card wide">
             <img src="assets/beam-token-cost.svg" width="760" height="470" loading="lazy" decoding="async"
-                 alt="Input tokens per query, log scale, BEAM 100K to 10M. A full-context line climbs ~100x from ~100K to ~10M tokens and crosses the ~1-2M model context window above the 1M tier. CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K); Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K).">
-            <figcaption><strong>Cost &mdash; the durable claim, drawn.</strong> As the haystack grows 100&times;, a brute-force full-context system's input explodes past the model's context window, while CSM (~36&ndash;38K all-in) and Hindsight (~18&ndash;27K, leaner) stay flat. Retrieval cost does not scale with the corpus.</figcaption>
+                 alt="Input tokens per query, log scale, BEAM 100K to 10M. A full-context line climbs ~76x from ~154K to ~11.7M tokens per unit and crosses the ~1-2M model context window above the 1M tier. CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K); Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K).">
+            <figcaption><strong>Cost &mdash; the durable claim, drawn.</strong> As the per-unit haystack grows 76&times; (~154K &rarr; ~11.7M tokens), a brute-force full-context system's input explodes past the model's context window, while CSM (~36&ndash;38K all-in) and Hindsight (~18&ndash;27K, leaner) stay flat. <strong>Per-query retrieval</strong> cost does not scale with the corpus &mdash; <a href="#cost">ingest cost does</a>.</figcaption>
           </figure>
         </div>
 
         <div class="table-wrap card" data-reveal>
           <table>
-            <caption>June 2026 ladder, unmodified AMB runner, same answer/judge models, single-trial. <strong>CSM all-in</strong> = answer-visible context <strong>plus</strong> CSM's internal probe/recall/synthesize tokens. Hindsight discloses no internal cost and distills memory at ingest, so its column is answer-context only and it has no comparable all-in figure. <strong>Scores are historical</strong> &mdash; see Status above.</caption>
+            <caption>June 2026 ladder, unmodified AMB runner, same answer/judge models, single-trial. <strong>CSM all-in</strong> = answer-visible context <strong>plus</strong> CSM's internal probe/recall/synthesize tokens. Hindsight's column is answer-context only — it discloses no internal-pipeline figure. Neither column includes ingest-time cost. <strong>Scores are historical</strong> &mdash; see Status above.</caption>
             <thead>
               <tr><th scope="col">BEAM tier</th><th scope="col">CSM score</th><th scope="col">Hindsight score</th><th scope="col">CSM answer-ctx</th><th scope="col">Hindsight answer-ctx</th><th scope="col">CSM all-in input</th></tr>
             </thead>
@@ -843,13 +847,14 @@
         </div>
 
         <div class="callout" data-reveal>
-          <h3>The all-in cost, printed &mdash; not left to be added up</h3>
+          <h3>The per-query cost, printed &mdash; not left to be added up</h3>
           <p>
             CSM's internal pipeline is about <strong>25% of the token count</strong> but runs on models roughly
             <strong>10&times; cheaper</strong> than the answer model, so it is about <strong>7% of the dollars</strong>.
             We print the sum rather than reporting the halves separately. On the apples-to-apples answer slice
             <strong>Hindsight is leaner</strong> (17.7&ndash;27.3K vs 26&ndash;33K) &mdash; that is a disclosed
-            trade, not a footnote. No gold answers, rubrics or query IDs ever reach retrieval.
+            trade, not a footnote. <strong>Neither column includes either system's ingest-time cost</strong>;
+            CSM's is disclosed <a href="#cost">below</a>. No gold answers, rubrics or query IDs ever reach retrieval.
           </p>
         </div>
 
@@ -858,6 +863,85 @@
           <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/experiments/EXP-category-leadership-2026-08.md">EXP-category-leadership-2026-08.md</a>
           <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/AMB_BEAM_LADDER_2026_06_18.md">AMB_BEAM_LADDER_2026_06_18.md</a>
           <code>npm run verify:published</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ COST, PRECISELY ============ -->
+    <section class="section band" id="cost" aria-labelledby="cost-title">
+      <div class="section-inner">
+        <div class="section-head" data-reveal>
+          <p class="kicker">The cost claim, precisely</p>
+          <h2 id="cost-title">Flat per query. Not flat at ingest.</h2>
+          <p class="section-lede">
+            &ldquo;The cost stays flat&rdquo; is the line this project is most quoted on, so it is worth stating
+            exactly what it does and does not cover. It is a claim about <strong>query</strong> cost, and it was
+            measured on a configuration with <strong>no write-time stage</strong>. Today&rsquo;s default config
+            has one, and its ingest cost is <strong>O(corpus)</strong>. Both halves belong on the same page.
+          </p>
+        </div>
+
+        <div class="table-wrap card" data-reveal>
+          <table>
+            <caption>What is flat and what is not</caption>
+            <thead>
+              <tr><th scope="col">Cost</th><th scope="col">Flat?</th><th scope="col">Figure</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Per-query retrieval (answer packet + internal pipeline)</th><td class="hl-cell"><strong>Yes</strong></td><td>~36&ndash;38K input tokens across a 76&times; haystack range (154K &rarr; 11.7M per unit)</td></tr>
+              <tr><th scope="row">Per-query, with the fact fold on</th><td class="hl-cell"><strong>Yes</strong></td><td>token-neutral at answer time: 7,106 &rarr; 7,080 (abstention), 7,010 &rarr; 7,074 (knowledge_update)</td></tr>
+              <tr><th scope="row">Ingest (write-time fact extraction)</th><td><strong>No &mdash; O(corpus)</strong></td><td>the registry chunks each unit at 100K tokens and reads <em>every</em> chunk</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap card" data-reveal>
+          <table>
+            <caption>First-ingest cost, amortized over each tier&rsquo;s query budget. Disk-cached, so re-runs pay nothing.</caption>
+            <thead>
+              <tr><th scope="col">Tier</th><th scope="col">Per-unit haystack</th><th scope="col">Units</th><th scope="col">First-ingest input</th><th scope="col">Queries</th><th scope="col">Amortized/query</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">100K</th><td>~154K</td><td>20</td><td>~3.1M</td><td>400</td><td>~7.7K</td></tr>
+              <tr><th scope="row">1M</th><td>~800K</td><td>35</td><td>~28M <small>(&asymp;280 &times; 100K calls)</small></td><td>700</td><td><strong>~40K</strong></td></tr>
+              <tr><th scope="row">10M</th><td>~11.7M</td><td>&mdash;</td><td>~117 chunk calls <strong>per unit</strong></td><td>200</td><td>dominates all query spend</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="fact-row" data-reveal>
+          <div class="fact">
+            <strong>~40K</strong>
+            <span>1M-tier ingest, amortized per query &mdash; roughly the same order as the entire per-query retrieval spend for that run</span>
+          </div>
+          <div class="fact">
+            <strong>one-time</strong>
+            <span>disk-cached by <code>split|user|model|promptVersion</code>; re-runs pay nothing, and it runs on the cheap model tier</span>
+          </div>
+          <div class="fact">
+            <strong>~34&ndash;36K</strong>
+            <span>the likely per-query figure today, since the now-default batched probe cuts internal input ~21% &mdash; <strong>projected, not measured</strong></span>
+          </div>
+        </div>
+
+        <div class="callout" data-reveal>
+          <h3>Why this repo stopped saying its accounting was &ldquo;the complete one&rdquo;</h3>
+          <p>
+            In a real deployment memory arrives incrementally, so facts are extracted per turn as it lands &mdash;
+            the whole-corpus read is a <strong>backfill</strong>, not a recurring cost. That is the honest defense
+            of the ingest number above. <strong>It is also precisely Hindsight&rsquo;s defense.</strong> Earlier
+            versions of this page argued that because Hindsight distills at ingest and discloses no internal
+            figure, CSM&rsquo;s accounting was the complete one. CSM now distills at ingest too, so that comparison
+            was no longer true and has been removed. Both systems have an ingest cost; CSM&rsquo;s is on this page,
+            Hindsight&rsquo;s is not. That, and only that, is the difference worth stating.
+          </p>
+        </div>
+
+        <p class="evidence-row" data-reveal>
+          <span>Evidence</span>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/STATUS.md">STATUS.md &sect; the cost claim</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/scripts/amb-fact-registry.ts">amb-fact-registry.ts</a>
+          <a href="https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory/blob/main/docs/experiments/EXP-token-efficiency-2026-08.md">Token anatomy</a>
         </p>
       </div>
     </section>
@@ -1176,11 +1260,12 @@
             <summary>What is the honest tradeoff versus Hindsight?</summary>
             <p>
               On the apples-to-apples answer-context slice <strong>Hindsight is leaner</strong> (17.7&ndash;27.3K
-              vs CSM's 26&ndash;33K). CSM publishes an <strong>all-in</strong> figure instead &mdash; ~36&ndash;38K
-              input tokens/query &mdash; which adds its own probe/recall/synthesize calls to the answer packet.
-              Hindsight discloses no internal-pipeline cost and distills memory at ingest, so its all-in total is
-              unstated and the two all-in numbers are not directly comparable. CSM's internal tokens run on models
-              ~10&times; cheaper: ~25% of the token count, ~7% of the dollars.
+              vs CSM's 26&ndash;33K). CSM publishes a per-query <strong>all-in</strong> figure instead &mdash;
+              ~36&ndash;38K input tokens &mdash; which adds its own probe/recall/synthesize calls to the answer
+              packet; Hindsight discloses no internal figure, so the two all-in numbers are not directly
+              comparable. CSM's internal tokens run on models ~10&times; cheaper: ~25% of the token count, ~7% of
+              the dollars. <strong>Neither figure includes ingest-time cost, and both systems now distill at
+              ingest</strong> &mdash; CSM's ingest cost is <a href="#cost">disclosed</a>, Hindsight's is not.
             </p>
           </details>
           <details class="faq-item">

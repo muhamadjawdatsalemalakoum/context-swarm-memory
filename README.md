@@ -14,7 +14,7 @@
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg" alt="Website"></a>
 </p>
 
-<p align="center"><strong>Cited, auditable LLM agent memory whose retrieval cost stays flat as memory grows.</strong></p>
+<p align="center"><strong>Cited, auditable LLM agent memory whose <em>per-query</em> retrieval cost stays flat as memory grows.</strong></p>
 
 <p align="center">
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/">
@@ -31,11 +31,14 @@ Committer protocol.
 
 Two claims carry the project, and they are different kinds of claim:
 
-1. **Cost is bounded by construction.** CSM's total per-query input —
-   the packet the answer model sees *plus* CSM's own probe/recall/synthesize
-   calls — stays at **~36–38K tokens** whether the underlying memory holds
-   100K or 10M tokens. Measured across a 100× range on the public benchmark.
-   This is a property of the architecture, not a win over anyone.
+1. **Retrieval cost per query is bounded by construction.** CSM's total
+   per-query input — the packet the answer model sees *plus* CSM's own
+   probe/recall/synthesize calls — stays at **~36–38K tokens** as the per-unit
+   haystack grows **76×**, from ~154K to ~11.7M tokens. This is a property of
+   the architecture, not a win over anyone — and it is a claim about *query*
+   cost specifically. CSM's current default config also does write-time fact
+   extraction, whose ingest cost is **not** flat; see
+   [The cost claim, stated precisely](#the-cost-claim-stated-precisely).
 2. **Accuracy is a live, partly-unsettled question.** CSM has **certified
    category-level leads** over the strongest published competitor on a
    calibrated instrument — and it has a longer list of levers that were
@@ -63,7 +66,7 @@ artifact. Frozen pipeline, single-trial, 2,000 graded queries.
 
 <p align="center"><img src="docs/assets/beam-token-cost.svg" width="760" alt="Input tokens per query (log scale), BEAM 100K to 10M. A brute-force full-context line climbs ~100x from ~100K to ~11.7M tokens and crosses the ~1-2M model context window; CSM all-in stays flat near 36K (35.8/36.2/38.1/35.9K) and Hindsight stays flat and leaner near 22K (17.7/20.5/23.9/27.3K)."></p>
 
-<p align="center"><em>As the haystack grows 100×, full-context input explodes past the model's context window while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat. Retrieval cost does not scale with the corpus.</em></p>
+<p align="center"><em>As the per-unit haystack grows 76× (~154K → ~11.7M tokens), full-context input explodes past the model's context window while CSM (~36–38K all-in) and Hindsight (~18–27K, leaner) stay flat. <strong>Per-query retrieval</strong> cost does not scale with the corpus — ingest cost does; see below.</em></p>
 
 | BEAM tier | CSM score | Hindsight score | CSM answer-ctx | Hindsight answer-ctx | CSM all-in input¹ |
 |---|---:|---:|---:|---:|---:|
@@ -73,18 +76,62 @@ artifact. Frozen pipeline, single-trial, 2,000 graded queries.
 | 10M | 0.5616 | **0.6408** | 32.5K | 27.3K | **35.9K** |
 
 <sup>¹ CSM all-in input = answer-visible context **plus** CSM's own
-probe/recall/synthesize tokens — the honest per-query total. Hindsight
-discloses no internal-pipeline cost and distills memory at ingest, so it has no
-comparable all-in figure; its column is answer-context only. On the
-apples-to-apples answer slice **Hindsight is leaner**.</sup>
+probe/recall/synthesize tokens — the per-query total. Hindsight's column is
+answer-context only; it discloses no internal-pipeline figure. On the
+apples-to-apples answer slice **Hindsight is leaner**. Neither column includes
+either system's ingest-time cost.</sup>
 
-**What survives from this run:** the flat-cost property. All-in input is
-~36–38K per query whether the per-unit haystack is 154K or 11.7M tokens. The
-internal pipeline is ~25% of the token *count* but runs on models ~10× cheaper,
-so ~7% of the dollars.
+**What survives from this run:** the flat *per-query retrieval* cost. All-in
+input is ~36–38K per query whether the per-unit haystack is 154K or 11.7M
+tokens. The internal pipeline is ~25% of the token *count* but runs on models
+~10× cheaper, so ~7% of the dollars.
 
-**What does not survive:** the scores, as a statement about CSM today. Read the
-next section before quoting any number in that table.
+**What does not survive:** the scores, as a statement about CSM today. And the
+cost figure needs one correction of its own, because the configuration that
+produced it had no write-time stage — see below.
+
+## The cost claim, stated precisely
+
+The flat-cost headline is real but it is a claim about **query** cost, and it
+was measured on a configuration with **no write-time stage**. Today's default
+config turns the fact fold on, and that changes the accounting in a way worth
+stating plainly rather than burying.
+
+**Per query, retrieval cost is flat.** ~36–38K all-in input across a 76×
+haystack range. The fold does not change this — measured token-neutral at
+answer time (7,106 → 7,080 on abstention; 7,010 → 7,074 on knowledge_update).
+
+**At ingest, cost is not flat — it is O(corpus).** The fact registry chunks each
+unit at 100K tokens and reads *every* chunk, so a first ingest reads the entire
+corpus once:
+
+| tier | per-unit haystack | units | first-ingest input | queries | amortized/query |
+|---|---:|---:|---:|---:|---:|
+| 100K | ~154K | 20 | ~3.1M | 400 | ~7.7K |
+| 1M | ~800K | 35 | ~28M (≈280 × 100K calls) | 700 | **~40K** |
+| 10M | ~11.7M | — | ~117 chunk calls **per unit** | 200 | dominates everything else |
+
+At the 1M tier the one-time build is roughly the *same order* as the entire
+per-query retrieval spend across the run. At 10M it is larger by an order of
+magnitude — the pre-flight budgets it as most of a $750–960 tier estimate.
+
+**Three things keep this honest rather than fatal:**
+
+1. It is **one-time and disk-cached** (keyed `split|user|model|promptVersion`);
+   re-runs pay nothing.
+2. It runs on the **cheap model tier**, like the internal pipeline.
+3. In a real deployment memory arrives incrementally, so facts are extracted
+   per turn as it lands. The whole-corpus read is a **backfill**, not a
+   recurring cost. This is the honest defense — and it is *precisely the same
+   defense Hindsight has*, which is why this repo no longer claims its own
+   accounting is "the complete one" by comparison. It isn't. Both systems now
+   distill at ingest; CSM's ingest cost is disclosed above, Hindsight's is not,
+   and that is the only difference worth stating.
+
+**And the ~36–38K figure is measured for the June config, projected for
+today's.** The batched probe cuts internal input ~21%, which would put today's
+number nearer ~34–36K, but that has not been measured on the official path.
+Treat it as an estimate until the re-run lands.
 
 ## Where this actually stands
 

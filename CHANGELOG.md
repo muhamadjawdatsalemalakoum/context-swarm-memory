@@ -6,6 +6,39 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Correction — the flat-cost headline was overclaimed (2026-08-30)
+
+Caught on review the same day it shipped. "The haystack grows 100x. The cost
+stays flat." had two defects and a third that was self-contradictory.
+
+- **Scope.** "The cost" reads as total cost. Only *per-query retrieval* cost is
+  flat. The default config now runs write-time fact extraction, whose registry
+  chunks each unit at 100K tokens and reads **every** chunk -- a first ingest
+  reads the whole corpus, which is **O(corpus)**. Amortized over each tier's
+  query budget that is ~7.7K/query at 100K, **~40K/query at 1M** (roughly the
+  same order as the entire per-query retrieval spend for that run), and at 10M
+  it dominates everything else. Now disclosed in a table on all four surfaces
+  rather than omitted.
+- **Magnitude.** The per-unit haystack grows **76x** (154K -> 11.7M), not 100x.
+  100x is the benchmark's tier span, a different quantity. Headline, hero,
+  metric card, chart caption, chart alt text and all meta/JSON-LD now say 76x
+  and name the per-unit figures.
+- **A claim that contradicted its own page.** The docs argued CSM's accounting
+  was "the complete one" because Hindsight distills at ingest and discloses no
+  internal figure -- while the same documents listed the fact fold as a default.
+  CSM distills at ingest too, and its all-in figure excluded that cost. The
+  comparison is removed everywhere and replaced with the accurate statement:
+  both systems have an ingest cost, CSM's is now disclosed, Hindsight's is not.
+- Also corrected: "the cost measurement survives because a token count does not
+  depend on the prompt or judge" answered the runner-change objection but not
+  the config-change one. The now-default batched probe cuts internal input ~21%,
+  so today's per-query figure is a **projection (~34-36K), not a measurement**
+  on the official path. Said plainly wherever the 36-38K figure appears.
+
+New `#cost` section on the site; `The cost claim, stated precisely` in the
+README; `The cost claim, precisely` in STATUS.md; `Cost, stated honestly`
+rewritten in llms.txt.
+
 ### Documentation reset to the August 2026 reality (2026-08-30)
 
 The README, the GitHub Pages site, `llms.txt`, and the evidence map described a

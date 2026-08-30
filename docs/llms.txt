@@ -21,12 +21,16 @@ state of the art.
 
 Two claims are load-bearing, and they are different kinds of claim:
 
-1. FLAT COST (architectural property, measured): CSM's total per-query input —
-   the packet the answer model sees PLUS CSM's own probe/recall/synthesize
-   calls — stays at ~36-38K tokens whether the underlying memory holds 100K or
-   10M tokens. This is a token count, not a judged score, so it does not depend
-   on the benchmark's prompt or judge. It is a property of CSM, NOT a win over
-   any competitor.
+1. FLAT PER-QUERY RETRIEVAL COST (architectural property, measured): CSM's
+   total per-query input — the packet the answer model sees PLUS CSM's own
+   probe/recall/synthesize calls — stays at ~36-38K tokens as the per-unit
+   haystack grows 76x (from ~154K to ~11.7M tokens). It is a property of CSM,
+   NOT a win over any competitor. TWO IMPORTANT QUALIFIERS: (a) this is a QUERY
+   cost claim — CSM's default config also does write-time fact extraction whose
+   INGEST cost is O(corpus) and NOT flat; (b) the 36-38K figure was measured on
+   the June config, and the now-default batched probe cuts internal input ~21%,
+   so today's figure is projected (~34-36K), not measured. See "COST, STATED
+   HONESTLY" below.
 2. TWO CERTIFIED CATEGORY LEADS (statistical claim, bounded): on a calibrated
    head-to-head instrument, CSM leads Hindsight in two BEAM categories, each
    replicated on a second independent reader. Two categories is not the whole
@@ -100,21 +104,43 @@ THESE SCORES ARE STALE IN TWO INDEPENDENT WAYS:
    Hindsight's committed April artifacts AND this project's June ladder —
    cannot be placed beside a post-change run, on either side.
 
-WHAT DOES SURVIVE from that ladder is the COST measurement, because a token
-count does not depend on the prompt or the judge.
+WHAT MOSTLY SURVIVES from that ladder is the COST measurement, because a token
+count does not depend on the prompt or the judge. But the config-change
+objection applies to tokens too, so two caveats: the now-default batched probe
+cuts internal input ~21%, making today's per-query figure a PROJECTION
+(~34-36K) rather than a measurement on the official path; and the ladder config
+had NO write-time stage, so its accounting excludes an ingest cost that today's
+default config incurs. See "Cost, stated honestly".
 
 ## Cost, stated honestly
 
-CSM keeps its TOTAL cost per query bounded (~36-38K all-in input tokens =
-~26-33K answer-visible + ~3-10K internal pipeline) whether the per-unit
-haystack is 154K or 11.7M tokens. The internal tokens are ~25% of the token
-COUNT but hit models ~10x cheaper than the answer model, so ~7% of the DOLLARS.
+PER-QUERY RETRIEVAL COST IS FLAT. CSM keeps per-query input bounded (~36-38K
+all-in = ~26-33K answer-visible + ~3-10K internal pipeline) as the per-unit
+haystack grows 76x (154K -> 11.7M). Internal tokens are ~25% of the token COUNT
+but hit models ~10x cheaper, so ~7% of the DOLLARS. The fact fold does not
+change this — measured token-neutral at answer time (7,106 -> 7,080 on
+abstention; 7,010 -> 7,074 on knowledge_update).
 
-On the apples-to-apples answer-visible slice, HINDSIGHT IS LEANER (17.7-27.3K
-vs CSM's 26-33K). That is a disclosed trade, not a footnote. On TOTAL cost
-Hindsight reports no internal figure and distills memory at ingest, so its
-all-in total is unstated and the two all-in numbers are NOT directly
-comparable. Flat cost is a property of CSM, NOT a win over Hindsight.
+INGEST COST IS NOT FLAT. It is O(corpus). The fact registry chunks each unit at
+100K tokens and reads EVERY chunk, so a first ingest reads the whole corpus
+once. Amortized over each tier's query budget:
+  100K: ~154K/unit x 20 units = ~3.1M input / 400 queries  = ~7.7K per query
+  1M:   ~800K/unit x 35 units = ~28M input  / 700 queries  = ~40K per query
+  10M:  ~11.7M/unit (~117 chunk calls per unit) / 200 queries = dominates
+At 1M the one-time build is roughly the same order as the ENTIRE per-query
+retrieval spend for the run; at 10M it is larger by an order of magnitude.
+
+WHAT KEEPS THIS HONEST: the build is one-time and disk-cached (keyed
+split|user|model|promptVersion), it runs on the cheap model tier, and in a real
+deployment memory arrives incrementally so facts are extracted per turn — the
+whole-corpus read is a BACKFILL, not a recurring cost.
+
+THAT IS ALSO HINDSIGHT'S DEFENSE. This repo therefore does NOT claim its
+accounting is "the complete one." Both systems distill at ingest. CSM's ingest
+cost is disclosed above; Hindsight's is not. That, and only that, is the
+difference worth stating. On the apples-to-apples answer-visible slice
+HINDSIGHT IS LEANER (17.7-27.3K vs CSM's 26-33K) — a disclosed trade, not a
+footnote. Flat per-query cost is a property of CSM, NOT a win over Hindsight.
 
 ## Current defaults — the certified configuration
 
@@ -247,18 +273,21 @@ leakage-firewall test enforces the boundary in CI.
 
 Q: What is the main tradeoff versus Hindsight?
 A: On the answer-visible slice Hindsight is leaner (17.7-27.3K vs CSM's
-26-33K). CSM publishes an all-in figure instead (~36-38K), which adds its own
-probe/recall/synthesize calls; Hindsight discloses no internal figure and
-distills at ingest, so its all-in is unstated and the two all-in numbers are not
-directly comparable. CSM's honest edges are architectural — open source, cited
-to shard/snapshot/event IDs, zero-LLM indexing, Committer-gated, auditable —
-plus a published falsification record.
+26-33K). CSM publishes a per-query all-in figure instead (~36-38K), which adds
+its own probe/recall/synthesize calls; Hindsight discloses no internal figure,
+so the two all-in numbers are not directly comparable. NEITHER figure includes
+ingest-time cost, and both systems now distill at ingest — CSM's ingest cost is
+disclosed (O(corpus); see COST, STATED HONESTLY), Hindsight's is not. CSM's
+honest edges are architectural — open source, cited to shard/snapshot/event IDs,
+zero-LLM indexing, Committer-gated, auditable — plus a published falsification
+record.
 
 Q: Does CSM degrade as memory grows?
 A: On the June ladder CSM's absolute accuracy declined with scale (0.74 to 0.56,
-100K to 10M) while its TOTAL cost stayed flat (~36-38K all-in input
-tokens/query). The durable claim is "keeps total cost flat as memory grows" —
-NOT that accuracy stays flat. Today's configuration substantially improved
+100K to 10M) while its PER-QUERY RETRIEVAL cost stayed flat (~36-38K all-in
+input tokens/query). The durable claim is "keeps per-query retrieval cost flat
+as memory grows" — NOT that accuracy stays flat, and NOT that ingest cost stays
+flat (it does not; it is O(corpus)). Today's configuration substantially improved
 several of the categories that drove that decline, but on a different
 instrument, so the two are not directly comparable.
 
@@ -305,9 +334,10 @@ single-call retrieval.
 
 Context Swarm Memory (CSM) is an open-source LLM memory system using bounded
 read-only memory shards, cited recall (shard/snapshot/event IDs), and
-Committer-gated writes. Its total per-query cost stays flat at ~36-38K input
-tokens as the underlying corpus grows 100x (AMB BEAM, 100K to 10M,
-single-trial, unmodified runner). On a calibrated head-to-head instrument
+Committer-gated writes. Its per-query retrieval cost stays flat at ~36-38K
+input tokens as the per-unit corpus grows 76x (AMB BEAM, 100K to 10M,
+single-trial, unmodified runner); its write-time ingest cost is O(corpus) and
+separately disclosed. On a calibrated head-to-head instrument
 (rho 0.864 vs the official judge) it holds two certified category-level leads
 over Hindsight — knowledge_update at 500K (+0.382) and abstention at 1M
 (+0.193) — each replicated on a second independent reader at n=70, the full
