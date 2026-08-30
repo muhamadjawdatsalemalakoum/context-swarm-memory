@@ -9,7 +9,7 @@
 // resolved levers, models, artifact identity).
 //
 //   node scripts/free-ladder-report.mjs --tier 100k \
-//     --csm free100k-v1 --h2h 100k-free --out docs/experiments/free-ladder/
+//     --csm ladder100k-v1 --h2h 100k-free --out docs/experiments/free-ladder/
 //
 // Writes <out>/<tier>.json (machine) and appends a markdown section to
 // <out>/REPORT.md (human). Safe to re-run: it overwrites that tier's section.

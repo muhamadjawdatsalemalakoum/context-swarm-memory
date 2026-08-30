@@ -127,3 +127,16 @@ data/eval/corpus-synthetic/queries-stub.json
 # Hindsight BEAM artifacts: ~60MB each, re-fetchable from the AMB repo
 # (scripts/verify-hindsight-ladder.mjs, scripts/category-leaderboard.mjs).
 data/eval/external/hindsight-*.json
+
+# Write-time artifact caches — regenerable, keyed by split|user|model|promptVersion.
+# Built at ingest by scripts/amb-preference-profile.ts and scripts/amb-fact-registry.ts.
+data/eval/fact-registries/
+data/eval/preference-profiles/
+
+# Local publishing drafts + render scratch (Medium/LinkedIn). Not part of the repo.
+drafts/
+
+# Vendored deps inside integrations/ are installed, never committed.
+integrations/*/node_modules/
+integrations/*/package-lock.json
+integrations/**/__pycache__/

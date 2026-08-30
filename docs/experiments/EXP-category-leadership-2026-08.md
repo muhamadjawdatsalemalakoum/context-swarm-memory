@@ -360,10 +360,20 @@ instrument**. Certification remains a job for the official Gemini ladder (P7).
 Poisoned-artifact note: the first rep3 file on disk (31/140 pairs, 109
 excluded by a dying sidecar) was survivorship-biased garbage and has been
 overwritten by this clean run. Free-tier 429s produce the same poison, which
-is why the OpenRouter shim now absorbs them with backoff instead of surfacing
+is why the second-reader shim absorbed them with backoff instead of surfacing
 errors that become exclusions.
 
 ## Cross-reader replication on ox-alpha: the abstention lead is NOT a reader artifact
+
+> **Instrument retired (2026-08-30).** `stealth/ox-alpha` was a time-boxed free
+> preview on OpenRouter and is no longer available, so the shim that served it
+> has been removed from the repo. Every ox-alpha number below is **frozen
+> evidence from the window it was live** and is no longer re-runnable. That
+> does not weaken the conclusions: each is a *within-instrument* paired delta
+> over contexts still on disk byte-for-byte, and the point of the exercise was
+> to show the sonnet-5 verdicts survive a reader swap — which they did. Future
+> falsification attempts need a different second reader.
+
 
 The doc above flagged abstention as the category most sensitive to the reader's
 willingness to say "I don't know" — the one certified CSM lead sat in exactly
