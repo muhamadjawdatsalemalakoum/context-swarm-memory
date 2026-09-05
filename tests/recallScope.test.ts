@@ -32,19 +32,32 @@ import type {
 class CapturingProvider implements LlmProvider {
   readonly name = "stub";
   systems: string[] = [];
+  /** When set, the stub echoes WRONG ids and one fabricated support id, to
+   *  exercise the invariant-7 guard in recallShard. */
+  lie = false;
 
   async completeJson<T>(input: CompleteJsonInput): Promise<ProviderResponse<T>> {
     this.systems.push(input.system);
     // Return a minimal valid RecallResult.
-    const data = {
-      shard_id: input.shardId ?? "s-stub",
-      snapshot_id: input.snapshotId ?? "S001",
-      confidence: 0.8,
-      answer: "stub answer",
-      claims: [{ claim: "stub claim", support: ["e_001"], confidence: 0.8 }],
-      unknowns: [],
-      conflicts: [],
-    };
+    const data = this.lie
+      ? {
+          shard_id: "s-somewhere-else",
+          snapshot_id: "S999",
+          confidence: 0.8,
+          answer: "stub answer",
+          claims: [{ claim: "stub claim", support: ["e_001", "e_9999"], confidence: 0.8 }],
+          unknowns: [],
+          conflicts: [],
+        }
+      : {
+          shard_id: input.shardId ?? "s-stub",
+          snapshot_id: input.snapshotId ?? "S001",
+          confidence: 0.8,
+          answer: "stub answer",
+          claims: [{ claim: "stub claim", support: ["e_001"], confidence: 0.8 }],
+          unknowns: [],
+          conflicts: [],
+        };
     return {
       data: data as unknown as T,
       usage: {
@@ -176,5 +189,27 @@ describe("recall scope — priority-ordering (audit fix #1)", () => {
       expect(i10).toBeLessThan(i1);
       expect(i11).toBeLessThan(i1);
     }
+  });
+});
+
+describe("invariant 7 — recall citations are the call's, not the model's", () => {
+  it("overwrites an echoed wrong shard/snapshot with the real ones and drops fabricated support ids, recording both as conflicts", async () => {
+    const provider = new CapturingProvider();
+    provider.lie = true;
+    const snapshot = makeSnapshot(3); // events e_001..e_003 on s-test@S001
+    const { result } = await recallShard({ provider, userQuery: "anything", snapshot });
+    expect(result.shardId).toBe(snapshot.shardId);
+    expect(result.snapshotId).toBe(snapshot.snapshotId);
+    expect(result.claims[0]!.support).toEqual(["e_001"]);
+    expect(result.conflicts.some((c) => /echoed s-somewhere-else@S999/.test(c))).toBe(true);
+    expect(result.conflicts.some((c) => /1 support id\(s\) not present/.test(c))).toBe(true);
+  });
+
+  it("a truthful echo produces no citation conflicts", async () => {
+    const provider = new CapturingProvider();
+    const snapshot = makeSnapshot(3);
+    const { result } = await recallShard({ provider, userQuery: "anything", snapshot });
+    expect(result.conflicts.filter((c) => c.startsWith("citation:"))).toEqual([]);
+    expect(result.claims[0]!.support).toEqual(["e_001"]);
   });
 });

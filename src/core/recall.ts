@@ -82,20 +82,47 @@ ${eventDigest}`;
     recallResultSchema,
   );
 
+  // INVARIANT 7 — citations must be CORRECT, which means they come from the
+  // call, not from the model. Before 2026-09-05 `shardId`/`snapshotId` were
+  // copied from the model's echoed `shard_id`/`snapshot_id` and every claim's
+  // `support` ids were taken on trust, so a hallucinated id would have been
+  // cited downstream as if it were real. The snapshot this call was made
+  // against is the truth: use it, and record any disagreement as a conflict
+  // so the discrepancy is visible rather than silently corrected.
+  const conflicts = [...data.conflicts];
+  if (data.shard_id !== snapshot.shardId || data.snapshot_id !== snapshot.snapshotId) {
+    conflicts.push(
+      `citation: model echoed ${data.shard_id}@${data.snapshot_id} for a recall made ` +
+        `against ${snapshot.shardId}@${snapshot.snapshotId}; the call's ids are used.`,
+    );
+  }
+  const knownEventIds = new Set(snapshot.events.map((e) => e.eventId));
+  let fabricated = 0;
+  // Cast is safe: `tolerantClaimsArray` in schemas.ts validates every item
+  // individually via `claimSchema.safeParse`, so anything that reaches here
+  // has the shape `RecallClaim`. The cast exists only because Zod 3.x
+  // reports `z.array(z.unknown()).transform()` as `unknown[]` through
+  // `z.infer`, even though the transform return type is precise.
+  const claims = (data.claims as RecallClaim[]).map((c) => {
+    const support = c.support.filter((id) => knownEventIds.has(id));
+    fabricated += c.support.length - support.length;
+    return support.length === c.support.length ? c : { ...c, support };
+  });
+  if (fabricated > 0) {
+    conflicts.push(
+      `citation: ${fabricated} support id(s) not present in ${snapshot.shardId}@${snapshot.snapshotId} were dropped.`,
+    );
+  }
+
   return {
     result: {
-      shardId: data.shard_id,
-      snapshotId: data.snapshot_id,
+      shardId: snapshot.shardId,
+      snapshotId: snapshot.snapshotId,
       confidence: data.confidence,
       answer: data.answer,
-      // Cast is safe: `tolerantClaimsArray` in schemas.ts validates every item
-      // individually via `claimSchema.safeParse`, so anything that reaches here
-      // has the shape `RecallClaim`. The cast exists only because Zod 3.x
-      // reports `z.array(z.unknown()).transform()` as `unknown[]` through
-      // `z.infer`, even though the transform return type is precise.
-      claims: data.claims as RecallClaim[],
+      claims,
       unknowns: data.unknowns,
-      conflicts: data.conflicts,
+      conflicts,
     },
     usage,
   };
