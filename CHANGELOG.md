@@ -6,6 +6,58 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Full-repo audit, fix units 3–12 (2026-09-05)
+
+Continuation of the audit recorded in units 1 and 2 above. Each unit is one
+commit; each finding was verified by hand before being touched. Full candidate
+list with per-item status: `docs/experiments/AUDIT-2026-09-05.md`.
+
+- **Unit 3 — invariant 4.** Six bare `.sort().slice()` cuts routed through
+  `select()` with their tiebreak stated (byte-identical order). The degeneracy
+  report is now SURFACED: `AskRunResult.selection`, three new fields on every
+  `QueryRunRecord`, and bridge `raw_response.meta` (plus `hybridRouterStats()`
+  and new chronicle degenerate-bucket counters). `selectCandidatesHybridDetailed`
+  returns the report alongside the candidates.
+- **Unit 4 — invariant 6.** The live recall prompt named a PaySwift entity on
+  every call for every corpus; replaced. `HIGH_SIGNAL` retained as a disclosed
+  exception (default-OFF, measured lever). "mistake" in the coverage cue set
+  verified deliberate and left.
+- **Unit 5 — AMB provider.** Respawn now replays `documents.jsonl` (it served an
+  empty server before); replay batched under the 256 MiB body cap (the 10M
+  store is 329 MB); startup deadline actually fires (stdout read on a thread).
+- **Unit 6 — write-time caches.** Empty builds are never cached or served; four
+  zero-byte registries removed; every row carries `factRegistryStatus` and
+  `factFoldMode` (off/replace/folded/standalone/unavailable).
+- **Unit 7 — Committer.** Dry-run says `wouldMutate:false` for unimplemented
+  actions; `requiresUserConfirmation` is honoured (`confirmed:true` / `--confirm`);
+  CLI validates `--action`/`--memory-type`; a crash-orphan snapshot is diagnosed
+  with a recovery path instead of failing forever.
+- **Unit 8 — chronicle keying.** `assembleChronicle` keyed four maps by bare
+  event id; durable ids are per-shard (`e_0001` in every shard), so multi-shard
+  `csm ask` under coverage collided. Keyed by (shard, event); bare footholds
+  resolve to every shard that has them.
+- **Unit 9 — invariant 7.** Recall citations come from the snapshot the call
+  was made against; fabricated support ids dropped; both recorded as conflicts.
+- **Unit 10 — ops.** Watchdog can only relaunch a ladder whose `-Tag` it knows
+  (the ladder records it); guards see `pwsh`; `omb` matched as a word;
+  `Write-Warning` so the .env abort actually exits 2; slice resume writes a new
+  manifest instead of overwriting; report uses the head-to-head's certification
+  rule (n≥2, MDE, CI); leakage scan says SKIP on zero events; tier script checks
+  the head-to-head exit status.
+- **Unit 11 — eval harness.** `meta.citationsInferred` marks rows whose
+  citations the harness substituted; errored cells are excluded from
+  early-stop and no longer double-counted on resume (`cellsErrored` reported);
+  `refusedEmpty` surfaced from the cache layer; under-sampling warns.
+- **Unit 12 — docs.** Public docs corrected (see the unit-12 commit for the
+  full list: provider "nothing else", 500K exclusion count, cross-instrument
+  before/after labelled, pre-#20 judge, three missing default-ON augmentations,
+  CLI-vs-bridge routing, ~25%/~9% internal share, verifier pins, dead script
+  references, Node 22, CI exists, wrong embedding package). Experiment docs get
+  dated forward pointers rather than rewrites.
+
+Tests 549 → 563. Lint, build, `verify:published` (86 PASS / 0 FAIL), `bench:smoke`, and
+the mock eval all green at HEAD.
+
 ### Audit fix unit 2 — invariant 5 enforced everywhere (2026-09-05)
 
 CLAUDE.md states that every `CSM_*` read goes through `src/utils/env.ts` and

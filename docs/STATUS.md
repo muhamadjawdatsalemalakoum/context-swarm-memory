@@ -1,6 +1,6 @@
 # STATUS — where Context Swarm Memory actually stands
 
-**Last updated: 2026-08-30.** This is the single page that says what is true
+**Last updated: 2026-09-05.** This is the single page that says what is true
 *today*. Every other document in `docs/` is a record of a moment; when one of
 them disagrees with this page, this page wins and the other one is history.
 
@@ -236,8 +236,61 @@ deltas are compared.
 
 - CSM is an **R&D prototype**, not a product.
 - It has **no leaderboard placement** and does not claim SOTA.
-- Its **flat-cost property** is measured and durable.
+- Its **flat per-query retrieval cost** is measured and durable; its ingest cost is O(corpus) and disclosed.
 - Its **certified accuracy claims** are two categories, on a free instrument,
   cross-reader replicated, with MDEs and exclusions attached.
 - Its **failure record is public** and longer than its win record.
 - The goal of "leading two categories at every corpus size" is **not met**.
+
+## Audit 2026-09-05 — every layer, by hand
+
+A 14-layer audit (core read path, write path and contracts, providers,
+storage/utils/CLI, the CSM baseline runner, the eval harness, the AMB bridge,
+the gate scripts, the verifier and charts, ops scripts and integrations, tests,
+top-level docs, experiment docs, config and CI) produced **383 candidate
+findings**. Agent-side verification was killed twice by usage limits, so every
+finding acted on below was **verified by hand against the code or the artifact**
+before it was touched. The full candidate list with per-item status is
+[`experiments/AUDIT-2026-09-05.md`](experiments/AUDIT-2026-09-05.md); the twelve
+fix units are the commits `e952618..HEAD` and are itemised in `CHANGELOG.md`.
+
+### Invariant scorecard (CLAUDE.md's ten, after the fixes)
+
+| # | invariant | before the audit | now | decided by |
+|---|---|---|---|---|
+| 1 | Query path never mutates durable memory | upheld, tested | **upheld, tested** | `tests/mutationSafety.test.ts` (SHA-256) |
+| 2 | Durable writes only via `appendEventAndSnapshot` / `applyCommitDecision` | upheld; one undocumented exception (`csm init` writes the `init` chronicle record) | **upheld, exception documented** in ARCHITECTURE.md | `src/core/commit.ts`, `src/cli/index.ts` |
+| 3 | Snapshots immutable, storage refuses overwrites | upheld, but a crash-orphan made every later append fail with a bare refusal | **upheld; orphan diagnosed with a recovery path** | `commit.ts` orphan check, `tests/commit.test.ts` |
+| 4 | Ranking through `select()`; degeneracy reported | **violated** — 6 bare `.sort().slice()` cuts; report computed then discarded by `ask()`; no consumer of `hybridRouterStats()` | **upheld and surfaced**: all cuts through `select()`; `AskRunResult.selection`, `QueryRunRecord.routerDiscriminated/recallDiscriminated/degenerate[]`, bridge `raw_response.meta` | `tests/askPipeline.test.ts`, `tests/selection.test.ts` |
+| 5 | Every `CSM_*` read through `env.ts`; unknown value throws | **violated** — 12 hand-parsed integer readers, 2 silent-default enums (`CSM_PROVIDER` → mock!), 5 tests pinning the silence | **upheld, tabled**: all through `envInt`/`envPositiveInt`/`envEnum` | `tests/envIntegerResolvers.test.ts`, `tests/env.test.ts` |
+| 6 | No corpus vocabulary in the retrieval path | **violated** — the live recall prompt named a PaySwift entity; `HIGH_SIGNAL` is a hand-written vocabulary | **prompt fixed; `HIGH_SIGNAL` retained as a disclosed exception** (default-OFF measured lever) | `src/core/prompts.ts`, `digestSelection.ts` header |
+| 7 | Recall cites shard, snapshot, event IDs correctly | **violated** — shard/snapshot copied from the model's echo; support ids taken on trust | **upheld**: ids from the call, fabricated support dropped, both recorded as conflicts | `tests/recallScope.test.ts` |
+| 8 | Every LLM JSON output through a Zod schema + `providerJson` | upheld | **upheld** (no finding survived) | `src/core/schemas.ts`, `providerJson.ts` |
+| 9 | Gold never reaches retrieval (leakage firewall) | upheld in code; the filler leakage scan was vacuous on a fresh checkout ("Clean" after reading 0 events) | **upheld; scan says SKIP when it scanned nothing** | `tests/beamLeakageFirewall.test.ts`, `verify-no-leakage.ts` |
+| 10 | Write-time artifacts fold, never append | **overstated** — the bridge emits a standalone document when no capsule exists | **restated as the conditional it is**, and every row now says how the registry rode (`factFoldMode`) | `amb-csm-retrieve.ts`, README/site/llms |
+
+### Published numbers the audit changed
+
+- 10M span coverage: **63.5–88.8%** (was 64.3–89.7%; regex matched only dated turn markers).
+- Head-to-head reader cap (200,000 chars) fired on 1/140 certified 500K rows and 1/70 in the 1M paired fold arm, never on Hindsight — asymmetric against CSM, now counted in the output.
+- The hybrid-router evidence (+0.365) predates the render-gap fix and was never re-measured with the capsule rendered.
+- Second-reader exclusions at 500K: 3 `knowledge_update` pairs (7 across the pair), not 7.
+- Judge calibration (ρ 0.864) is against the **pre-#20** official judge, since replaced upstream.
+- "3-file provider and nothing else": `amb:patch` also edits two upstream files.
+- Internal token component is **not** pinned by `verify:published` (only `context_tokens` is).
+
+### Run-integrity defects fixed
+
+A dead warm server respawned empty and served the rest of the unit as wrong
+rows; the 10M resume could never have fit its single-POST replay under the 256
+MiB cap; an empty fact-registry build was cached forever as a silent OFF (four
+such files existed); a failed fold build was indistinguishable from fold-OFF; the
+watchdog relaunched a ladder that then blocked on a parameter prompt; a resumed
+slice run overwrote its own manifest; the report certified at n=1.
+
+### Still open
+
+The candidate list holds items the audit did not act on — mostly low-severity
+drift in experiment docs, dead exports, and test-coverage gaps — each marked
+`unaddressed` in the record. Nothing in that set touches a published number.
+

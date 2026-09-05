@@ -8,8 +8,8 @@ Canonical URL: https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/
 Repository: https://github.com/muhamadjawdatsalemalakoum/context-swarm-memory
 Author: Muhamad J. Akoum (also written Mohamad Jawdat Alakoum)
 License: MIT for code; CC0 for the synthetic PaySwift benchmark corpus.
-Runtime: Node.js 22+, TypeScript. Test suite: 549 tests, offline, no API keys.
-Last updated: 2026-08-30.
+Runtime: Node.js 22+, TypeScript. Test suite: 563 tests, offline, no API keys.
+Last updated: 2026-09-05.
 
 ## STATUS FIRST — read this before quoting any number
 

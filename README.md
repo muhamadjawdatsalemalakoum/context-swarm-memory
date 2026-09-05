@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/tests-549%20passing-brightgreen.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-563%20passing-brightgreen.svg" alt="Tests">
   <img src="https://img.shields.io/badge/node-%E2%89%A522-339933.svg" alt="Node">
   <img src="https://img.shields.io/badge/status-R%26D%20prototype-orange.svg" alt="Status">
   <a href="https://muhamadjawdatsalemalakoum.github.io/context-swarm-memory/"><img src="https://img.shields.io/badge/website-GitHub%20Pages-0E7C66.svg" alt="Website"></a>
@@ -319,7 +319,7 @@ Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
 
 ```bash
 npm install
-npm test                       # 549 tests, no API keys (deterministic MockProvider)
+npm test                       # 563 tests, no API keys (deterministic MockProvider)
 
 npm run csm -- init
 npm run csm -- shard create --name "Project X" --tags x,architecture
