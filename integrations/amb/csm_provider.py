@@ -29,9 +29,11 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -112,17 +114,7 @@ class CSMMemoryProvider(MemoryProvider):
 
         # Resume path: replay the durable document log into the (empty) server
         # so `--skip-ingestion`-style runs see the previously ingested state.
-        if self._documents_path.exists():
-            health = self._get("/healthz")
-            if int(health.get("documents", 0)) == 0:
-                docs = []
-                with self._documents_path.open("r", encoding="utf-8") as fh:
-                    for line in fh:
-                        line = line.strip()
-                        if line:
-                            docs.append(json.loads(line))
-                if docs:
-                    self._post("/ingest", {"documents": docs})
+        self._replay_documents_if_empty(reason="prepare(reset=False)")
 
     # ── data path ────────────────────────────────────────────────────────────
 
@@ -153,7 +145,21 @@ class CSMMemoryProvider(MemoryProvider):
         user_id: str | None = None,
         query_timestamp: str | None = None,
     ) -> tuple[list[Document], dict | None]:
-        self._ensure_server()
+        respawned = self._ensure_server()
+        if respawned:
+            # The warm server died mid-run. Before 2026-09-05 this path silently
+            # started an EMPTY server and served the rest of the unit from it:
+            # every remaining query came back `no_documents_in_scope` with HTTP
+            # 200, AMB recorded them as ordinary wrong rows, and the ladder
+            # counted them toward tier completion. Replay the durable log first,
+            # and say so loudly.
+            print(
+                "[csm-provider] WARNING: warm server was not running at retrieve(); "
+                "respawned and replaying documents.jsonl before serving.",
+                file=sys.stderr,
+                flush=True,
+            )
+            self._replay_documents_if_empty(reason="respawn during retrieve()")
         return_k = int(os.environ.get("CSM_AMB_RETURN_K", str(k)))
 
         started = time.perf_counter()
@@ -185,9 +191,17 @@ class CSMMemoryProvider(MemoryProvider):
 
     # ── warm server management ───────────────────────────────────────────────
 
-    def _ensure_server(self) -> None:
+    def _ensure_server(self) -> bool:
+        """Start the warm server if it is not running. Returns True when a (re)spawn happened."""
         if self._proc is not None and self._proc.poll() is None and self._port is not None:
-            return
+            return False
+        if self._proc is not None:
+            code = self._proc.poll()
+            print(
+                f"[csm-provider] WARNING: warm server exited with code {code}; respawning.",
+                file=sys.stderr,
+                flush=True,
+            )
         if not self._repo_dir.exists():
             raise RuntimeError(
                 f"CSM_REPO_DIR does not exist: {self._repo_dir}. "
@@ -222,35 +236,88 @@ class CSMMemoryProvider(MemoryProvider):
         deadline = time.monotonic() + float(os.environ.get("CSM_AMB_SERVER_STARTUP_TIMEOUT_SEC", "120"))
         port: int | None = None
         assert self._proc.stdout is not None
-        while time.monotonic() < deadline:
-            line = self._proc.stdout.readline()
-            if not line:
+
+        # The deadline used to be checked only BETWEEN readline() calls, and
+        # readline() blocks -- a child that stayed alive but printed nothing
+        # hung initialize() forever and CSM_AMB_SERVER_STARTUP_TIMEOUT_SEC never
+        # fired. Read on a thread and poll the queue with a timeout instead. The
+        # same thread keeps draining stdout for the life of the process so the
+        # child never blocks on a full pipe.
+        lines: "queue.Queue[str | None]" = queue.Queue()
+
+        def _pump(stream) -> None:
+            try:
+                for ln in stream:
+                    lines.put(ln)
+            except Exception:
+                pass
+            finally:
+                lines.put(None)
+
+        threading.Thread(target=_pump, args=(self._proc.stdout,), daemon=True).start()
+
+        while port is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            try:
+                line = lines.get(timeout=min(0.5, remaining))
+            except queue.Empty:
                 if self._proc.poll() is not None:
                     raise RuntimeError(
                         f"CSM bridge server exited with code {self._proc.returncode} before becoming ready. "
                         f"See log: {log_path}"
                     )
-                time.sleep(0.05)
                 continue
+            if line is None:
+                raise RuntimeError(
+                    f"CSM bridge server closed stdout (exit code {self._proc.poll()}) before becoming ready. "
+                    f"See log: {log_path}"
+                )
             if line.startswith("AMB_CSM_SERVER_READY"):
                 try:
                     port = int(line.strip().split("port=", 1)[1])
                 except (IndexError, ValueError) as err:
                     raise RuntimeError(f"Unparseable CSM server ready line: {line!r}") from err
-                break
         if port is None:
             raise RuntimeError(f"CSM bridge server did not become ready in time. See log: {log_path}")
         self._port = port
+        return True
 
-        # Keep draining stdout so the child never blocks on a full pipe.
-        def _drain(stream) -> None:
-            try:
-                for _ in stream:
-                    pass
-            except Exception:
-                pass
+    # Keep each replay POST comfortably under the server's 256 MiB body cap.
+    # The completed 10M store is ~329 MB on disk, so a single-POST replay --
+    # which is what the old resume path did -- could never have resumed 10M.
+    _REPLAY_BATCH_BYTES = 48 * 1024 * 1024
 
-        threading.Thread(target=_drain, args=(self._proc.stdout,), daemon=True).start()
+    def _replay_documents_if_empty(self, *, reason: str) -> None:
+        """Re-ingest the durable document log into a server that holds no documents."""
+        if self._documents_path is None or not self._documents_path.exists():
+            return
+        health = self._get("/healthz")
+        if int(health.get("documents", 0)) != 0:
+            return
+        batch: list[dict] = []
+        batch_bytes = 0
+        total = 0
+        with self._documents_path.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                batch.append(json.loads(line))
+                batch_bytes += len(line) + 1
+                if batch_bytes >= self._REPLAY_BATCH_BYTES:
+                    self._post("/ingest", {"documents": batch})
+                    total += len(batch)
+                    batch, batch_bytes = [], 0
+        if batch:
+            self._post("/ingest", {"documents": batch})
+            total += len(batch)
+        print(
+            f"[csm-provider] replayed {total} document(s) from {self._documents_path.name} ({reason})",
+            file=sys.stderr,
+            flush=True,
+        )
 
     def _post(self, route: str, body: dict, timeout: float = 120.0) -> dict:
         return self._request("POST", route, body, timeout)
