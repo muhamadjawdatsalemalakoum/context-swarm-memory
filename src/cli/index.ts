@@ -437,9 +437,29 @@ async function cmdCommit(rest: string[]): Promise<number> {
   }
   const args = parseArgs(rest.slice(1));
   const shard = flagString(args, "shard") ?? null;
-  const action = (flagString(args, "action") ?? "no_op") as CommitDecision["action"];
+  // These were `as`-cast with no validation, so a mistyped --action produced a
+  // dry-run that said "would mutate" and an apply that did nothing, both
+  // exiting 0 (audit 2026-09-05). Validate against the closed vocabularies in
+  // src/core/types.ts.
+  const ACTIONS: readonly CommitDecision["action"][] = [
+    "no_op", "write", "update", "freeze", "split", "merge", "ask_confirmation",
+  ];
+  const MEMORY_TYPES: readonly CommitDecision["memoryType"][] = [
+    "fact", "user_preference", "project_decision", "correction", "inference", "none",
+  ];
+  const actionRaw = flagString(args, "action") ?? "no_op";
+  const action = ACTIONS.find((a) => a === actionRaw);
+  if (!action) {
+    console.error(`--action must be one of ${ACTIONS.join(", ")} (got ${JSON.stringify(actionRaw)})`);
+    return 2;
+  }
   const content = flagString(args, "content") ?? "";
-  const memoryType = (flagString(args, "memory-type") ?? "fact") as CommitDecision["memoryType"];
+  const memoryTypeRaw = flagString(args, "memory-type") ?? "fact";
+  const memoryType = MEMORY_TYPES.find((m) => m === memoryTypeRaw);
+  if (!memoryType) {
+    console.error(`--memory-type must be one of ${MEMORY_TYPES.join(", ")} (got ${JSON.stringify(memoryTypeRaw)})`);
+    return 2;
+  }
   const tagsRaw = flagString(args, "tags") ?? "";
   const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
   const decision: CommitDecision = {
@@ -457,7 +477,7 @@ async function cmdCommit(rest: string[]): Promise<number> {
     const r = await dryRunCommit({ storage, decision });
     console.log(`would_mutate=${r.wouldMutate}  chronicle_type=${r.chronicleType}\n${r.description}`);
   } else {
-    const r = await applyCommitDecision({ storage, decision });
+    const r = await applyCommitDecision({ storage, decision, confirmed: flagBool(args, "confirm", false) });
     console.log(`applied=${r.applied}\n${r.description}`);
   }
   return 0;

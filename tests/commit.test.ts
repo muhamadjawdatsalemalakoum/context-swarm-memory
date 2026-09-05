@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { makeTempStorage } from "./helpers.js";
-import { createShard, dryRunCommit, applyCommitDecision } from "../src/core/commit.js";
+import { appendEventAndSnapshot, createShard, dryRunCommit, applyCommitDecision } from "../src/core/commit.js";
 import { SHARD_SYSTEM_PROMPT } from "../src/core/prompts.js";
 import { recommendForFullness, shardHealthReport } from "../src/core/split.js";
 import type { CommitDecision, MemoryDirectory } from "../src/core/types.js";
@@ -78,6 +78,79 @@ describe("commit protocol skeleton (Phase 2)", () => {
     await applyCommitDecision({ storage: ctx.storage, decision: dec });
     const m = await ctx.storage.loadManifest("c-001");
     expect(m?.status).toBe("frozen");
+  });
+});
+
+describe("commit protocol — audit 2026-09-05 fixes", () => {
+  let ctx: Awaited<ReturnType<typeof makeTempStorage>>;
+  const base = (): CommitDecision => ({
+    action: "no_op",
+    targetShardId: "c-001",
+    memoryType: "fact",
+    content: "",
+    confidence: 0.7,
+    requiresUserConfirmation: false,
+    tags: [],
+    source: "user_confirmation",
+  });
+  beforeEach(async () => {
+    ctx = await makeTempStorage();
+    await createShard({
+      storage: ctx.storage,
+      id: "c-001",
+      name: "C",
+      description: "Commit audit test",
+      tags: ["c"],
+      systemPrompt: SHARD_SYSTEM_PROMPT,
+      summary: "x",
+    });
+  });
+  afterEach(async () => { await ctx.cleanup(); });
+
+  it("dry-run reports wouldMutate:false for unimplemented actions, and apply agrees", async () => {
+    const unimplemented: CommitDecision["action"][] = ["split", "merge", "ask_confirmation"];
+    for (const action of unimplemented) {
+      const dec = { ...base(), action };
+      const dry = await dryRunCommit({ storage: ctx.storage, decision: dec });
+      expect(dry.wouldMutate, action).toBe(false);
+      expect(dry.chronicleType, action).toBe("none");
+      const applied = await applyCommitDecision({ storage: ctx.storage, decision: dec });
+      expect(applied.applied, action).toBe(false);
+    }
+    // and an unrecognised action string is treated the same way, not as a mutation
+    const bogus = { ...base(), action: "bogus" as unknown as CommitDecision["action"] };
+    expect((await dryRunCommit({ storage: ctx.storage, decision: bogus })).wouldMutate).toBe(false);
+  });
+
+  it("apply refuses a decision that requiresUserConfirmation unless confirmed:true", async () => {
+    const dec: CommitDecision = { ...base(), action: "write", content: "needs a human", requiresUserConfirmation: true };
+    const before = (await ctx.storage.loadManifest("c-001"))!.latestSnapshotId;
+    const refused = await applyCommitDecision({ storage: ctx.storage, decision: dec });
+    expect(refused.applied).toBe(false);
+    expect(refused.description).toMatch(/requires user confirmation/i);
+    expect((await ctx.storage.loadManifest("c-001"))!.latestSnapshotId).toBe(before);
+
+    const ok = await applyCommitDecision({ storage: ctx.storage, decision: dec, confirmed: true });
+    expect(ok.applied).toBe(true);
+    expect((await ctx.storage.loadManifest("c-001"))!.latestSnapshotId).not.toBe(before);
+  });
+
+  it("an orphan snapshot left by a crashed append is diagnosed with a recovery path, not a bare overwrite refusal", async () => {
+    const manifest = (await ctx.storage.loadManifest("c-001"))!;
+    const prev = (await ctx.storage.loadSnapshot("c-001", manifest.latestSnapshotId))!;
+    expect(manifest.latestSnapshotId).toBe("S001");
+    // Simulate a previous append that wrote S002 and died before saveManifest.
+    await ctx.storage.writeSnapshot({ ...prev, snapshotId: "S002", parentSnapshotId: "S001" });
+    await expect(
+      appendEventAndSnapshot({
+        storage: ctx.storage,
+        shardId: "c-001",
+        event: { role: "user", content: "after the crash" },
+        reason: "test",
+        actor: "user",
+        chronicleType: "commit_write",
+      }),
+    ).rejects.toThrow(/Orphan snapshot c-001\/S002 .*not in the manifest.*Recovery/);
   });
 });
 

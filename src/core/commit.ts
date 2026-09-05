@@ -67,6 +67,22 @@ export async function appendEventAndSnapshot(args: {
     parentSnapshotId: prevSnapshot.snapshotId,
   };
 
+  // Write order is deliberate: immutable blob first, then the pointers. A crash
+  // between writeSnapshot and saveManifest therefore leaves an ORPHAN snapshot
+  // on disk that no manifest references. The next append would compute the
+  // same id, hit the storage layer's overwrite refusal, and fail the shard
+  // forever with a message that says nothing about why. Detect it here and say
+  // exactly what happened and how to recover (audit 2026-09-05).
+  const orphan = await storage.loadSnapshot(shardId, newSnapId);
+  if (orphan) {
+    throw new Error(
+      `Orphan snapshot ${shardId}/${newSnapId} exists on disk but is not in the manifest ` +
+        `(manifest latest=${manifest.latestSnapshotId}). A previous append crashed after ` +
+        `writing the snapshot and before updating the manifest. Recovery: inspect the file; ` +
+        `if its events are correct, add ${newSnapId} to the manifest's snapshotIds and set ` +
+        `latestSnapshotId to it; otherwise delete the file. Nothing is overwritten automatically.`,
+    );
+  }
   await storage.writeSnapshot(newSnapshot);
 
   const updatedManifest: ShardManifest = {
@@ -252,9 +268,13 @@ export async function dryRunCommit(args: {
       chronicleType: "shard_frozen",
     };
   }
+  // split / merge / ask_confirmation / anything unrecognised: not implemented,
+  // so it does NOT mutate. This used to say wouldMutate:true beside "Would be a
+  // no-op", and applyCommitDecision then returned applied:false -- a
+  // self-contradictory dry-run a caller could not trust (audit 2026-09-05).
   return {
-    wouldMutate: true,
-    description: `Action ${decision.action} not implemented in MVP. Would be a no-op.`,
+    wouldMutate: false,
+    description: `Action ${String(decision.action)} not implemented in MVP. No-op.`,
     chronicleType: "none",
   };
 }
@@ -263,10 +283,24 @@ export async function dryRunCommit(args: {
 export async function applyCommitDecision(args: {
   storage: JsonlStorage;
   decision: CommitDecision;
+  /**
+   * Must be `true` to apply a decision whose `requiresUserConfirmation` is set.
+   * Before 2026-09-05 the flag was carried on every decision and read by
+   * nothing -- a decision that asked for confirmation was applied unconditionally.
+   */
+  confirmed?: boolean;
 }): Promise<{ applied: boolean; description: string }> {
-  const { storage, decision } = args;
+  const { storage, decision, confirmed = false } = args;
   const dry = await dryRunCommit({ storage, decision });
   if (!dry.wouldMutate) return { applied: false, description: dry.description };
+  if (decision.requiresUserConfirmation && !confirmed) {
+    return {
+      applied: false,
+      description:
+        `Decision requires user confirmation and none was given. ` +
+        `Dry-run: ${dry.description} -- re-run with confirmed:true (CLI: --confirm) to apply.`,
+    };
+  }
 
   if (!decision.targetShardId) {
     return { applied: false, description: "Missing targetShardId." };
