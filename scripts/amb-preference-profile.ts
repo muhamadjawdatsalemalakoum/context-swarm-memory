@@ -106,12 +106,15 @@ export async function loadOrBuildPreferenceProfile(args: {
 }): Promise<{ text: string; fromCache: boolean; outputTokens: number; chunks: number }> {
   const cachePath = preferenceProfileCachePath(args);
   if (existsSync(cachePath)) {
-    return {
-      text: readFileSync(cachePath, "utf8"),
-      fromCache: true,
-      outputTokens: 0,
-      chunks: 0,
-    };
+    // A 0-byte or whitespace-only file is NOT a hit. Before 2026-09-05 an empty
+    // build result was written to disk and then read back as a valid artifact
+    // on every later run, so the lever was permanently and silently OFF for
+    // that split|user|model key -- four such files were found in the real cache.
+    const cached = readFileSync(cachePath, "utf8");
+    if (cached.trim().length > 0) {
+      return { text: cached, fromCache: true, outputTokens: 0, chunks: 0 };
+    }
+    process.stderr.write(`[pref] ignoring empty cache file ${cachePath} -- rebuilding\n`);
   }
 
   const r = await args.baseline.organizePreferencesScaled({
@@ -148,11 +151,17 @@ export async function loadOrBuildPreferenceProfile(args: {
     onProgress: args.onProgress,
   });
 
-  try {
-    mkdirSync(dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, r.text, "utf8");
-  } catch {
-    // A cache write failure must never fail the run.
+  if (r.text.trim().length > 0) {
+    try {
+      mkdirSync(dirname(cachePath), { recursive: true });
+      writeFileSync(cachePath, r.text, "utf8");
+    } catch {
+      // A cache write failure must never fail the run.
+    }
+  } else {
+    // Never persist an empty build: the next run must try again, not inherit
+    // a silent OFF.
+    process.stderr.write(`[pref] build returned empty text for ${cachePath}; not caching\n`);
   }
   return { text: r.text, fromCache: false, outputTokens: r.outputTokens, chunks: r.chunks };
 }

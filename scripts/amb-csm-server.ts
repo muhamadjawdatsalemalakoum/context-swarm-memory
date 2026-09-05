@@ -576,6 +576,15 @@ export async function handleRetrieve(
   const foldedFactRegistry = factFoldActive()
     ? await getScopedFactRegistryFolded(state, request.user_id, corpus)
     : undefined;
+  // Distinguish "lever off" from "lever on but the build failed" in the row
+  // itself. Before 2026-09-05 a failed registry build degraded to no-registry
+  // with no marker, so a run could be graded without its certified lever and
+  // look identical to a fold-OFF run.
+  const factRegistryStatus: "off" | "available" | "build-failed" = !factFoldActive()
+    ? "off"
+    : foldedFactRegistry === undefined
+      ? "build-failed"
+      : "available";
   return executeAmbRetrieve({
     baseline: state.baseline,
     providerName: state.providerName,
@@ -586,6 +595,7 @@ export async function handleRetrieve(
     observationBuildCost: observation?.buildCost ?? null,
     factRegistry: foldedFactRegistry ?? fact?.text,
     factBuildCost: fact?.buildCost ?? null,
+    factRegistryStatus,
     preferenceProfile,
   });
 }

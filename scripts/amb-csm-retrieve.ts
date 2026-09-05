@@ -229,6 +229,9 @@ export async function executeAmbRetrieve(input: {
     latencyMs: number;
     chunks: number;
   } | null;
+  /** Server-side verdict on the registry: lets a row say "the certified lever
+   *  was ON but its build FAILED" instead of looking like fold-OFF. */
+  factRegistryStatus?: "off" | "available" | "build-failed";
 }): Promise<AmbRetrievePayload> {
   const {
     baseline,
@@ -240,6 +243,7 @@ export async function executeAmbRetrieve(input: {
     observationBuildCost,
     factRegistry,
     factBuildCost,
+    factRegistryStatus,
     preferenceProfile,
   } = input;
   const query: FreeFormQuery = {
@@ -571,11 +575,25 @@ export async function executeAmbRetrieve(input: {
   // CURRENT VALUES (fact registry) -- same fold-not-append rule; the header
   // licenses the reader to COMMIT to the latest value (measured: hedged
   // correct answers score 0.5 where crisp commitment scores 1.0).
+  // Recorded into raw_response so every row states how the registry rode:
+  // folded into an existing capsule, or as its own standalone document (point
+  // queries with no capsule) -- the conditional the "fold, never append"
+  // wording glossed over.
+  let factFoldMode: "off" | "unavailable" | "folded" | "standalone" | "replace" = !factFold
+    ? factActive
+      ? "replace"
+      : "off"
+    : factActive
+      ? "folded"
+      : factRegistryStatus === "build-failed"
+        ? "unavailable"
+        : "off";
   if (factFold && factActive) {
     const factBlock = renderFactFoldBlock(factRegistry as string);
     if (capsule) {
       capsule = { ...capsule, content: `${factBlock}\n\n---\n\n${capsule.content}` };
     } else {
+      factFoldMode = "standalone";
       capsule = {
         id: "csm-fact-registry",
         content: factBlock,
@@ -629,6 +647,8 @@ ${digests}` };
       // lets analysis separate the one-time build cost from per-query cost.
       observationBuildCost: obsActive ? (observationBuildCost ?? null) : null,
       factBuildCost: factActive ? (factBuildCost ?? null) : null,
+      factFoldMode,
+      factRegistryStatus: factRegistryStatus ?? (factActive ? "available" : "off"),
     },
   };
 }
