@@ -68,7 +68,11 @@ function loadLocalEnv() {
 loadLocalEnv();
 
 const PORT = Number.parseInt(process.env.CSM_AGENT_PORT ?? "8787", 10);
-const DEFAULT_MODEL = process.env.CSM_AGENT_MODEL ?? "claude-opus-5";
+// Sonnet 5 is the iteration/testing instrument: every gate script
+// (answer-arms, judge-arms, headtohead-arms, calibrate-judge) already defaults
+// to it, and the judge calibration (rho 0.864 vs the official Gemini judge) was
+// established on it. Opus is reserved for explicit --model overrides.
+const DEFAULT_MODEL = process.env.CSM_AGENT_MODEL ?? "claude-sonnet-5";
 const MAX_TURNS = Number.parseInt(process.env.CSM_AGENT_MAX_TURNS ?? "6", 10);
 const MAX_BODY_BYTES = 32 * 1024 * 1024;
 
