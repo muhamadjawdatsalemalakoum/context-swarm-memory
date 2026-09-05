@@ -403,10 +403,10 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   // if its probe was rejected.
   //
   // Why: the 8B probe model is a false-negative bottleneck. On q11 ("Which
-  // integration partner from the dental-SaaS vertical signed the first LOI?")
+  // integration partner from the <vertical> signed the first LOI?")
   // the router correctly picked `s-customers` as the #1 candidate, but the e4b
   // probe said `knows: false` because the small model couldn't bridge query
-  // terms like "dental-SaaS" to the shard's actual ChairSync events. With
+  // category terms like "<vertical>" to the shard's actual entity events. With
   // probe-only gating, the pipeline returned 0 packed events and the answering
   // model had to guess.
   //

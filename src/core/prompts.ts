@@ -111,7 +111,7 @@ Answer using only this shard snapshot. Return JSON only:
 Each entry in "support" must be a bare event ID like "e_0001" — not the event content.
 
 Relevance guidance — IMPORTANT, read carefully:
-- DO NOT require exact terminology match. If the question asks about a "dental-SaaS vendor" and the events describe "ChairSync, a dental-practice management software", that IS a match. Resolve aliases, synonyms, and paraphrases liberally.
+- DO NOT require exact terminology match. If the question refers to an entity by its role or category (e.g. "the payments vendor", "the analytics tool we adopted") and an event names the specific company or product that fills that role, that IS a match. Resolve aliases, synonyms, and paraphrases liberally.
 - If ANY event in this shard describes entities, decisions, dates, or topics related to the question — even if the connection requires light inference — produce a claim for it. Better to surface a weakly-supported claim with confidence 0.3 than to return empty.
 - Only return an empty claims list when the shard is genuinely about a different topic with NO connection to the question.
 

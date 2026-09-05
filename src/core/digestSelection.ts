@@ -151,6 +151,16 @@ function salienceScore(e: DigestEvent, qTerms: Set<string>): number {
 
 // Decision/quantity cue words that mark answer-bearing clauses. Kept small and
 // deterministic; this is a lexical heuristic, not a model.
+//
+// INVARIANT-6 EXCEPTION, DISCLOSED (audit 2026-09-05): this is a hand-written
+// English business vocabulary, neither corpus-derived nor structural, which
+// CLAUDE.md forbids in the retrieval path. It is retained because (a) it lives
+// behind CSM_SIGNALS_RANKER, default OFF, so it is not on the certified path or
+// in any published number; (b) it was MEASURED under that flag (BABILong
+// task-1 needle 7%→100% @8K; no multi-hop gain) and silently rewriting a
+// measured lever would destroy the comparability of that record. If the lever
+// is ever promoted to a default, this table must first be replaced by a
+// corpus-derived signal (e.g. df-weighted terms) and re-gated.
 const HIGH_SIGNAL: RegExp[] = [
   /\bdecid/i,
   /\bapprov/i,
