@@ -491,7 +491,14 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
 
   // Scope: all events of all provided snapshots, with parsed timestamps.
   const scoped: ScopedEvent[] = [];
-  const byEventId = new Map<string, ScopedEvent>();
+  // Events are keyed by (shardId, eventId), never by eventId alone: durable
+  // store ids are per-shard sequences (`e_0001` exists in every shard), so a
+  // bare-id key collided across shards on any multi-shard `csm ask` --
+  // scoring one shard's event with another's token set and collapsing
+  // distinct events (audit 2026-09-05). Probe footholds still arrive as bare
+  // ids; `byBareId` resolves one to every shard that has it.
+  const keyOf = (item: ScopedEvent): string => `${item.shardId}\u001f${item.event.eventId}`;
+  const byBareId = new Map<string, ScopedEvent[]>();
   for (const snap of [...snapshots].sort((a, b) => compareNaturally(a.shardId, b.shardId))) {
     for (const event of snap.events) {
       const item: ScopedEvent = {
@@ -501,7 +508,9 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
         timeMs: event.createdAt ? Date.parse(event.createdAt) : Number.NaN,
       };
       scoped.push(item);
-      if (!byEventId.has(event.eventId)) byEventId.set(event.eventId, item);
+      const arr = byBareId.get(event.eventId);
+      if (arr) arr.push(item);
+      else byBareId.set(event.eventId, [item]);
     }
   }
   if (scoped.length === 0) return [];
@@ -532,9 +541,7 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
    *  handles topic identification — no length heuristics, no domain tables. */
   const anchored = extractAnchoredTerms(query);
   const footholdShardIds = new Set(
-    footholdEventIds
-      .map((id) => byEventId.get(id)?.shardId)
-      .filter((id): id is string => Boolean(id)),
+    footholdEventIds.flatMap((id) => (byBareId.get(id) ?? []).map((item) => item.shardId)),
   );
   const scoreAt = (ix: number, terms: string[]): number => {
     const set = tokenSets[ix]!;
@@ -547,14 +554,12 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
     }
     return score;
   };
-  const indexById = new Map<string, number>();
-  scoped.forEach((item, ix) => indexById.set(item.event.eventId, ix));
+  const indexByKey = new Map<string, number>();
+  scoped.forEach((item, ix) => indexByKey.set(keyOf(item), ix));
 
   // Terms: query → footholds → self-discovered seeds.
   const queryTerms = extractCoverageTerms(query, 16);
-  const footholdItems = footholdEventIds
-    .map((id) => byEventId.get(id))
-    .filter((item): item is ScopedEvent => Boolean(item));
+  const footholdItems = footholdEventIds.flatMap((id) => byBareId.get(id) ?? []);
   const querySeeds =
     queryTerms.length > 0
       ? scoped
@@ -583,10 +588,10 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
   const seedLists: SeedList[] = [];
   const seedSeen = new Set<string>();
   const pushSeed = (item: ScopedEvent, perRound: number): void => {
-    if (seedSeen.has(item.event.eventId)) return;
-    seedSeen.add(item.event.eventId);
+    if (seedSeen.has(keyOf(item))) return;
+    seedSeen.add(keyOf(item));
     const content = item.event.content.slice(0, SEED_CONTENT_CHARS);
-    const seedIx = indexById.get(item.event.eventId);
+    const seedIx = indexByKey.get(keyOf(item));
     const ranked = rankExpansionTerms(
       // 128-candidate cap: the cap is pre-RANKING, so a tight cap silently
       // drops topic vocabulary that appears late in the seed's text
@@ -720,7 +725,7 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
   if (footholdItems.length > 0 && terms.length > 0 && expansionTerms.length > 0) {
     const hop1Top = scoped
       .map((item, ix) => ({ item, ix, score: scoreAt(ix, terms) }))
-      .filter((s) => s.score > 0 && !seedSeen.has(s.item.event.eventId))
+      .filter((s) => s.score > 0 && !seedSeen.has(keyOf(s.item)))
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return compareNaturally(a.item.event.eventId, b.item.event.eventId);
@@ -770,13 +775,14 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
 
   const picked = new Map<string, { item: ScopedEvent; score: number }>();
   const pick = (item: ScopedEvent, score: number): void => {
-    const prior = picked.get(item.event.eventId);
-    if (!prior || score > prior.score) picked.set(item.event.eventId, { item, score });
+    const k = keyOf(item);
+    const prior = picked.get(k);
+    if (!prior || score > prior.score) picked.set(k, { item, score });
   };
 
   // Phase 0 — footholds are probe-verified evidence: always included.
   for (const item of footholdItems) {
-    const ix = indexById.get(item.event.eventId);
+    const ix = indexByKey.get(keyOf(item));
     pick(item, ix === undefined ? 0 : scoreAt(ix, terms));
   }
 
@@ -794,7 +800,7 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
     for (let start = 0; start < events.length; start += bucketSize) {
       const bucket = events.slice(start, start + bucketSize);
       const winners = bucket
-        .map((item) => ({ item, score: scoreAt(indexById.get(item.event.eventId)!, terms) }))
+        .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
         .filter((s) => s.score > 0)
         .sort((a, b) => {
           if (b.score !== a.score) return b.score - a.score;
@@ -812,8 +818,8 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
   // final score-ranked cap arbitrates between spread picks and top scorers.
   {
     const remaining = scoped
-      .filter((item) => !picked.has(item.event.eventId))
-      .map((item) => ({ item, score: scoreAt(indexById.get(item.event.eventId)!, terms) }))
+      .filter((item) => !picked.has(keyOf(item)))
+      .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
       .filter((s) => s.score > 0)
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
@@ -831,12 +837,12 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
     for (let i = 0; i < want && all.length > 0; i++) {
       const ix = want === 1 ? 0 : Math.round((i * (all.length - 1)) / (want - 1));
       const item = all[ix];
-      if (item && !picked.has(item.event.eventId)) pick(item, 0);
+      if (item && !picked.has(keyOf(item))) pick(item, 0);
     }
     // Fill any duplicate-index gaps with the earliest unpicked events.
     for (const item of all) {
       if (picked.size >= maxEntries) break;
-      if (!picked.has(item.event.eventId)) pick(item, 0);
+      if (!picked.has(keyOf(item))) pick(item, 0);
     }
   }
 
@@ -868,13 +874,14 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
         if (ad !== bd) return ad < bd ? 1 : -1; // latest first
         return compareNaturally(b.eventId, a.eventId);
       });
+      const entryKey = (e: ChronicleEntry): string => `${e.shardId}\u001f${e.eventId}`;
       const dropped = new Set<string>();
       for (const e of dropOrder) {
         if (total <= maxTimelineTokens) break;
-        dropped.add(e.eventId);
+        dropped.add(entryKey(e));
         total -= tokensOf(e);
       }
-      entries = entries.filter((e) => !dropped.has(e.eventId));
+      entries = entries.filter((e) => !dropped.has(entryKey(e)));
     }
   }
 
