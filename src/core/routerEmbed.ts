@@ -42,14 +42,13 @@ import {
   scoreEntryLexical,
   selectCandidates,
   termMatchesAnyTag,
-  tokenize,
-} from "./router.js";
+  tokenize, selectCandidatesDetailed } from "./router.js";
 import {
   decodeCentroid,
   type DirectoryEntryWithDescriptors,
 } from "./descriptors.js";
 import { bestUnitScore } from "./retrievalUnit.js";
-import { select } from "./selection.js";
+import { select, type DegenerateReason } from "./selection.js";
 
 /** Local text embedder. `src/eval/embed.ts#embed` satisfies this; tests
  *  inject deterministic fakes. Declared here so core never imports eval. */
@@ -292,13 +291,42 @@ export function resetHybridRouterStats(): void {
   delete hybridStats.lastEmbedError;
 }
 
+export interface HybridRouteResult {
+  candidates: CandidateScore[];
+  selection: HybridSelectionReport & {
+    totalCandidates: number;
+    path: "hybrid" | "hybrid-fallback-no-index" | "hybrid-fallback-embed-failed";
+  };
+}
+
+/** Back-compatible array-returning form; prefer `selectCandidatesHybridDetailed`
+ *  where the degeneracy report matters (ask() does). */
 export async function selectCandidatesHybrid(
   opts: HybridRouteOptions,
 ): Promise<CandidateScore[]> {
+  return (await selectCandidatesHybridDetailed(opts)).candidates;
+}
+
+export async function selectCandidatesHybridDetailed(
+  opts: HybridRouteOptions,
+): Promise<HybridRouteResult> {
   const { query, directory, maxCandidates = 8, index } = opts;
+  const lexicalFallback = (path: HybridRouteResult["selection"]["path"]): HybridRouteResult => {
+    const r = selectCandidatesDetailed({ query, directory, maxCandidates });
+    return {
+      candidates: r.selected,
+      selection: {
+        discriminated: r.discriminated,
+        degenerateReason: r.degenerateReason,
+        signalRatio: r.signalRatio,
+        totalCandidates: r.totalCandidates,
+        path,
+      },
+    };
+  };
   if (!index) {
     hybridStats.fallbackNoIndex++;
-    return selectCandidates({ query, directory, maxCandidates });
+    return lexicalFallback("hybrid-fallback-no-index");
   }
 
   let queryVec: Float32Array | null = null;
@@ -314,7 +342,7 @@ export async function selectCandidatesHybrid(
   if (!queryVec) {
     hybridStats.fallbackEmbedFailed++;
     hybridStats.lastEmbedError = embedError;
-    return selectCandidates({ query, directory, maxCandidates });
+    return lexicalFallback("hybrid-fallback-embed-failed");
   }
   hybridStats.hybrid++;
 
@@ -396,14 +424,23 @@ export async function selectCandidatesHybrid(
     degenerateReason: result.degenerateReason,
     signalRatio: result.signalRatio,
   };
-  return result.selected.map(({ entry, score, reasons }) => ({ entry, score, reasons }));
+  return {
+    candidates: result.selected.map(({ entry, score, reasons }) => ({ entry, score, reasons })),
+    selection: {
+      discriminated: result.discriminated,
+      degenerateReason: result.degenerateReason,
+      signalRatio: result.signalRatio,
+      totalCandidates: result.totalCandidates,
+      path: "hybrid",
+    },
+  };
 }
 
 /** Degeneracy report of the most recent `selectCandidatesHybrid` cut, for the
  *  probe-shrink gate. Same process-local pattern as `hybridRouterStats`. */
 export interface HybridSelectionReport {
   discriminated: boolean;
-  degenerateReason?: string;
+  degenerateReason?: DegenerateReason;
   signalRatio: number;
 }
 

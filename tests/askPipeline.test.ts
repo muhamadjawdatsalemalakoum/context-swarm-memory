@@ -52,4 +52,31 @@ describe("ask pipeline", () => {
     // We tolerate no key claims; mutation must still be false.
     expect(result.mutated).toBe(false);
   });
+
+  it("carries the router's and recall's select() reports onto the result and the query-run record (invariant 4)", async () => {
+    const provider = new MockProvider();
+    const q1 = "What did we decide about OpenClaw and Thalm?";
+    const q2 = "what colour is the moon today";
+    const r1 = await ask({ provider, storage: ctx.storage, query: q1 });
+    const r2 = await ask({ provider, storage: ctx.storage, query: q2 });
+    for (const r of [r1, r2]) {
+      // The report used to be computed by select() and dropped before it reached anyone.
+      expect(r.selection.router.path).toBe("lexical");
+      expect(typeof r.selection.router.discriminated).toBe("boolean");
+      expect(r.selection.router.totalCandidates).toBeGreaterThan(0);
+      expect(typeof r.selection.recall.discriminated).toBe("boolean");
+    }
+    const runs = await ctx.storage.readQueryRuns();
+    const rec1 = runs.find((r) => r.query === q1)!;
+    const rec2 = runs.find((r) => r.query === q2)!;
+    expect(rec1).toBeDefined();
+    expect(rec2).toBeDefined();
+    for (const [rec, res] of [[rec1, r1], [rec2, r2]] as const) {
+      expect(rec.routerDiscriminated).toBe(res.selection.router.discriminated);
+      expect(rec.recallDiscriminated).toBe(res.selection.recall.discriminated);
+      // A degenerate cut is NAMED in the record; a clean one leaves no entry.
+      expect(rec.degenerate.some((d) => d.startsWith("router:"))).toBe(!res.selection.router.discriminated);
+      expect(rec.degenerate.some((d) => d.startsWith("recall:"))).toBe(!res.selection.recall.discriminated);
+    }
+  });
 });

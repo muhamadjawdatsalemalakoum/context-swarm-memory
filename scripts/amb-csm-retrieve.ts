@@ -7,7 +7,7 @@ import {
   extractDatePhrases,
   parseDatePhrase,
 } from "../src/core/coverage.js";
-import { dedupeInOrder } from "../src/core/selection.js";
+import { dedupeInOrder, select } from "../src/core/selection.js";
 import { estimateTokens } from "../src/core/tokenBudget.js";
 import { CsmBaseline } from "../src/eval/baselines/csm.js";
 import {
@@ -1222,15 +1222,20 @@ function selectChronologicalCoverageIds(
     const bucketSize = Math.max(1, Math.ceil(shardEvents.length / bucketCount));
     for (let start = 0; start < shardEvents.length; start += bucketSize) {
       const bucket = shardEvents.slice(start, start + bucketSize);
-      const scored = bucket
-        .map((event) => ({ event, score: coverageScore(event.content, terms) }))
-        .filter((item) => item.score > 0)
-        .sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          return turnNumber(a.event) - turnNumber(b.event);
-        })
-        .slice(0, perBucket)
-        .map((item) => item.event.id);
+      // Through select(): score desc, then turn number asc as a zero-padded key
+      // (turnNumber may be MAX_SAFE_INTEGER, 16 digits) -- the same policy the
+      // hand-rolled sort applied, now stated (invariant 4).
+      const scored = select(
+        bucket
+          .map((event) => ({ event, score: coverageScore(event.content, terms) }))
+          .filter((item) => item.score > 0),
+        {
+          score: (item) => item.score,
+          key: (item) => String(turnNumber(item.event)).padStart(16, "0"),
+          limit: perBucket,
+          tieBreak: "key-asc",
+        },
+      ).selected.map((item) => item.event.id);
       selected.push(...scored);
       if (selected.length >= maxIds) return dedupeInOrder(selected);
     }

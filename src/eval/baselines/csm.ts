@@ -1,15 +1,14 @@
 import { ask, resolveProbeLocalKeep } from "../../core/ask.js";
 import { envFlag, envInt } from "../../utils/env.js";
-import { dedupeInOrder } from "../../core/selection.js";
+import { dedupeInOrder, select } from "../../core/selection.js";
 import { escapeRegExp } from "../../utils/text.js";
-import { collectTimelineEventIds } from "../../core/coverage.js";
+import { collectTimelineEventIds, coverageSelectionStats } from "../../core/coverage.js";
 import { centroidOf, deriveShardDescriptors } from "../../core/descriptors.js";
 import { partitionIntoUnits, resolveUnitSize } from "../../core/retrievalUnit.js";
 import {
   buildRouterIndex,
   hybridEquivalentOfLexScore,
-  type RouterIndex,
-} from "../../core/routerEmbed.js";
+  type RouterIndex, hybridRouterStats } from "../../core/routerEmbed.js";
 import { SHARD_SYSTEM_PROMPT } from "../../core/prompts.js";
 import {
   estimateEventsTokens,
@@ -317,19 +316,20 @@ export function buildEntityBridgeGroups(
     if (seenGroup.has(groupKey)) continue;
     seenGroup.add(groupKey);
 
-    const candidates = (eventsByShard.get(seed.shardId) ?? [])
+    const scoredCandidates = (eventsByShard.get(seed.shardId) ?? [])
       .filter((event) => event.id !== eventId)
       .map((event) => ({
         event,
         score: bridgeScore(event.content, terms),
       }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return b.event.id.localeCompare(a.event.id);
-      })
-      .slice(0, rankedLimit)
-      .map((item) => item.event.id);
+      .filter((item) => item.score > 0);
+    // Through select(): same score-desc then id-desc policy, stated (invariant 4).
+    const candidates = select(scoredCandidates, {
+      score: (item) => item.score,
+      key: (item) => item.event.id,
+      limit: rankedLimit,
+      tieBreak: "key-desc",
+    }).selected.map((item) => item.event.id);
 
     if (candidates.length > 0) {
       groups.push({
@@ -361,18 +361,19 @@ export function buildLocalLexicalBridgeGroups(
 
   const groups: ShardLocalExpansionInput[] = [];
   for (const [shardId, afterEventId] of lastEventIdByShard) {
-    const candidates = (eventsByShard.get(shardId) ?? [])
+    const scoredCandidates = (eventsByShard.get(shardId) ?? [])
       .map((event) => ({
         event,
         score: bridgeScore(event.content, queryTerms),
       }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return b.event.id.localeCompare(a.event.id);
-      })
-      .slice(0, rankedLimit)
-      .map((item) => item.event.id);
+      .filter((item) => item.score > 0);
+    // Through select(): same score-desc then id-desc policy, stated (invariant 4).
+    const candidates = select(scoredCandidates, {
+      score: (item) => item.score,
+      key: (item) => item.event.id,
+      limit: rankedLimit,
+      tieBreak: "key-desc",
+    }).selected.map((item) => item.event.id);
 
     if (candidates.length > 0) {
       groups.push({ shardId, afterEventId, rankedIds: candidates });
@@ -1657,6 +1658,15 @@ export class CsmBaseline implements BaselineRunner {
         candidateShardIds: askResult.candidates.map((c) => c.entry.id),
         probedShardIds: askResult.probes.map((p) => p.shardId),
         recalledShardIds: askResult.recalls.map((r) => r.shardId),
+        // Invariant 4, surfaced: whether the router and recall cuts actually
+        // discriminated, plus the hybrid router's fallback counters and the
+        // chronicle assembler's degenerate-bucket counters. Before 2026-09-05
+        // every one of these existed and none reached a row.
+        routerDiscriminated: askResult.selection.router.discriminated,
+        routerSelectionPath: askResult.selection.router.path,
+        recallDiscriminated: askResult.selection.recall.discriminated,
+        hybridRouterStats: hybridRouterStats(),
+        coverageSelectionStats: coverageSelectionStats(),
         ragFallbackFired,
         ragFallbackShardId,
         ragAugmentCount,

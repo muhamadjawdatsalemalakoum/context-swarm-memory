@@ -188,6 +188,21 @@ export interface AskRunCost {
   latencyMs: number;
 }
 
+/**
+ * What a `select()` cut reported about itself (src/core/selection.ts). Carried
+ * on every ask() result and query-run record so "the ranking was arbitrary" is
+ * a fact the operator can see, not one the code computed and threw away
+ * (invariant 4: a component that cannot discriminate must SAY so).
+ */
+export interface SelectionSummary {
+  discriminated: boolean;
+  degenerateReason?: "no-candidates" | "no-signal" | "ties-at-cut";
+  signalRatio: number;
+  totalCandidates: number;
+  /** Router only: which path produced the cut. */
+  path?: "lexical" | "hybrid" | "hybrid-fallback-no-index" | "hybrid-fallback-embed-failed";
+}
+
 export interface AskRunResult {
   query: string;
   candidates: CandidateScore[];
@@ -211,6 +226,8 @@ export interface AskRunResult {
   recallTokensPerShard: number;
   /** True when the coverage intent classifier escalated the recall budget. */
   coverageEscalated: boolean;
+  /** Degeneracy reports of the two production cuts (router, recall). */
+  selection: { router: SelectionSummary; recall: SelectionSummary };
 }
 
 // Commit protocol — Phase 2.
@@ -258,6 +275,11 @@ export interface QueryRunRecord {
   cost: AskRunCost;
   mutated: false;
   providerName: string;
+  /** Whether the router's and recall's score->cut actually discriminated. */
+  routerDiscriminated: boolean;
+  recallDiscriminated: boolean;
+  /** Human-readable list of which cuts were degenerate and why; empty when none. */
+  degenerate: string[];
 }
 
 // Split/compact recommendations — Phase 3.

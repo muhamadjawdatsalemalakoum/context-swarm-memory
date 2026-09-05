@@ -38,7 +38,7 @@ import type {
 } from "./types.js";
 import { estimateTokens } from "./tokenBudget.js";
 import { envFlag, envInt, envPositiveInt } from "../utils/env.js";
-import { dedupeInOrder } from "./selection.js";
+import { dedupeInOrder, select } from "./selection.js";
 import { escapeRegExp } from "../utils/text.js";
 
 // ─── Intent classification ──────────────────────────────────────────────────
@@ -471,6 +471,24 @@ interface ScopedEvent {
  * Output is globally date-ordered (undated last), deduped, capped, and every
  * entry carries shardId/snapshotId/eventId for full citation discipline.
  */
+/** Process-local counters of how many per-bucket / global cuts inside
+ *  assembleChronicle were DEGENERATE (all-tied or no-signal), so a harness can
+ *  report it. Same pattern as routerEmbed's hybridRouterStats. */
+export interface CoverageSelectionStats {
+  buckets: number;
+  degenerateBuckets: number;
+  globalCuts: number;
+  degenerateGlobalCuts: number;
+}
+const coverageStats: CoverageSelectionStats = { buckets: 0, degenerateBuckets: 0, globalCuts: 0, degenerateGlobalCuts: 0 };
+export function coverageSelectionStats(): CoverageSelectionStats {
+  return { ...coverageStats };
+}
+export function resetCoverageSelectionStats(): void {
+  coverageStats.buckets = 0; coverageStats.degenerateBuckets = 0;
+  coverageStats.globalCuts = 0; coverageStats.degenerateGlobalCuts = 0;
+}
+
 export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[] {
   const {
     query,
@@ -798,16 +816,20 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
     const events = [...(byShard.get(shardId) ?? [])].sort(chrono);
     const bucketSize = Math.max(1, Math.ceil(events.length / bucketCount));
     for (let start = 0; start < events.length; start += bucketSize) {
-      const bucket = events.slice(start, start + bucketSize);
-      const winners = bucket
-        .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
-        .filter((s) => s.score > 0)
-        .sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          return chrono(a.item, b.item);
-        })
-        .slice(0, perBucket);
-      for (const w of winners) pick(w.item, w.score);
+      const bucket = events.slice(start, start + bucketSize); // already chrono-sorted
+      // Through select(): the bucket is in chrono order, so "stable" IS the
+      // old chrono tiebreak, stated rather than inherited (invariant 4).
+      // Zero-score events were never eligible here (the old chain filtered
+      // score>0 before sorting); keep that so select() only ranks real hits.
+      const cut = select(
+        bucket
+          .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
+          .filter((x) => x.score > 0),
+        { score: (x) => x.score, key: (x) => keyOf(x.item), limit: perBucket, tieBreak: "stable" },
+      );
+      coverageStats.buckets++;
+      if (!cut.discriminated && cut.degenerateReason !== "no-candidates") coverageStats.degenerateBuckets++;
+      for (const w of cut.selected) pick(w.item, w.score);
     }
   }
 
@@ -817,16 +839,18 @@ export function assembleChronicle(args: AssembleChronicleArgs): ChronicleEntry[]
   // perBucket=2 dropped two of them despite top-10 global scores). The
   // final score-ranked cap arbitrates between spread picks and top scorers.
   {
-    const remaining = scoped
-      .filter((item) => !picked.has(keyOf(item)))
-      .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
-      .filter((s) => s.score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return chrono(a.item, b.item);
-      })
-      .slice(0, maxEntries);
-    for (const s of remaining) pick(s.item, s.score);
+    // Pre-sort by chrono so select()'s "stable" tiebreak is the old chrono one.
+    const cut = select(
+      [...scoped]
+        .sort(chrono)
+        .filter((item) => !picked.has(keyOf(item)))
+        .map((item) => ({ item, score: scoreAt(indexByKey.get(keyOf(item))!, terms) }))
+        .filter((x) => x.score > 0),
+      { score: (x) => x.score, key: (x) => keyOf(x.item), limit: maxEntries, tieBreak: "stable" },
+    );
+    coverageStats.globalCuts++;
+    if (!cut.discriminated && cut.degenerateReason !== "no-candidates") coverageStats.degenerateGlobalCuts++;
+    for (const w of cut.selected) pick(w.item, w.score);
   }
 
   // Phase C — breadth spread for summary/aggregation (or forced).

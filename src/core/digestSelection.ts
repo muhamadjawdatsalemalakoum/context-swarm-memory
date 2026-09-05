@@ -1,4 +1,5 @@
 import { tokenize } from "./router.js";
+import { select } from "./selection.js";
 import { estimateTokens } from "./tokenBudget.js";
 import { envFlag } from "../utils/env.js";
 import { truncate } from "../utils/text.js";
@@ -115,10 +116,13 @@ function orderCandidates(
 ): DigestEvent[] {
   if (opts.reorderBySalience) {
     // Rank all candidates by query salience (stable: ties keep original order).
-    const ranked = events
-      .map((e, i) => ({ e, i, score: salienceScore(e, qTerms!) }))
-      .sort((a, b) => b.score - a.score || a.i - b.i)
-      .map((x) => x.e);
+    // Through select() with "stable" — identical order to the old
+    // `b.score - a.score || a.i - b.i`, but the cut can now say when it was
+    // arbitrary (invariant 4; this is one of the four sites selection.ts names).
+    const ranked = select(
+      events.map((e, i) => ({ e, i, score: salienceScore(e, qTerms!) })),
+      { score: (x) => x.score, key: (x) => String(x.i).padStart(8, "0"), limit: events.length, tieBreak: "stable" },
+    ).selected.map((x) => x.e);
     if (!opts.hint || !opts.hint.length) return ranked;
     // The probe hint is production's safety net: hinted events ALWAYS lead (as in
     // blind mode), salience-ordered within each group. This guarantees salient

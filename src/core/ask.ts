@@ -8,12 +8,13 @@ import type {
   ProbeResult,
   QueryRunRecord,
   RecallResult,
+  SelectionSummary,
 } from "./types.js";
-import { selectCandidates } from "./router.js";
+import { selectCandidatesDetailed } from "./router.js";
 import {
   lastHybridSelectionReport,
   routeConfidence,
-  selectCandidatesHybrid,
+  selectCandidatesHybridDetailed,
   type RouterIndex,
 } from "./routerEmbed.js";
 import {
@@ -153,15 +154,32 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   const directory = await storage.loadDirectory();
   // Hybrid when an index is supplied, byte-identical Phase-0 path otherwise
   // (docs/experiments/EXP-T2-router.md §5).
-  const candidates: CandidateScore[] = opts.routerIndex
-    ? await selectCandidatesHybrid({
+  // Both paths return their `select()` report; ask() carries it to the result
+  // and the query-run record instead of dropping it on the floor (invariant 4).
+  const routerCut: { candidates: CandidateScore[]; selection: SelectionSummary } = opts.routerIndex
+    ? await selectCandidatesHybridDetailed({
         query, directory, index: opts.routerIndex,
         maxCandidates: Math.max(maxProbeShards, budget.maxCandidateShards) })
-    : selectCandidates({ query, directory, maxCandidates: Math.max(maxProbeShards, budget.maxCandidateShards) });
+    : (() => {
+        const r = selectCandidatesDetailed({ query, directory, maxCandidates: Math.max(maxProbeShards, budget.maxCandidateShards) });
+        return {
+          candidates: r.selected,
+          selection: {
+            discriminated: r.discriminated,
+            degenerateReason: r.degenerateReason,
+            signalRatio: r.signalRatio,
+            totalCandidates: r.totalCandidates,
+            path: "lexical" as const,
+          },
+        };
+      })();
+  const candidates: CandidateScore[] = routerCut.candidates;
+  const NO_RECALL_CUT: SelectionSummary = { discriminated: true, signalRatio: 0, totalCandidates: 0 };
 
   // Short-circuit: nothing to ask.
   if (candidates.length === 0) {
     return await finalize({
+      selection: { router: routerCut.selection, recall: NO_RECALL_CUT },
       query,
       runId,
       startedAt,
@@ -225,11 +243,13 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
     });
     const scores = await opts.localProbeGate(query, digests);
     const keepSet = new Set<number>([0]);
-    const ranked = probedCandidates
-      .map((_, ix) => ix)
-      .slice(1)
-      .sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0) || a - b);
-    for (const ix of ranked.slice(0, Math.max(0, localKeep - 1))) keepSet.add(ix);
+    const gate = select(probedCandidates.map((_, ix) => ix).slice(1), {
+      score: (ix) => scores[ix] ?? 0,
+      key: (ix) => String(ix).padStart(6, "0"),
+      limit: Math.max(0, localKeep - 1),
+      tieBreak: "stable",
+    });
+    for (const ix of gate.selected) keepSet.add(ix);
     const keptIx = probedCandidates.map((_, ix) => ix).filter((ix) => keepSet.has(ix));
     probedCandidates = keptIx.map((ix) => probedCandidates[ix]!);
     snapshotsByCandidate = keptIx.map((ix) => snapshotsByCandidate[ix]!);
@@ -536,6 +556,15 @@ export async function ask(opts: AskOptions): Promise<AskRunResult> {
   }
 
   return await finalize({
+    selection: {
+      router: routerCut.selection,
+      recall: {
+        discriminated: recallSelection.discriminated,
+        degenerateReason: recallSelection.degenerateReason,
+        signalRatio: recallSelection.signalRatio,
+        totalCandidates: recallSelection.totalCandidates,
+      },
+    },
     query,
     runId,
     startedAt,
@@ -572,6 +601,7 @@ async function finalize(args: {
   discardedRecalls?: number;
   recallTokensPerShard: number;
   coverageEscalated: boolean;
+  selection: AskRunResult["selection"];
 }): Promise<AskRunResult> {
   args.cost.latencyMs = Date.now() - args.latencyStart;
   const finishedAt = args.finishedAtFn();
@@ -589,7 +619,15 @@ async function finalize(args: {
     discardedRecalls: args.discardedRecalls ?? 0,
     recallTokensPerShard: args.recallTokensPerShard,
     coverageEscalated: args.coverageEscalated,
+    selection: args.selection,
   };
+  const degenerate: string[] = [];
+  if (!args.selection.router.discriminated) {
+    degenerate.push(`router: ${args.selection.router.degenerateReason ?? "degenerate"} (${args.selection.router.path ?? "?"}, signal ${args.selection.router.signalRatio.toFixed(2)} of ${args.selection.router.totalCandidates})`);
+  }
+  if (!args.selection.recall.discriminated) {
+    degenerate.push(`recall: ${args.selection.recall.degenerateReason ?? "degenerate"} (signal ${args.selection.recall.signalRatio.toFixed(2)} of ${args.selection.recall.totalCandidates})`);
+  }
   if (!args.skipQueryLog && args.storage.appendQueryRun) {
     const record: QueryRunRecord = {
       runId: args.runId,
@@ -603,6 +641,9 @@ async function finalize(args: {
       cost: args.cost,
       mutated: false,
       providerName: args.provider.name,
+      routerDiscriminated: args.selection.router.discriminated,
+      recallDiscriminated: args.selection.recall.discriminated,
+      degenerate,
     };
     await args.storage.appendQueryRun(record);
   }
