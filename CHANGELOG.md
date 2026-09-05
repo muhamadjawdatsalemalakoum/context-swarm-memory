@@ -6,6 +6,44 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Audit fix unit 2 — invariant 5 enforced everywhere (2026-09-05)
+
+CLAUDE.md states that every `CSM_*` read goes through `src/utils/env.ts` and
+that an unrecognised value THROWS. The audit found **twelve hand-parsed
+integer readers** that silently fell back to their default on garbage, two
+enum readers that silently defaulted, and **five tests that pinned the silent
+behaviour** — one of them literally named `..._rejects_unknown` while asserting
+the opposite. This is the same class that once let `CSM_ROUTER_HYBRID=off` turn
+the router ON.
+
+Routed through `envInt` / `envPositiveInt` / `envEnum`, so a present but
+invalid value now throws an `EnvConfigError` naming the variable:
+`CSM_RECALL_BUDGET`, `CSM_MAX_PROBE_SHARDS`, `CSM_MAX_RECALL_SHARDS`
+(`tokenBudget.ts`); `CSM_COVERAGE_RECALL_TOKENS`, `CSM_COVERAGE_MAX_ENTRIES`,
+`CSM_COVERAGE_STARVATION_FLOOR` (`coverage.ts`, whose private
+`parsePositiveInt` is deleted); `CSM_RETRIEVAL_UNITS`; `CSM_SHARD_EXPAND_K/_MAX`,
+`CSM_LEXICAL_BRIDGE_K/_MAX`, `CSM_ENTITY_BRIDGE_K/_MAX` (`baselines/csm.ts`);
+`CSM_VIRTUAL_SHARDS` (`amb-csm-retrieve.ts`); `CSM_GEMINI_CACHE` (was
+warn-once-and-default); and **`CSM_PROVIDER`** — a typo like `gemni` used to fall
+through URL auto-detection and run the entire CLI or benchmark on MockProvider
+without anyone noticing. Unset still auto-detects; a present unknown value now
+throws.
+
+Where 0 is a meaningful "off" (retrieval units, bridges, shard expand, virtual
+shards, starvation floor) the resolver uses `min: 0`; where a count must be
+positive (budgets, shard counts, coverage tokens/entries) 0 throws too, as
+`envPositiveInt` documents.
+
+Tests: the five silent-default pins in `digestSelection`, `coverageAssembler`,
+`embeddingFloor`, `geminiCaching`, `retrievalUnit` now pin the throw. New
+`tests/envIntegerResolvers.test.ts` is a table of every integer/enum resolver
+outside env.ts asserting unset→default, valid→verbatim, zero→off-or-throw, and
+garbage→`EnvConfigError` naming the variable — a resolver not in the table is a
+resolver nobody checked. `tests/env.test.ts`'s AMBIENT clear-list gains
+`CSM_AMB_PREFERENCE_PROFILE` and `CSM_AMB_FACT_FOLD`, both FLAGS rows whose
+"unset default" assertions were otherwise reading the developer's shell.
+557 tests.
+
 ### Full-repo audit, fix unit 1 — published-claim corrections (2026-09-05)
 
 A 14-layer, 25-finder audit produced 383 candidate findings. Verification by

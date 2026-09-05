@@ -701,8 +701,9 @@ export function buildCorpus(documents: AmbDocument[]): Corpus {
  * — only `shardId` moves.
  */
 function resolveVirtualShardSize(raw = process.env.CSM_VIRTUAL_SHARDS): number {
-  const n = Number.parseInt(String(raw ?? ""), 10);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  // 0 = OFF. A present non-integer (e.g. "on", "4x") throws rather than
+  // silently disabling the lever (invariant 5).
+  return envInt(raw, { name: "CSM_VIRTUAL_SHARDS", fallback: 0, min: 0 });
 }
 
 function documentToEvents(doc: AmbDocument, index: number): BenchEvent[] {

@@ -1,3 +1,4 @@
+import { envInt } from "../utils/env.js";
 /**
  * RETRIEVAL UNITS — the single source of truth for "what granularity does CSM
  * reason about?"
@@ -164,6 +165,7 @@ export function topKUnitScore(unitScores: readonly number[], k: number): number 
  * legacy whole-shard centroid, so the default is byte-identical.
  */
 export function resolveUnitSize(raw = process.env.CSM_RETRIEVAL_UNITS): number {
-  const n = Number.parseInt(String(raw ?? ""), 10);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  // 0 = off (legacy whole-shard centroid); any other present value must be a
+  // non-negative integer or it throws (invariant 5).
+  return envInt(raw, { name: "CSM_RETRIEVAL_UNITS", fallback: 0, min: 0 });
 }

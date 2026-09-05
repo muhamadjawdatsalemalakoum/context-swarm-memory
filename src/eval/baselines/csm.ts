@@ -274,17 +274,13 @@ export function applyShardLocalExpansion(
 }
 
 export function resolveShardExpandK(raw = process.env.CSM_SHARD_EXPAND_K): number {
-  if (raw === undefined || raw.trim().length === 0) return 3;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 3;
+  return envInt(raw, { name: "CSM_SHARD_EXPAND_K", fallback: 3, min: 0 });
 }
 
 export function resolveShardExpandMax(
   raw = process.env.CSM_SHARD_EXPAND_MAX,
 ): number {
-  if (raw === undefined || raw.trim().length === 0) return 16;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 16;
+  return envInt(raw, { name: "CSM_SHARD_EXPAND_MAX", fallback: 16, min: 0 });
 }
 
 export interface EntityBridgeEvent {
@@ -387,31 +383,23 @@ export function buildLocalLexicalBridgeGroups(
 }
 
 export function resolveLexicalBridgeK(raw = process.env.CSM_LEXICAL_BRIDGE_K): number {
-  if (raw === undefined || raw.trim().length === 0) return 0;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return envInt(raw, { name: "CSM_LEXICAL_BRIDGE_K", fallback: 0, min: 0 });
 }
 
 export function resolveLexicalBridgeMax(
   raw = process.env.CSM_LEXICAL_BRIDGE_MAX,
 ): number {
-  if (raw === undefined || raw.trim().length === 0) return 20;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 20;
+  return envInt(raw, { name: "CSM_LEXICAL_BRIDGE_MAX", fallback: 20, min: 0 });
 }
 
 export function resolveEntityBridgeK(raw = process.env.CSM_ENTITY_BRIDGE_K): number {
-  if (raw === undefined || raw.trim().length === 0) return 6;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 6;
+  return envInt(raw, { name: "CSM_ENTITY_BRIDGE_K", fallback: 6, min: 0 });
 }
 
 export function resolveEntityBridgeMax(
   raw = process.env.CSM_ENTITY_BRIDGE_MAX,
 ): number {
-  if (raw === undefined || raw.trim().length === 0) return 24;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) ? parsed : 24;
+  return envInt(raw, { name: "CSM_ENTITY_BRIDGE_MAX", fallback: 24, min: 0 });
 }
 
 /**

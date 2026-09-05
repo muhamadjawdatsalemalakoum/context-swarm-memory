@@ -337,8 +337,10 @@ describe("coverage budgets & flags", () => {
       DEFAULT_COVERAGE_RECALL_TOKENS,
     );
     expect(resolveCoverageRecallTokens(coverage, 1200, "2400")).toBe(2400);
-    expect(resolveCoverageRecallTokens(coverage, 1200, "garbage")).toBe(
-      DEFAULT_COVERAGE_RECALL_TOKENS,
+    // Invariant 5: a present, unparseable value throws — it used to silently
+    // resolve to the default on the default-ON coverage path.
+    expect(() => resolveCoverageRecallTokens(coverage, 1200, "garbage")).toThrow(
+      /CSM_COVERAGE_RECALL_TOKENS/,
     );
   });
 
@@ -363,6 +365,8 @@ describe("coverage budgets & flags", () => {
     expect(resolveCoverageStarvationFloor(undefined)).toBe(4);
     expect(resolveCoverageStarvationFloor("0")).toBe(0);
     expect(resolveCoverageStarvationFloor("7")).toBe(7);
-    expect(resolveCoverageStarvationFloor("nope")).toBe(4);
+    // Invariant 5: garbage throws rather than reverting to 4.
+    expect(() => resolveCoverageStarvationFloor("nope")).toThrow(/CSM_COVERAGE_STARVATION_FLOOR/);
+    expect(() => resolveCoverageStarvationFloor("-1")).toThrow(/CSM_COVERAGE_STARVATION_FLOOR/);
   });
 });

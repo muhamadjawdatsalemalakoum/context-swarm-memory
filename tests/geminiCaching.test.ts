@@ -141,7 +141,10 @@ describe("resolveGeminiCacheMode", () => {
     expect(resolveGeminiCacheMode("off")).toBe("off");
     expect(resolveGeminiCacheMode("implicit-observe")).toBe("implicit-observe");
     expect(resolveGeminiCacheMode("EXPLICIT")).toBe("explicit");
-    expect(resolveGeminiCacheMode("banana")).toBe("off");
+    // The test was NAMED "rejects_unknown" while asserting the opposite — an
+    // unknown value silently became "off" (with a one-time console warning).
+    // Now it rejects, like CSM_GEMINI_THINKING already did.
+    expect(() => resolveGeminiCacheMode("banana")).toThrow(/CSM_GEMINI_CACHE/);
   });
 });
 

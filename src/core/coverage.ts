@@ -37,7 +37,7 @@ import type {
   QueryIntentFacets,
 } from "./types.js";
 import { estimateTokens } from "./tokenBudget.js";
-import { envFlag } from "../utils/env.js";
+import { envFlag, envInt, envPositiveInt } from "../utils/env.js";
 import { dedupeInOrder } from "./selection.js";
 import { escapeRegExp } from "../utils/text.js";
 
@@ -1181,7 +1181,10 @@ export function resolveCoverageRecallTokens(
   raw = process.env.CSM_COVERAGE_RECALL_TOKENS,
 ): number {
   if (intent.kind !== "coverage") return base;
-  return parsePositiveInt(raw, DEFAULT_COVERAGE_RECALL_TOKENS);
+  return envPositiveInt(raw, {
+    name: "CSM_COVERAGE_RECALL_TOKENS",
+    fallback: DEFAULT_COVERAGE_RECALL_TOKENS,
+  });
 }
 
 /** Intent-conditional timeline size. Ordering/temporal queries get 32
@@ -1197,7 +1200,7 @@ export function resolveCoverageMaxEntries(
     starvation || intent.facets.ordering || intent.facets.temporalArithmetic
       ? 32
       : 24;
-  return parsePositiveInt(raw, fallback);
+  return envPositiveInt(raw, { name: "CSM_COVERAGE_MAX_ENTRIES", fallback });
 }
 
 /**
@@ -1260,17 +1263,10 @@ export function attachCoverage(args: {
 export function resolveCoverageStarvationFloor(
   raw = process.env.CSM_COVERAGE_STARVATION_FLOOR,
 ): number {
-  if (raw === undefined || raw.trim().length === 0) return 4;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 4;
+  // 0 is a meaningful "disabled", so min is 0 rather than envPositiveInt's 1.
+  return envInt(raw, { name: "CSM_COVERAGE_STARVATION_FLOOR", fallback: 4, min: 0 });
 }
 
 // ─── small helpers ───────────────────────────────────────────────────────────
 
 
-
-function parsePositiveInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}

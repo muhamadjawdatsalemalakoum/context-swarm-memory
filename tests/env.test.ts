@@ -122,6 +122,11 @@ describe("every CSM boolean flag now shares one vocabulary", () => {
     "CSM_HYBRID_RERANK",
     "CSM_COVERAGE",
     "CSM_PROBE_BATCH",
+    // Both are FLAGS rows whose resolvers default their argument from
+    // process.env; without clearing them the "unset default" assertions read
+    // the developer's shell (audit 2026-09-05).
+    "CSM_AMB_PREFERENCE_PROFILE",
+    "CSM_AMB_FACT_FOLD",
   ] as const;
   let saved: Record<string, string | undefined> = {};
 

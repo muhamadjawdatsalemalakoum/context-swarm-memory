@@ -174,9 +174,14 @@ describe("resolveShardExpandK / resolveShardExpandMax", () => {
     expect(resolveShardExpandMax("0")).toBe(0);
   });
 
-  it("falls back to defaults for invalid input", () => {
-    expect(resolveShardExpandK("nope")).toBe(3);
-    expect(resolveShardExpandMax("nope")).toBe(16);
+  it("THROWS on invalid input instead of falling back (invariant 5)", () => {
+    // This file already called the silent-default shape "the exact shape the
+    // env.ts invariant exists to forbid" for CSM_EMBED_FLOOR_K; these two were
+    // the same shape and are now held to the same rule.
+    expect(() => resolveShardExpandK("nope")).toThrow(/CSM_SHARD_EXPAND_K/);
+    expect(() => resolveShardExpandMax("nope")).toThrow(/CSM_SHARD_EXPAND_MAX/);
+    expect(() => resolveEntityBridgeK("6x")).toThrow(/CSM_ENTITY_BRIDGE_K/);
+    expect(() => resolveLexicalBridgeMax("-1")).toThrow(/CSM_LEXICAL_BRIDGE_MAX/);
   });
 });
 

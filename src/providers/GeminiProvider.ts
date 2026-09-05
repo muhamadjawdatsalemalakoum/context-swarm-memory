@@ -37,21 +37,16 @@ export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 // already returns and changes no request bytes.
 export type GeminiCacheMode = "off" | "implicit-observe" | "explicit";
 
-let warnedUnknownCacheMode = false;
 export function resolveGeminiCacheMode(
   raw = process.env.CSM_GEMINI_CACHE,
 ): GeminiCacheMode {
-  if (raw === undefined || raw.trim().length === 0) return "off";
-  const v = raw.trim().toLowerCase();
-  if (v === "off" || v === "implicit-observe" || v === "explicit") return v;
-  if (!warnedUnknownCacheMode) {
-    warnedUnknownCacheMode = true;
-    console.error(
-      `GeminiProvider: unknown CSM_GEMINI_CACHE value "${raw}" — falling back to "off". ` +
-        `Valid: off | implicit-observe | explicit.`,
-    );
-  }
-  return "off";
+  // Was a warn-once-and-default; a typo silently ran the default mode. Now the
+  // same envEnum contract as CSM_GEMINI_THINKING (invariant 5).
+  return envEnum(raw, {
+    name: "CSM_GEMINI_CACHE",
+    allowed: ["off", "implicit-observe", "explicit"] as const,
+    fallback: "off",
+  });
 }
 
 /** Minimum tokens Google will accept for a cachedContents entry on

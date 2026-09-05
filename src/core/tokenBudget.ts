@@ -31,19 +31,22 @@ export const DEFAULT_RECALL_BUDGET = {
 /**
  * Resolve an optional recall-budget override (`CSM_RECALL_BUDGET`). When set to
  * a positive integer it caps `maxRecallTokensPerShard` for the run — used to A/B
- * the token-cut config (e.g. Signals ranker @ 600 vs blind @ 1200). Returns the
- * supplied default when unset or invalid. Pure; the resulting digest is part of
- * the cache-key `system`, so a changed budget re-keys distinctly on its own.
+ * the token-cut config (e.g. Signals ranker @ 600 vs blind @ 1200). Unset →
+ * the supplied default; a present but non-positive-integer value THROWS
+ * (invariant 5 — a mistyped budget must not silently run at the default). Pure;
+ * the resulting digest is part of the cache-key `system`, so a changed budget
+ * re-keys distinctly on its own.
  */
+import { envPositiveInt } from "../utils/env.js";
+
 export function resolveRecallBudget(
   defaultTokens: number,
   env: Record<string, string | undefined> = process.env,
 ): number {
-  const raw = env.CSM_RECALL_BUDGET;
-  if (raw === undefined) return defaultTokens;
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n <= 0) return defaultTokens;
-  return Math.floor(n);
+  return envPositiveInt(env.CSM_RECALL_BUDGET, {
+    name: "CSM_RECALL_BUDGET",
+    fallback: defaultTokens,
+  });
 }
 
 /**
@@ -58,16 +61,13 @@ export function resolveRecallBudget(
  * The pipeline conserves SHARDS; what actually matters is EVENTS. When shard
  * size changes, these must move inversely or the harvest starves.
  *
- * Both default to the frozen values, so unset is byte-identical.
+ * Both default to the frozen values, so unset is byte-identical. A present but
+ * non-positive-integer value throws (invariant 5).
  */
 export function resolveShardCount(
   key: "CSM_MAX_PROBE_SHARDS" | "CSM_MAX_RECALL_SHARDS",
   defaultCount: number,
   env: Record<string, string | undefined> = process.env,
 ): number {
-  const raw = env[key];
-  if (raw === undefined) return defaultCount;
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n <= 0) return defaultCount;
-  return Math.floor(n);
+  return envPositiveInt(env[key], { name: key, fallback: defaultCount });
 }

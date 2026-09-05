@@ -119,8 +119,11 @@ describe("resolveUnitSize", () => {
     expect(resolveUnitSize(undefined)).toBe(0);
     expect(resolveUnitSize("")).toBe(0);
     expect(resolveUnitSize("0")).toBe(0);
-    expect(resolveUnitSize("nonsense")).toBe(0);
-    expect(resolveUnitSize("-4")).toBe(0);
+  });
+
+  it("THROWS on garbage or negative input instead of silently turning the lever off (invariant 5)", () => {
+    expect(() => resolveUnitSize("nonsense")).toThrow(/CSM_RETRIEVAL_UNITS/);
+    expect(() => resolveUnitSize("-4")).toThrow(/CSM_RETRIEVAL_UNITS/);
   });
 
   it("accepts a positive unit size", () => {

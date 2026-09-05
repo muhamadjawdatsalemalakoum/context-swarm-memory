@@ -116,13 +116,18 @@ describe("truncate", () => {
 });
 
 describe("resolveRecallBudget", () => {
-  it("returns the default when unset or invalid, the override when valid", () => {
+  it("returns the default when unset, the override when valid", () => {
     expect(resolveRecallBudget(1200, {})).toBe(1200);
+    expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "" })).toBe(1200);
     expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "600" })).toBe(600);
-    expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "0" })).toBe(1200);
-    expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "-5" })).toBe(1200);
-    expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "abc" })).toBe(1200);
-    expect(resolveRecallBudget(1200, { CSM_RECALL_BUDGET: "640.7" })).toBe(640);
+  });
+
+  it("THROWS on a present but invalid value (invariant 5) instead of silently running at the default", () => {
+    // These four used to resolve to 1200 / 640 — a mistyped budget quietly ran
+    // the wrong experiment. Same silent-default class as CSM_ROUTER_HYBRID=off.
+    for (const bad of ["0", "-5", "abc", "640.7"]) {
+      expect(() => resolveRecallBudget(1200, { CSM_RECALL_BUDGET: bad })).toThrow(/CSM_RECALL_BUDGET/);
+    }
   });
 });
 

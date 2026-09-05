@@ -1,3 +1,4 @@
+import { EnvConfigError } from "../utils/env.js";
 // Provider abstraction. The MVP runs entirely on MockProvider by default.
 // Real providers: OpenAI / Ollama (OpenAI-compatible local) / Gemini / Anthropic stub.
 
@@ -116,18 +117,29 @@ export interface ProviderEnv {
   ANTHROPIC_API_KEY?: string;
 }
 
+const PROVIDER_NAMES: readonly ProviderName[] = [
+  "openai",
+  "anthropic",
+  "agent-sdk",
+  "gemini",
+  "mock",
+  "ollama",
+  "llama-server",
+];
+
 export function selectProviderName(env: ProviderEnv = process.env as ProviderEnv): ProviderName {
   const explicit = (env.CSM_PROVIDER ?? "").toLowerCase().trim();
-  if (
-    explicit === "openai" ||
-    explicit === "anthropic" ||
-    explicit === "agent-sdk" ||
-    explicit === "gemini" ||
-    explicit === "mock" ||
-    explicit === "ollama" ||
-    explicit === "llama-server"
-  ) {
-    return explicit as ProviderName;
+  if (explicit.length > 0) {
+    const hit = PROVIDER_NAMES.find((p) => p === explicit);
+    if (hit) return hit;
+    // A mistyped provider used to fall through to URL auto-detection and land on
+    // "mock", so a whole benchmark could run against the deterministic stub
+    // without anyone noticing (invariant 5: unrecognised value is an error).
+    throw new EnvConfigError(
+      "CSM_PROVIDER",
+      env.CSM_PROVIDER ?? "",
+      `expected one of ${PROVIDER_NAMES.join(", ")}`,
+    );
   }
   // Auto-detect from base URL when CSM_PROVIDER is unset.
   // Port 8080 is the conventional llama.cpp `llama-server` port; 11434 is
