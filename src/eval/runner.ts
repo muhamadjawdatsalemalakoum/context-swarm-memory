@@ -177,9 +177,14 @@ export async function runBenchmark(opts: RunBenchmarkOptions): Promise<RunOutput
     return sample;
   };
 
-  const results: CellResult[] = [...previousResults];
-  let cellsCompleted = previousResults.length;
+  // `seen` already excludes errored rows so resume RE-RUNS them; the in-memory
+  // results must drop them too, or the summary counts the stale error row AND
+  // the fresh row for the same cell (audit 2026-09-05). results.jsonl on disk is
+  // append-only and keeps the history.
+  const results: CellResult[] = previousResults.filter((r) => !r.error);
+  let cellsCompleted = results.length;
   let cellsSkipped = 0;
+  let cellsErrored = previousResults.length - results.length;
   let cellIndex = 0;
 
   const totalCells =
@@ -247,6 +252,7 @@ export async function runBenchmark(opts: RunBenchmarkOptions): Promise<RunOutput
               trial,
               cellsCompleted,
               cellsSkipped,
+              cellsErrored,
               earlyStopGroups: countEarlyStops(failedAt),
             });
 
@@ -328,13 +334,12 @@ export async function runBenchmark(opts: RunBenchmarkOptions): Promise<RunOutput
               }
               await appendFile(resultsPath, `${JSON.stringify(cell)}\n`, "utf8");
               results.push(cell);
-              cellScores.push({
-                correct: false,
-                citationPrecision: 0,
-                citationRecall: 0,
-                citationF1: 0,
-              });
-              cellsCompleted++;
+              // NOT pushed into cellScores: a provider timeout is not a wrong
+              // answer, and counting it as one let a burst of transient errors
+              // permanently early-stop a (system, ctx) at that corpus size
+              // (audit 2026-09-05). Errored cells are counted separately and
+              // re-run on resume.
+              cellsErrored++;
             }
           }
         }
@@ -368,6 +373,7 @@ export async function runBenchmark(opts: RunBenchmarkOptions): Promise<RunOutput
       cells: summaries,
       earlyStops: earlyStopMap,
       systemNames,
+      cellsErrored,
     }),
     "utf8",
   );
@@ -485,11 +491,14 @@ function reconstructEarlyStops(
   const grouped = groupBy(previous, (r) =>
     `${r.system}|${r.modelContext}|${r.corpusSize}`,
   );
-  for (const [key, rows] of grouped) {
+  for (const [key, allRows] of grouped) {
     const [system, ctxStr, sizeStr] = key.split("|");
     if (!system || !ctxStr || !sizeStr) continue;
     const ctx = Number(ctxStr);
     const size = Number(sizeStr);
+    // Error rows are not answers; they must not drive an early stop.
+    const rows = allRows.filter((r) => !r.error);
+    if (rows.length === 0) continue;
     const correct = rows.filter((r) => r.correct).length;
     const accuracy = correct / rows.length;
     if (accuracy < threshold) {

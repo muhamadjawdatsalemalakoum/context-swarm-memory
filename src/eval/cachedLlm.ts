@@ -46,6 +46,10 @@ export interface CachedLlmCallOutput {
   /** Token usage — exact from provider on miss, char/4 estimate on hit. */
   inputTokens: number;
   outputTokens: number;
+  /** True when the provider returned no usable text and the cache refused to
+   *  store it. The result row should record this rather than score an empty
+   *  answer as an ordinary miss (audit 2026-09-05). */
+  refusedEmpty?: boolean;
 }
 
 /**
@@ -100,6 +104,7 @@ export async function callLlmCached(
     disableThinking: input.disableThinking,
   });
 
+  let refusedEmpty = false;
   if (useCache) {
     try {
       await cacheSet(cacheInput, {
@@ -109,9 +114,10 @@ export async function callLlmCached(
     } catch (err) {
       if (err instanceof CacheRefusedEmptyError) {
         // Provider returned no usable text (timeout, CPU-offload stall, etc.).
-        // Don't poison the cache — the next run will retry the LLM call.
-        // Surface to the caller so the result row records the failure honestly
-        // rather than silently propagating null answers through the scorer.
+        // Don't poison the cache — the next run will retry the LLM call — and
+        // DO surface it: this branch used to be a comment promising to surface
+        // the failure while surfacing nothing (audit 2026-09-05).
+        refusedEmpty = true;
       } else {
         throw err;
       }

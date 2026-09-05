@@ -129,6 +129,14 @@ export function sampleFromEvents(
     if (runningTokens >= opts.targetTokens * 0.999) break;
   }
 
+  if (runningTokens < opts.targetTokens * 0.95) {
+    // The default sweep goes to 1B tokens on a ~9M-token corpus; without this
+    // the cell was labelled by the target it never reached (audit 2026-09-05).
+    console.warn(
+      `[corpus] sampleFromEvents: filler exhausted at ${runningTokens.toLocaleString()} tokens ` +
+        `(target ${opts.targetTokens.toLocaleString()}); this cell is under-sampled and its size label overstates the corpus.`,
+    );
+  }
   const events: BenchEvent[] = [...core, ...sampledFiller];
   const byShard = new Map<string, BenchEvent[]>();
   const byId = new Map<string, BenchEvent>();

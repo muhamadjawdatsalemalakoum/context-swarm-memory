@@ -1141,7 +1141,11 @@ export class CsmBaseline implements BaselineRunner {
       parsed.kind === "free-form"
         ? parsed.chosenAnswer !== null
         : parsed.chosenOption !== null;
-    if (hasAnswer && parsed.citedEventIds.length === 0) {
+    // Recorded per row (meta.citationsInferred) so citation P/R/F1 can be split
+    // into model-cited vs system-inferred; before 2026-09-05 the two were
+    // indistinguishable in every published citation figure.
+    const citationsInferred = hasAnswer && parsed.citedEventIds.length === 0;
+    if (citationsInferred) {
       parsed.citedEventIds = retrieval.packedEventIds.length
         ? retrieval.packedEventIds
         : retrieval.csmRetrievedEventIds;
@@ -1164,6 +1168,7 @@ export class CsmBaseline implements BaselineRunner {
       model: ctx.model ?? `${this.opts.provider.name}:<provider-default>`,
       meta: {
         ...retrieval.meta,
+        citationsInferred,
         // Per-stage breakdown so the report can disambiguate pipeline vs final.
         finalCallInputTokens: llm.inputTokens,
         finalCallOutputTokens: llm.outputTokens,
