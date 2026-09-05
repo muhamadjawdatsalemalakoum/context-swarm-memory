@@ -46,6 +46,7 @@ import {
   JUDGE_PROMPT_VERSION,
 } from "../src/eval/beamJudge.js";
 import { cacheGet, cacheSet } from "../src/eval/cache.js";
+import { createHash } from "node:crypto";
 
 interface Row {
   query_id: string;
@@ -122,6 +123,16 @@ async function call(
  * changing the cache key, so rep>0 is a genuinely fresh draw and not a replay
  * of the cached one.
  */
+/**
+ * Hard cap on the characters of retrieved context the reader sees per arm.
+ * Found silently truncating on 2026-09-05: it fired on 1/140 rows of the
+ * certified 500K pair (a 371K-char CSM context) and 1/70 of the 1M paired fold
+ * arm, never on Hindsight (max ~119K). Asymmetric AGAINST CSM, so the leads
+ * are conservative -- but a cut the output does not record is a defect. Every
+ * truncation is now counted and written into the result JSON.
+ */
+const CONTEXT_CAP = 200_000;
+
 async function scoreArmOnce(
   category: string,
   query: string,
@@ -133,7 +144,7 @@ async function scoreArmOnce(
   const repTag = rep > 0 ? `:rep${rep}` : "";
   const answer = await call(
     ANSWER_SYSTEM,
-    `Memory excerpts:\n\n${context.slice(0, 200_000)}\n\nQuestion: ${query}\n\nAnswer:`,
+    `Memory excerpts:\n\n${context.slice(0, CONTEXT_CAP)}\n\nQuestion: ${query}\n\nAnswer:`,
     model,
     `answer:${ANSWER_PROMPT_VERSION}${repTag}`,
   );
@@ -185,6 +196,14 @@ async function scoreArm(
   return draws.reduce((a, b) => a + b, 0) / draws.length;
 }
 
+function sha256File(p: string): string {
+  try {
+    return createHash("sha256").update(readFileSync(p)).digest("hex");
+  } catch {
+    return "unreadable";
+  }
+}
+
 async function main(): Promise<void> {
   const hsPath = arg("hindsight")!;
   const model = arg("model", "claude-sonnet-5")!;
@@ -222,7 +241,8 @@ async function main(): Promise<void> {
   );
 
   const out: Array<{ id: string; category: string; a: number; b: number }> = [];
-  let excluded = 0;
+  const exclusions: Array<{ id: string; reason: string }> = [];
+  const truncated: Array<{ id: string; arm: "csm" | "hindsight"; chars: number; kept: number }> = [];
   let cursor = 0;
   const t0 = Date.now();
   const worker = async (): Promise<void> => {
@@ -234,17 +254,19 @@ async function main(): Promise<void> {
       const B = hs.get(id)!;
       const rubric = A.meta?.rubric ?? B.meta?.rubric ?? [];
       if (rubric.length === 0) {
-        excluded++;
+        exclusions.push({ id, reason: "no-rubric" });
         continue;
       }
       try {
         const cat = categoryOf(id);
+        if (A.context.length > CONTEXT_CAP) truncated.push({ id, arm: "csm", chars: A.context.length, kept: CONTEXT_CAP });
+        if (B.context.length > CONTEXT_CAP) truncated.push({ id, arm: "hindsight", chars: B.context.length, kept: CONTEXT_CAP });
         const [a, b] = await Promise.all([
           scoreArm(cat, A.query, rubric, A.context, model, repeats),
           scoreArm(cat, B.query, rubric, B.context, model, repeats),
         ]);
         if (a === null || b === null) {
-          excluded++;
+          exclusions.push({ id, reason: a === null && b === null ? "both-arms-unscored" : a === null ? "csm-arm-unscored" : "hindsight-arm-unscored" });
           continue;
         }
         out.push({ id, category: cat, a, b });
@@ -252,7 +274,7 @@ async function main(): Promise<void> {
           console.log(`  ...${out.length}/${ids.length}`);
         }
       } catch (err) {
-        excluded++;
+        exclusions.push({ id, reason: `error: ${String((err as Error).message).slice(0, 120)}` });
         console.log(`  ${id.padEnd(26)} ERROR ${String((err as Error).message).slice(0, 60)}`);
       }
     }
@@ -290,7 +312,20 @@ async function main(): Promise<void> {
     console.log("  " + line(c, out.filter((r) => r.category === c)));
   }
   console.log("  " + line("ALL", out));
-  if (excluded > 0) console.log(`\n  excluded: ${excluded}`);
+  if (exclusions.length > 0) {
+    const byReason = new Map<string, number>();
+    for (const e of exclusions) {
+      const k = e.reason.split(":")[0]!;
+      byReason.set(k, (byReason.get(k) ?? 0) + 1);
+    }
+    console.log(`\n  excluded: ${exclusions.length}  (${[...byReason].map(([r, n]) => `${r}=${n}`).join(", ")})`);
+  }
+  if (truncated.length > 0) {
+    console.log(
+      `  TRUNCATED at ${CONTEXT_CAP} chars: ${truncated.length}  ` +
+        truncated.map((t) => `${t.id}[${t.arm}] ${t.chars}->${t.kept}`).join("; "),
+    );
+  }
   console.log(`  wall ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 
   const dir = resolve(process.cwd(), "data", "eval", "judge-calibration");
@@ -299,7 +334,26 @@ async function main(): Promise<void> {
   writeFileSync(
     dest,
     JSON.stringify(
-      { reader: model, judgePromptVersion: JUDGE_PROMPT_VERSION, n: out.length, excluded, results: out },
+      {
+        reader: model,
+        judgePromptVersion: JUDGE_PROMPT_VERSION,
+        n: out.length,
+        excluded: exclusions.length,
+        exclusions,
+        contextCapChars: CONTEXT_CAP,
+        truncated,
+        provenance: {
+          tier: arg("tier", "100k"),
+          csmPath: arg("csm", DEFAULT_CSM_ARTIFACT),
+          hindsightPath: hsPath,
+          csmSha256: sha256File(arg("csm", DEFAULT_CSM_ARTIFACT)!),
+          hindsightSha256: sha256File(hsPath),
+          repeats,
+          perCategory: perCat,
+          jobs,
+        },
+        results: out,
+      },
       null,
       2,
     ),

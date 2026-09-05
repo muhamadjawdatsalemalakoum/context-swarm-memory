@@ -144,12 +144,12 @@ lever that has since been certified and turned on:
 
 | lever | default | why it is on |
 |---|---|---|
-| hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project |
+| hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project. **Caveat:** measured on sidecar arm r1mC (2026-07-31) *before* the render-gap fix, on a harness that dropped the evidence capsule from *both* arms; the delta is within-harness valid but the absolutes are not, and it has not been re-measured with the capsule rendered. Every post-fix certified result runs with it ON — indirect support, not a re-measurement |
 | ID repair | **ON** | ~0.20 |
 | batched probe (hosted only) | **ON** | −21% internal input (arithmetic: one shared scaffold replaces 8), score delta +0.032 — below its 0.079 MDE, i.e. neutral. Local providers stay OFF. |
 | fact fold (write-time fact registry) | **ON** | 500K `knowledge_update` **certified on two independent readers** (+0.382 / +0.326); 1M paired +0.114 with CI above zero; token-neutral at answer time |
 | preference profile | OFF | composed with the fold it measured **−0.036** (4W/9L) versus the fold alone |
-| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage rerank, virtual shards | OFF | each measured negative, non-replicating, or a wash |
+| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage reranker (`CSM_AMB_COVERAGE_RERANK` — the one that gained +11.6 proxy and lost answers), cross-encoder reranker (`CSM_HYBRID_RERANK` — a different, unrelated lever), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash |
 
 The gap between that config and the ladder's config is not cosmetic. On the
 same 1M queries, re-measured at full category size:
@@ -274,9 +274,14 @@ flowchart TD
 - **Coverage queries get a deterministic chronicle.** Summary/ordering/temporal
   queries attach a date-ordered, fully-cited timeline assembled with no extra
   LLM calls. Date arithmetic is computed, never delegated to the model.
-- **Write-time artifacts fold, never append.** The fact registry folds *into*
-  the capsule rather than adding a document — measured four separate times,
-  displacement is fatal.
+- **Write-time artifacts fold into the capsule when one exists.** The fact
+  registry and preference profile are prepended *into* the evidence capsule
+  rather than added as a document, because a fixed return-K means an added
+  document evicts real evidence. On point queries where coverage did not fire
+  and no capsule exists, the artifact rides as **one standalone document**
+  rather than being dropped (`scripts/amb-csm-retrieve.ts:578`) — so "fold, never
+  append" is the rule *when there is something to fold into*, not an absolute.
+  The specific fold-vs-append +0.068 measurement was retracted (render gap).
 
 Design and data types: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
 [`specs/`](specs/).

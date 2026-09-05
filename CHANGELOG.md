@@ -6,6 +6,54 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Full-repo audit, fix unit 1 — published-claim corrections (2026-09-05)
+
+A 14-layer, 25-finder audit produced 383 candidate findings. Verification by
+agents was killed twice by usage limits, so every item below was verified by
+hand against the code or the artifact before being acted on. This unit is the
+subset that touches claims already published under the owner's name.
+
+- **The hybrid-router evidence (+0.365, 26W/5L) predates the render-gap fix.**
+  `EXP-capsule-render-gap.md` lists arm r1mC among the arms measured on
+  CSM-minus-capsule; the delta is within-harness valid, the absolutes are not,
+  and it was never re-measured with the capsule rendered. Every surface that
+  cited it as the lever's evidence now says so. Every post-fix certified arm
+  runs with the router ON, which is indirect support and is labelled as such.
+- **EVIDENCE.md attributed that result to "gemini, 1M ladder".** The arm's own
+  `config.json` says `providerName: "agent-sdk"`. Corrected to the sidecar.
+- **"Write-time artifacts fold, never append" was overstated.**
+  `scripts/amb-csm-retrieve.ts:578` emits the fact registry as a standalone
+  document when no capsule exists (point queries). Reworded everywhere to the
+  conditional rule it actually is.
+- **The head-to-head reader silently cut CSM contexts at 200,000 chars.** It
+  fired on 1 of 140 rows in the certified 500K pair (371K chars, 46% dropped)
+  and 1 of 70 in the 1M paired fold arm; Hindsight never reaches the cap, so the
+  cut is asymmetric against CSM and the leads are if anything conservative.
+  `headtohead-arms.ts` now counts every truncation and writes it, plus
+  per-query exclusion reasons and input-file SHA-256 provenance, into the result
+  JSON. Disclosed in STATUS and llms.txt.
+- **The 10M span script had a denominator bug.** It matched only the ~100 dated
+  turn markers per unit, so the range it printed (64.3-89.7% / 11.6-15.9%) was
+  about a point high. Correct: **63.5-88.8% / 11.5-15.8%**. Third correction of
+  this figure; each smaller than the last; the script now prints the
+  dated-marker count so the discrepancy is visible in its own output.
+- **STATUS/site/llms conflated two OFF flags.** The rejected +11.6-proxy
+  reranker was `CSM_AMB_COVERAGE_RERANK`; `CSM_HYBRID_RERANK` is the unrelated
+  cross-encoder. Both named correctly now.
+- **EXP-category-leadership attributed the 1M knowledge_update gain to the
+  preference profile being "default-on now".** It has never been default-on in
+  code and the arm ran profile-OFF. Corrected in place.
+- **The STANDING SCOREBOARD pooled official-ladder and free-instrument leads
+  into one "ahead in >=2 categories at every tier" line** -- the exact
+  instrument error the same document warns against. Now carries an instrument
+  column and an explicit no-pooling statement.
+- `AMB_BEAM_100K_OFFICIAL_RERUN.md` and `SOTA_BENCHMARK_PLAN.md` still read as
+  current ("pending acceptance", "CSM beats ... Hindsight"). HISTORICAL banners
+  added; the present-tense claim rewritten as a dated one.
+- `docs/assets/beam-token-cost.svg` still carried "The haystack grows 100x. The
+  cost stays flat." as its embedded title after the README and site were
+  corrected. Fixed to 76x / per-query.
+
 ### End-to-end claim audit — 11 findings, 2 of them wrong numbers (2026-08-30)
 
 Every quantitative and comparative claim on the four public surfaces (README,

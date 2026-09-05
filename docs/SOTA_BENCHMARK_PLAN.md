@@ -1,5 +1,10 @@
 # SOTA Benchmark Status
 
+> **HISTORICAL (2026-06) — read [STATUS.md](STATUS.md) first.** The "present
+> public claim" below was written when the May local comparison and PR #19 were
+> live. PR #19 was author-closed unmerged; the June ladder is stale on two counts;
+> the current claim set is in STATUS.md. Nothing here should be quoted as current.
+
 This is the public bar for answering the uncomfortable question:
 
 > Does CSM provide something current memory systems do not, or are we just
@@ -84,7 +89,7 @@ The repo now includes two real head-to-head evidence bundles:
   [`docs/BABILONG_RESULTS.md`](BABILONG_RESULTS.md).
 - Mem0 and HippoRAG 2 sidecars are wired, but the public evidence treats their
   local failures as blocked integrations, not as CSM wins.
-- The present public claim is therefore: CSM beats LightRAG on this traceable
+- The public claim *as of June 2026* was: CSM beats LightRAG on this traceable
   project-memory task and beats the accepted local Hindsight BEAM 100K artifact
   on AMB score/correct rows, while being slower and more internally token
   intensive. It is not yet a field-wide "beats every SOTA memory system" claim

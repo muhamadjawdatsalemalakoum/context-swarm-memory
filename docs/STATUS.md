@@ -90,12 +90,18 @@ committed script and is **wrong**. Recomputed from primary artifacts by
 
 | measure | across the 10 units |
 |---|---|
-| span coverage — highest turn index reached / unit's last turn | **64.3% – 89.7%** |
-| ref density — distinct turns retrieved / unit's total turns | **11.6% – 15.9%** |
+| span coverage — highest turn index reached / unit's last turn | **63.5% – 88.8%** |
+| ref density — distinct turns retrieved / unit's total turns | **11.5% – 15.8%** |
 
-Retrieval reaching across 64–90% of each unit's timeline is still hard to
+*Second correction (2026-09-05):* the first version of the script matched only
+the ~100 **dated** turn markers per unit (`[July-01-2024 | Turn 0]`) as the
+denominator, not all ~19,900 turns (`[Turn N]`), so its 64.3–89.7% / 11.6–15.9%
+were about one point high. The regex is fixed and the script now prints the
+dated-marker count so the discrepancy is visible in its own output.
+
+Retrieval reaching across 63–89% of each unit's timeline is still hard to
 reconcile with a ~0.27%-loaded corpus, so the tension with the upstream report
-stands — but the honest number is 64–90%, not 98–99.9%, and it is now a
+stands — but the honest number is 63–89%, not 98–99.9%, and it is now a
 computation anyone can re-run rather than a recollection. The tier is held until
 the upstream fix merges, then re-staged under the fixed loader.
 
@@ -140,13 +146,13 @@ is a test failure.
 
 | lever | default | evidence |
 |---|---|---|
-| hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project |
+| hybrid router + descriptors | **ON** | +0.365 answer at 1M, 26W/5L — the strongest single effect measured on this project. **Caveat:** measured on sidecar arm r1mC (2026-07-31) *before* the render-gap fix, on a harness that dropped the evidence capsule from *both* arms; the delta is within-harness valid but the absolutes are not, and it has not been re-measured with the capsule rendered. Every post-fix certified result runs with it ON — indirect support, not a re-measurement |
 | ID repair | **ON** | ~0.20 |
 | batched probe (hosted only) | **ON** | −21% internal input (arithmetic: one shared scaffold replaces 8); score delta +0.032, below its 0.079 MDE. Local (ollama, llama-server) stays OFF — the evidence is from one hosted model family |
 | fact fold | **ON** | 500K `knowledge_update` certified ×2 readers; 1M paired +0.114 (CI > 0); abstention guard a symmetric wash; token-neutral at answer time |
 | preference profile | **OFF** | every certified full-n arm ran profile-OFF; composed with the fold it measured **−0.036** (4W/9L) versus fold alone |
 | coverage mode + chronicle (`CSM_COVERAGE`) | **ON** | deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10 |
-| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage **reranker** (`CSM_HYBRID_RERANK`), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash. Note the reranker is a different thing from coverage mode above |
+| lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage reranker (`CSM_AMB_COVERAGE_RERANK` — the one that gained +11.6 proxy and lost answers), cross-encoder reranker (`CSM_HYBRID_RERANK` — a different, unrelated lever), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash |
 
 A residual-loss audit confirmed nothing measured-positive is switched off under
 the one-config-for-all-tiers constraint.
@@ -207,7 +213,7 @@ needs a different second reader.
 | instrument | what it is | when it is authoritative |
 |---|---|---|
 | **Official AMB runner** (Gemini) | upstream CLI, scoring, judge; a 3-file CSM provider and nothing else | the only publishable instrument; currently blocked |
-| **Free head-to-head** (`scripts/headtohead-arms.ts`) | one reader + one judge serve both arms; only the retrieved context differs; Hindsight replayed from its own published contexts | calibrated ρ 0.864 / MAE 0.077 vs the official judge; reproduced the official tie@100K and loss@1M. Certifies *within-instrument* paired deltas only. |
+| **Free head-to-head** (`scripts/headtohead-arms.ts`) | one reader + one judge serve both arms; only the retrieved context differs; Hindsight replayed from its own published contexts | calibrated ρ 0.864 / MAE 0.077 vs the official judge; reproduced the official tie@100K and loss@1M. Certifies *within-instrument* paired deltas only. **Known defect (found 2026-09-05):** the reader's context is silently cut at 200,000 chars. Hindsight's contexts never reach it; CSM's did on **1 of 140** rows in the certified 500K pair (`28_information_extraction_1`, 371K→200K, 46% dropped) and **1 of 70** in the 1M paired fold arm (`34_knowledge_update_1`, 215K→200K). The cut is asymmetric *against* CSM, so the certified leads are if anything conservative — but it was silent, and is now counted and written into the output. |
 | **Agent-SDK sidecar** | local iteration harness | iteration only — it carries ~8.5K tokens/call of harness overhead that is not CSM's, so its token totals are never publishable |
 
 Numbers from different instruments are **never pooled**. Absolute levels differ

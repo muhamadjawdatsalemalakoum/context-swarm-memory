@@ -16,7 +16,7 @@ defaults ARE the certified configuration:
 
 | lever | default | evidence |
 |---|---|---|
-| hybrid router + descriptors | ON | +0.365 answer @1M, 26W/5L |
+| hybrid router + descriptors | ON | +0.365 answer @1M, 26W/5L (sidecar arm r1mC, **pre-render-fix** — delta within-harness, absolutes not, never re-measured with the capsule rendered; every post-fix certified arm runs with it ON) |
 | ID repair | ON | ~0.20 |
 | batched probe (hosted) | ON | −21% internal input, score-neutral |
 | **fact fold** | **ON** | ku 500K **certified ×2 readers** (+0.382/+0.326); 1M paired +0.114 CI>0; abstention guard wash; PF/CR guard positive; token-neutral |
@@ -73,8 +73,10 @@ factFold and idRepair.
   support that reading for the published run** — but the figure this document
   first gave for it (98-99.9%) was itself wrong, and is corrected here.
   Recomputed by `scripts/measure-hindsight-10m-span.mjs`: Hindsight's 10M
-  contexts reach turn indices spanning **64.3%-89.7%** of each unit's full turn
-  range, surfacing **11.6%-15.9%** of its turns. Reaching across 64-90% of a
+  contexts reach turn indices spanning **63.5%-88.8%** of each unit's full turn
+  range, surfacing **11.5%-15.8%** of its turns (second correction 2026-09-05:
+  the first regex used only the ~100 dated markers per unit as denominator).
+  Reaching across 63-89% of a
   unit's timeline is still not what a 0.27%-loaded corpus would produce.
   (This document also once asserted the 0.27% figure itself as established
   fact; that was wrong too.) Both facts are recorded because they conflict and the conflict is

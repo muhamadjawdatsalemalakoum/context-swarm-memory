@@ -1,5 +1,11 @@
 # AMB BEAM 100K — Official-Runner Rerun (2026-06-10)
 
+> **HISTORICAL — read [STATUS.md](STATUS.md) first.** This run was submitted as
+> PR #19, which was **author-closed on 2026-06-22, unmerged**. It was produced on
+> the PRE-#20 runner (old prompt, old judge, Kendall τ-b for event_ordering), so
+> its score is not comparable to any current run. CSM has no official standing.
+> The paragraph below is preserved as written at the time.
+
 Status: completed through the **unmodified public AMB runner** in a single
 attempt; **submitted to the AMB maintainers and pending their acceptance — not
 claimed as an official leaderboard placement until they accept it.** This is

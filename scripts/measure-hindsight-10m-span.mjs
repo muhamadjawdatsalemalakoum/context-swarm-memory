@@ -31,13 +31,23 @@ for (const p of [DOCS, HS]) {
   }
 }
 
-/** Denominator: the highest `| Turn N]` index present in each unit's document. */
+/** Denominator: the highest `Turn N]` index present in each unit's document.
+ *
+ *  BUG FIXED 2026-09-05: the first version matched `| Turn N]`, which only hits
+ *  the ~100 DATED markers per unit (`[July-01-2024 | Turn 0]`); the other
+ *  ~19,800 turns are `[Turn N]` with no date. That made the denominator the
+ *  last dated turn rather than the last turn, overstating span coverage by
+ *  ~1 point (64.3-89.7% published; 63.5-88.8% correct). Both marker shapes
+ *  end in `Turn N]`, so that is what we match now. */
 const raw = JSON.parse(gunzipSync(readFileSync(DOCS)).toString());
 const docs = Array.isArray(raw) ? raw : (raw.documents ?? Object.values(raw).find(Array.isArray));
 const maxTurn = new Map();
+const datedOnly = new Map();
 for (const d of docs) {
-  const turns = [...String(d.content).matchAll(/\| Turn (\d+)\]/g)].map((m) => Number(m[1]));
-  if (turns.length) maxTurn.set(`u${d.id}`, Math.max(...turns));
+  const all = [...String(d.content).matchAll(/Turn (\d+)\]/g)].map((m) => Number(m[1]));
+  const dated = [...String(d.content).matchAll(/\| Turn (\d+)\]/g)].map((m) => Number(m[1]));
+  if (all.length) maxTurn.set(`u${d.id}`, Math.max(...all));
+  if (dated.length) datedOnly.set(`u${d.id}`, { count: dated.length, max: Math.max(...dated) });
 }
 
 /** Numerator: chunk ids `beam-10m-u<unit>_<conv>_<idx>` cited inside each context. */
@@ -77,6 +87,14 @@ for (const u of units) {
 }
 
 const fmt = (a) => `${Math.min(...a).toFixed(1)}%-${Math.max(...a).toFixed(1)}%`;
+const anyDated = [...datedOnly.values()];
+if (anyDated.length) {
+  console.log(
+    `
+(dated markers per unit: ${Math.min(...anyDated.map((x) => x.count))}-${Math.max(...anyDated.map((x) => x.count))}; ` +
+      `the retired regex used their max as the denominator, which is why the first published range was ~1 point too high)`,
+  );
+}
 console.log(`\nspan coverage  (highest turn index reached / unit's last turn): ${fmt(spans)}`);
 console.log(`ref density    (distinct turns retrieved / unit's total turns): ${fmt(densities)}`);
 console.log(

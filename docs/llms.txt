@@ -97,7 +97,9 @@ THESE SCORES ARE STALE IN TWO INDEPENDENT WAYS:
 
 1. They measured a CSM CONFIGURATION THAT NO LONGER EXISTS. The run predates
    the hybrid router (+0.365 answer at 1M, 26W/5L — the strongest single effect
-   measured on this project), ID repair (~0.20), the batched probe (-21%
+   measured on this project; CAVEAT: measured pre-render-fix on a harness that
+   dropped the capsule from both arms, never re-measured with it rendered),
+   ID repair (~0.20), the batched probe (-21%
    internal input, score-neutral), and the fact fold. Re-measured at full
    category size on today's defaults, the same 1M queries give:
    knowledge_update -0.435 -> -0.111; event_ordering -0.216 -> -0.023;
@@ -156,7 +158,11 @@ footnote. Flat per-query cost is a property of CSM, NOT a win over Hindsight.
 The official re-run uses code defaults; no behavioural CSM_* flag is set in the
 environment. tests/env.test.ts pins the decisive ones so a silent flip fails CI.
 
-ON:  hybrid router + descriptors (+0.365 answer at 1M, 26W/5L)
+ON:  hybrid router + descriptors (+0.365 answer at 1M, 26W/5L -- CAVEAT: measured on sidecar arm r1mC BEFORE the
+     render-gap fix, on a harness that dropped the capsule from both arms; the
+     delta is within-harness valid, the absolutes are not, and it has not been
+     re-measured with the capsule rendered. Every post-fix certified arm runs
+     with it ON -- indirect support, not a re-measurement)
 ON:  ID repair (~0.20)
 ON:  batched probe, HOSTED PROVIDERS ONLY (-21% internal input by arithmetic --
      one shared scaffold replaces 8; score delta +0.032, below its 0.079 MDE.
@@ -168,9 +174,10 @@ OFF: preference profile (composed with the fold it measured -0.036, 4W/9L,
 ON:  coverage mode + chronicle (CSM_COVERAGE) -- deterministic cited timeline
      for summary/ordering/temporal queries; default since 2026-06-10
 OFF: lean return, needle net, session digests, ordered capsule, local probe
-     gate, probe shrink, coverage RERANKER (CSM_HYBRID_RERANK -- a different
-     thing from coverage mode above), virtual shards, legacy vocab/intent --
-     each measured negative, non-replicating, or a wash
+     gate, probe shrink, coverage reranker (CSM_AMB_COVERAGE_RERANK -- the one
+     that gained +11.6 proxy and lost answers), cross-encoder reranker
+     (CSM_HYBRID_RERANK -- a different, unrelated lever), virtual shards,
+     legacy vocab/intent -- each measured negative, non-replicating, or a wash
 
 tests/env.test.ts pins TWELVE flag rows, including coverage mode (ON), the
 preference profile (OFF) and the fact fold (ON), so a silent flip fails CI.
@@ -224,10 +231,12 @@ Method rules these forced, now standing:
   "98-99.9% of each unit's full turn range". That number was never computed by
   any committed script and is WRONG. Recomputed from primary artifacts by
   scripts/measure-hindsight-10m-span.mjs: span coverage (highest turn index
-  reached / unit's last turn) is 64.3%-89.7%, and ref density (distinct turns
-  retrieved / total turns) is 11.6%-15.9%. Retrieval reaching across 64-90% of
+  reached / unit's last turn) is 63.5%-88.8%, and ref density (distinct turns
+  retrieved / total turns) is 11.5%-15.8% (second correction 2026-09-05: the
+  first regex matched only the ~100 dated turn markers per unit as the
+  denominator, overstating by ~1 point). Retrieval reaching across 63-89% of
   each unit's timeline is still hard to reconcile with a ~0.27%-loaded corpus,
-  so the tension stands -- but the honest number is 64-90% and it is now a
+  so the tension stands -- but the honest number is 63-89% and it is now a
   re-runnable computation, not a recollection.
 - Certifying the sub-MDE directional leads: needs the lower-variance official
   path; no free instrument can resolve a ~0.09 effect at maximum n.
@@ -239,7 +248,12 @@ Method rules these forced, now standing:
 - Free head-to-head (scripts/headtohead-arms.ts): one reader + one judge serve
   both arms; only the retrieved context differs; Hindsight replayed from its own
   published contexts. Calibrated rho 0.864 / MAE 0.077 against the official
-  judge. Certifies WITHIN-instrument paired deltas only.
+  judge. Certifies WITHIN-instrument paired deltas only. KNOWN DEFECT (found
+  2026-09-05): the reader's context was silently cut at 200,000 chars; it fired
+  on 1 of 140 rows in the certified 500K pair (information_extraction, 46%
+  dropped) and 1 of 70 in the 1M paired fold arm -- asymmetrically AGAINST CSM
+  (Hindsight never reaches the cap), so the leads are if anything conservative.
+  Now counted and recorded in the output.
 - Agent-SDK sidecar: local iteration harness. NEVER publishable — it carries
   ~8.5K tokens/call of harness overhead that is not CSM's.
 
@@ -266,7 +280,10 @@ Two structural invariants worth naming: an unrecognised CSM_* configuration
 value THROWS rather than silently defaulting (a silent fallback once let
 CSM_ROUTER_HYBRID=off turn the router ON), and write-time artifacts FOLD into
 the evidence capsule rather than appending another document to the return set
-(displacement measured fatal four separate times).
+-- WHEN A CAPSULE EXISTS. On point queries with no capsule the artifact rides
+as one standalone document rather than being dropped (amb-csm-retrieve.ts:578),
+so the rule is conditional, not absolute. The fold-vs-append +0.068 measurement
+itself was retracted as a render artifact.
 
 ## Common questions
 

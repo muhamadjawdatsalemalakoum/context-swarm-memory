@@ -1025,11 +1025,13 @@
             </p>
           </article>
           <article class="invariant card" data-reveal style="--d:0.35s">
-            <h3>Write-time artifacts fold, never append</h3>
+            <h3>Write-time artifacts fold into the capsule when one exists</h3>
             <p>
-              Distilled facts fold <em>into</em> the evidence capsule rather than adding another document to the
-              return set. Displacement &mdash; pushing real evidence out to make room &mdash; measured
-              <strong>fatal four separate times</strong> before the rule was made structural.
+              Distilled facts are prepended <em>into</em> the evidence capsule rather than added as a document,
+              because a fixed return-K means an added document evicts real evidence. On point queries where no
+              capsule exists, the artifact rides as <strong>one standalone document</strong> rather than being
+              dropped &mdash; so the rule is conditional, not absolute. The fold-vs-append +0.068 measurement itself
+              was retracted as a render artifact.
             </p>
           </article>
         </div>
@@ -1137,13 +1139,13 @@
               <tr><th scope="col">Lever</th><th scope="col">Default</th><th scope="col">Evidence</th></tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Hybrid router + descriptors</th><td class="hl-cell"><strong>ON</strong></td><td>+0.365 answer at 1M, 26W/5L &mdash; the strongest single effect measured on this project</td></tr>
+              <tr><th scope="row">Hybrid router + descriptors</th><td class="hl-cell"><strong>ON</strong></td><td>+0.365 answer at 1M, 26W/5L &mdash; the strongest single effect measured on this project. <strong>Caveat:</strong> measured on sidecar arm r1mC <em>before</em> the render-gap fix, on a harness that dropped the evidence capsule from both arms; the delta is within-harness valid, the absolutes are not, and it has not been re-measured with the capsule rendered. Every post-fix certified result runs with it ON &mdash; indirect support, not a re-measurement</td></tr>
               <tr><th scope="row">ID repair</th><td class="hl-cell"><strong>ON</strong></td><td>~0.20</td></tr>
               <tr><th scope="row">Batched probe <small>(hosted providers only)</small></th><td class="hl-cell"><strong>ON</strong></td><td>&minus;21% internal input by arithmetic (one shared scaffold replaces 8); score delta +0.032, <strong>below its 0.079 MDE</strong>. Local providers stay OFF &mdash; the evidence is from one hosted model family</td></tr>
               <tr><th scope="row">Fact fold (write-time registry)</th><td class="hl-cell"><strong>ON</strong></td><td>500K <code>knowledge_update</code> certified on two readers; 1M paired +0.114 with CI above zero; token-neutral at answer time</td></tr>
               <tr><th scope="row">Preference profile</th><td>OFF</td><td>composed with the fold it measured <strong>&minus;0.036</strong> (4W/9L) versus the fold alone</td></tr>
               <tr><th scope="row">Coverage mode + chronicle <code>CSM_COVERAGE</code></th><td class="hl-cell"><strong>ON</strong></td><td>deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10</td></tr>
-              <tr><th scope="row">Lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage <em>reranker</em> <code>CSM_HYBRID_RERANK</code>, virtual shards</th><td>OFF</td><td>each measured negative, non-replicating, or a wash. The reranker is a different thing from coverage mode above</td></tr>
+              <tr><th scope="row">Lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage reranker <code>CSM_AMB_COVERAGE_RERANK</code> (the +11.6-proxy one), cross-encoder reranker <code>CSM_HYBRID_RERANK</code> (unrelated), virtual shards</th><td>OFF</td><td>each measured negative, non-replicating, or a wash</td></tr>
             </tbody>
           </table>
         </div>

@@ -314,8 +314,13 @@ official ladder's numbers, even where they did not produce a certified lead:
 | abstention | +0.086 | **+0.193 (certified)** |
 
 `knowledge_update` in particular: CSM scored 0.229 on the official ladder and
-0.639 here, which is the preference-profile lever — absent from that run,
-default-on now — doing what it was built for.
+0.639 here. *(Correction 2026-09-05: an earlier version of this paragraph
+attributed the gain to the preference profile being "default-on now". The
+profile has never been default-on in code — see the 2026-08-25 pre-flight — and
+the arm that produced 0.639 ran profile-OFF. The gain is the accumulated
+defaults that DID change between the ladder and this run: hybrid router, ID
+repair, batched probe. The fact fold, which later certified this category at
+500K, was not yet on either.)*
 
 ### Method lessons this campaign forced
 
@@ -532,14 +537,22 @@ information_extraction also improves on both (−0.124 / −0.093, still behind)
 
 ## STANDING SCOREBOARD (2026-08-25) — the strongest true statement per tier
 
-On the nearest available data, CSM is ahead in ≥2 categories at every tier:
+On the nearest available data, CSM is ahead in ≥2 categories at every tier —
+**read the instrument column: the 100K and 10M rows are the June official
+Gemini ladder on an older config, the 500K and 1M rows are the free instrument
+on today's config. They are listed side by side for completeness and are NOT
+summed into one claim; pooling them would be exactly the instrument error the
+"Two instrument caveats" section above warns against.** The honest one-line
+statement is: two certified leads on the free instrument (500K, 1M), and a
+historical multi-category lead on the official ladder (100K, 10M) that has not
+been re-measured on the current config.
 
-| tier | certified (both readers where tested) | replicated directional |
-|---|---|---|
-| 100K | 7 leads — official Gemini ladder | — |
-| 500K | **knowledge_update** (+0.382 / +0.326, both certified) | preference_following, contradiction_resolution (2 readers each) |
-| 1M | **abstention** (+0.193 / +0.185, both certified) | knowledge_update (flipped −0.111 → +0.032) |
-| 10M | 4 leads — official Gemini ladder | — |
+| tier | instrument | certified (both readers where tested) | replicated directional |
+|---|---|---|---|
+| 100K | official Gemini ladder, June config | 7 leads (historical) | — |
+| 500K | free h2h, today's config | **knowledge_update** (+0.382 / +0.326, both certified) | preference_following, contradiction_resolution (2 readers each) |
+| 1M | free h2h, today's config | **abstention** (+0.193 / +0.185, both certified) | knowledge_update (flipped −0.111 → +0.032) |
+| 10M | official Gemini ladder, June config | 4 leads (historical) | — |
 
 What separates this from a publishable "CSM leads ≥2 everywhere": the
 directional cells sit under instrument MDEs that no free reader can beat at
