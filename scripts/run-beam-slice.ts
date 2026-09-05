@@ -285,11 +285,23 @@ export async function runBeamSlice(
   // contract (beamLeakageFirewall) and the digest is already the canonical
   // per-question identity the bridge telemetry uses.
   for (const q of selected) queriesHash.update(`${q.id}\u0000${q.questionSha256}\u0000`);
+  // A resumed run used to REWRITE config.json, so a payloads.jsonl assembled
+  // across invocations under different env / commits carried only the LAST
+  // invocation's gitSha / envEcho / resolvedLevers -- the F7 failure shape.
+  // The first manifest is now immutable; each resume writes its own alongside.
+  const isResume = existsSync(configPath);
+  const manifestPath = isResume
+    ? join(runDir, `config.resume-${new Date().toISOString().replace(/[:.]/g, "-")}.json`)
+    : configPath;
+  if (isResume) {
+    console.log(`resume detected: original config.json kept; this invocation's manifest -> ${manifestPath}`);
+  }
   await writeFile(
-    configPath,
+    manifestPath,
     `${JSON.stringify(
       {
         harness: "beam-slice-retrieval-v1",
+        resumeOf: isResume ? "config.json" : null,
         runId: opts.runId,
         split: opts.split,
         categories,

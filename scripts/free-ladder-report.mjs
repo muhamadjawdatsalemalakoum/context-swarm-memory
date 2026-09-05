@@ -80,7 +80,21 @@ function paired(rows) {
     csmWins: d.filter((x) => x < -1e-9).length,
     hindsightWins: d.filter((x) => x > 1e-9).length,
     ties: d.filter((x) => Math.abs(x) <= 1e-9).length,
-    certified: Math.abs(md) > 2.8 * se ? (md < 0 ? "CSM" : "Hindsight") : "tie (below MDE)",
+    ci95: [round(md - 1.96 * se, 4), round(md + 1.96 * se, 4)],
+    // Same rule headtohead-arms applies: enough pairs to have a variance, the
+    // delta clears its MDE, AND the 95% CI excludes zero. The old line dropped
+    // the CI condition and the n guard, so at n=1 (se=0) any nonzero delta was
+    // "certified" (audit 2026-09-05).
+    certified:
+      n < 2
+        ? "insufficient n"
+        : Math.abs(md) <= 2.8 * se
+          ? "tie (below MDE)"
+          : md + 1.96 * se < 0
+            ? "CSM"
+            : md - 1.96 * se > 0
+              ? "Hindsight"
+              : "tie (CI spans 0)",
   };
 }
 

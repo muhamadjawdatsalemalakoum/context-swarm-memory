@@ -45,6 +45,12 @@ CSM_AGENT_BASE_URL="$BASE_URL" npx tsx scripts/headtohead-arms.ts \
   --csm "data/eval/runs/$RUN/contexts.json" \
   --hindsight "data/eval/external/hindsight-$TIER.json" \
   --tier "$TIER-free" --model "$MODEL" --jobs 2 >> "$LOG" 2>&1
+if [ $? -ne 0 ]; then
+  # Without this the report step summarised whatever stale <tier>-free.json
+  # already existed for the label (audit 2026-09-05).
+  echo "[$(date -u +%H:%M:%SZ)] head-to-head FAILED for $TIER -- not writing a report over stale results" | tee -a "$LOG"
+  exit 1
+fi
 
 echo "[$(date -u +%H:%M:%SZ)] capturing report" | tee -a "$LOG"
 node scripts/free-ladder-report.mjs --tier "$TIER" --csm "$RUN" --h2h "$TIER-free" \

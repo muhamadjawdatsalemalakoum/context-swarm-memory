@@ -126,6 +126,17 @@ async function main(): Promise<void> {
   }
 
   console.log(`\nScanned ${totalEvents} filler events total.`);
+  if (totalEvents === 0) {
+    // The filler files are gitignored build intermediates, so on a fresh
+    // checkout every one is absent and this scan used to print "Clean" having
+    // looked at nothing (audit 2026-09-05). Say SKIP, in the same vocabulary
+    // verify:published uses for absent artifacts.
+    console.log(
+      "SKIP -- no filler files present; NOTHING was scanned, so this is not a clean result. " +
+        "Regenerate the tiered filler (scripts/expand-filler.ts) and re-run to actually verify.",
+    );
+    return;
+  }
 
   if (allWarns.length > 0) {
     console.log(`\nSoft warnings (${allWarns.length}):`);

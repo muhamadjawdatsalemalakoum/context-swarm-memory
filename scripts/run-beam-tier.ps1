@@ -95,7 +95,10 @@ $ambEnv = Join-Path $Amb ".env"
 if (Test-Path $ambEnv) {
   $csmLines = Select-String -Path $ambEnv -Pattern "^\s*CSM_" -ErrorAction SilentlyContinue
   if ($csmLines) {
-    Write-Error "ABORT: $ambEnv contains CSM_* entries that would override this script exports (AMB loads it with override=True): $($csmLines.Line -join '; '). Remove them and re-run."
+    # Write-Warning is not governed by $ErrorActionPreference='Stop'; Write-Error was,
+    # so the intentional abort surfaced as an unhandled exception and `exit 2` never
+    # ran -- the ladder then treated it as a retryable crash (audit 2026-09-05).
+    Write-Warning "ABORT: $ambEnv contains CSM_* entries that would override this script exports (AMB loads it with override=True): $($csmLines.Line -join '; '). Remove them and re-run."
     exit 2
   }
 }

@@ -19,14 +19,24 @@
 # BLOCKER fix (2026-08-25 pre-flight audit): the tier names were hardcoded to
 # the COMPLETED June run dirs, so a re-run would have judged every tier
 # "already complete" and done nothing. -SkipTenM holds the 10M tier: upstream
-# PR #38 documents the 10M loader as broken (the published 10M results
-# measured a 0.27%-loaded corpus) -- run 10M only after that fix merges.
+# PR #38 reports a 10M loader defect. (An earlier comment here repeated the
+# "0.27%-loaded corpus" figure as fact; a check of the committed artifacts does
+# not support it -- see docs/STATUS.md "The 10M tier".) Run 10M only after the
+# upstream fix merges.
 param(
   [int]$MaxAttemptsPerTier = 8,
   [Parameter(Mandatory = $true)][ValidatePattern("^[a-z0-9-]+$")][string]$Tag,
   [switch]$SkipTenM = $true
 )
 $ErrorActionPreference = 'Continue'
+
+# Record the tag so the watchdog (run-beam-watchdog.ps1) can relaunch THIS
+# ladder. -Tag is mandatory; a watchdog relaunch without it blocked forever on
+# the parameter prompt in a hidden window while step 1 kept reporting "ladder
+# alive" (audit 2026-09-05).
+$tagFile = Join-Path $PSScriptRoot '..\data\eval\runs\ladder-current-tag.txt'
+New-Item -ItemType Directory -Force -Path (Split-Path $tagFile) | Out-Null
+Set-Content -Path $tagFile -Value $Tag -Encoding ascii -NoNewline
 
 # Keep the machine awake for the duration of the ladder. Repeated idle
 # sleep/hibernate was the cause of the overnight + afternoon stalls (the run
@@ -53,8 +63,8 @@ $me = $PID
 # Kill any prior ladder instance first (a frozen-then-resumed zombie that the
 # harness/UI can no longer stop) — this is what spawns competing omb workers.
 # Excludes this process so the script never kills itself.
-Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -like '*run-beam-ladder*' -and $_.ProcessId -ne $me } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop; $stale++ } catch {} }
-Get-CimInstance Win32_Process -Filter "Name='uv.exe' OR Name='python.exe'" | Where-Object { $_.CommandLine -like '*omb*' } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop; $stale++ } catch {} }
+Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" | Where-Object { $_.CommandLine -like '*run-beam-ladder*' -and $_.ProcessId -ne $me } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop; $stale++ } catch {} }
+Get-CimInstance Win32_Process -Filter "Name='uv.exe' OR Name='python.exe'" | Where-Object { $_.CommandLine -match '\bomb\b' } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop; $stale++ } catch {} }
 Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*amb-csm-server*' } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop; $stale++ } catch {} }
 if ($stale -gt 0) { Start-Sleep -Seconds 3 }
 "[$([DateTime]::UtcNow.ToString('HH:mm:ssZ'))] single-instance guard: cleared $stale stale process(es)"

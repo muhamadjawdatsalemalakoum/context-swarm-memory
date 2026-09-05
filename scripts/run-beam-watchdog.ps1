@@ -19,15 +19,24 @@ function Log($m) { ("[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $m)
 
 # 1. Already running? Leave it alone. (CommandLine match; exclude self by name —
 #    the watchdog's own command line contains run-beam-watchdog, not -ladder.)
-$alive = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -like '*run-beam-ladder*' })
+$alive = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" | Where-Object { $_.CommandLine -like '*run-beam-ladder*' })
 if ($alive.Count -gt 0) { Log "ladder alive (PID $($alive[0].ProcessId)); no action"; exit 0 }
 
-# 2. All tiers complete? Then we are done — remove the watchdog task.
+# 2. Which ladder? The ladder records its -Tag on start. Without it we cannot
+#    name the run dirs and must not relaunch (a relaunch without -Tag blocks
+#    forever on the mandatory-parameter prompt in a hidden window).
+$tagFile = Join-Path $repo 'data\eval\runs\ladder-current-tag.txt'
+if (-not (Test-Path $tagFile)) { Log "no ladder-current-tag.txt; nothing to watch (start the ladder once with -Tag first)"; exit 0 }
+$tag = (Get-Content -Path $tagFile -Raw).Trim()
+if ($tag -notmatch '^[a-z0-9-]+$') { Log "tag file contents invalid ($tag); refusing to relaunch"; exit 0 }
+
+# All tiers complete? Then we are done — remove the watchdog task. Run dirs are
+# amb-beam-<split>-<tag>, mirroring run-beam-ladder.ps1. 10M is HELD there by
+# default (-SkipTenM), so it is not in this list.
 $tiers = @(
-  @('100k','amb-beam-100k-official-v2',400),
-  @('500k','amb-beam-500k-official-v1',700),
-  @('1m','amb-beam-1m-official-v1',700),
-  @('10m','amb-beam-10m-official-v1',200)
+  @('100k',"amb-beam-100k-$tag",400),
+  @('500k',"amb-beam-500k-$tag",700),
+  @('1m',"amb-beam-1m-$tag",700)
 )
 $allDone = $true
 foreach ($t in $tiers) {
@@ -43,5 +52,5 @@ if ($allDone) { Log "all tiers complete; deleting watchdog task"; schtasks /dele
 
 # 3. Dead + incomplete -> relaunch detached. The ladder's own single-instance
 #    guard clears any stale workers; --skip-ingested resumes from saved units.
-Log "ladder dead + incomplete; relaunching"
-Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-File', $ladder) -WindowStyle Hidden
+Log "ladder dead + incomplete; relaunching with -Tag $tag"
+Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-File', $ladder, '-Tag', $tag) -WindowStyle Hidden
