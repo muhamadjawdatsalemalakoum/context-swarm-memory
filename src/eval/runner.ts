@@ -67,6 +67,8 @@ export interface ProgressTick {
   trial: number;
   cellsCompleted: number;
   cellsSkipped: number;
+  /** Cells that threw (provider timeout etc.); re-run on resume, never scored as wrong. */
+  cellsErrored?: number;
   earlyStopGroups: number;
 }
 
