@@ -56,7 +56,7 @@ reduce-merge; `organizeMemoryScaled` in `src/eval/baselines/csm.ts`).
 Retrospective summary/ordering queries then receive this organized memory as
 the primary document plus a reduced set of raw events. Everything else is
 byte-identical to baseline. Flag: `CSM_AMB_OBSERVE_MEMORY` (default **off**;
-the submitted PR #19 configuration is untouched).
+written when PR #19 was live — it was author-closed unmerged on 2026-06-22).
 
 ### The gate, and how it was validated
 
@@ -183,16 +183,16 @@ internal LLM call. Two disclosures in that spirit:
 1. **Paired multi_session A/B** for the fact registry (staged, one command).
 2. **Known-baselines comparison** people can calibrate against: long-context
    ("paste everything") and vanilla RAG vs CSM, same model, same corpus, same
-   questions — the harness has all three behind one interface
-   (`scripts/measure-baseline-comparison.ts`, validated offline, awaiting
-   credit).
+   questions — a harness for that existed at the time
+   (`measure-baseline-comparison.ts`) and was removed with the baseline cleanup;
+   the comparison was never run.
 3. Gemini-stack confirmation of the summarization flip + a fresh full BEAM
    ladder with `CSM_AMB_OBSERVE_MEMORY=1`.
 
 ## 7. Reproduce / verify
 
 ```bash
-npm test                      # 368 offline tests (MockProvider, no keys)
+npm test                      # offline tests (MockProvider, no keys); count in README badge
 npx vitest run tests/ambServer.test.ts   # both gates' regression cases
 ```
 

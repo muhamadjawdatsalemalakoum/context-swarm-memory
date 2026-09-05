@@ -38,7 +38,7 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
   - `cache.ts` — content-hashed Ollama response cache, atomic writes
   - `corpus.ts` — `BenchEvent` schema, tiered sampling, sweep constants, `loadAllEvents`
   - `corpus/babilong.ts` — BABILong loader for Tasks 1–3 (free-form needle-in-haystack)
-  - `embed.ts` — `@xenova/transformers` embedding helper (disk-cached)
+  - `embed.ts` — `@huggingface/transformers` embedding helper (disk-cached)
   - `cachedLlm.ts` — cache-wrapping LLM caller used by every baseline
   - `runner.ts` — sweep-aware matrix runner with adaptive 50%-accuracy early-stop, resumable, replayable
   - `plotter.ts` — Vega-Lite spec generator for Graphs A–F of the context-scaling study
@@ -88,14 +88,14 @@ See `specs/context_swarm_memory_spec.md` for the full design and `README.md` for
 - **Never paste the real key into any committed file** (CLAUDE.md, docs, code, `.env.example`) — only into the gitignored `.env`.
 
 ## Mock provider convention
-`MockProvider` returns deterministic results pre-computed by Phase 0 keyword logic, embedded in a `<<MOCK_RESULT>>...<</MOCK_RESULT>>` fence inside the prompt. The mock provider extracts from the fence; real providers (OpenAI/Ollama) have it stripped before send. **Do not "clean up" or remove these fences** when editing prompts in `src/core/prompts.ts` — tests depend on them.
+`MockProvider` returns deterministic results pre-computed by Phase 0 keyword logic, embedded in a `<<MOCK_RESULT>>...<</MOCK_RESULT>>` fence that the stage modules (`src/core/probe.ts`, `recall.ts`, `synthesize.ts`) append to the prompt when the provider is the mock. The mock provider extracts from the fence; real providers have it stripped before send. **Do not "clean up" or remove these fences** when editing those modules — tests depend on them. (`src/core/prompts.ts` itself contains no fence.)
 
 ## MVP stack
-- TypeScript (NodeNext modules), Node 20+, ES modules (`"type": "module"`)
+- TypeScript (NodeNext modules), Node 22+ (`package.json` `engines`), ES modules (`"type": "module"`)
 - JSON + JSONL files under `data/` (created by `csm init`)
 - `zod` for schema validation, `vitest` for tests
 - `@modelcontextprotocol/sdk` is a declared dependency but **not yet imported** anywhere in `src/` — it's there for the planned HTTP/MCP server (see README "Future work"). Don't be surprised by the unused dep.
-- No DB, no vector store, no web UI, no eslint/prettier, no CI in MVP
+- No DB, no vector store, no web UI, no eslint/prettier. CI exists (`.github/workflows/ci.yml`: install, lint, test, build, verify:published, bench:smoke on Node 22)
 
 ## Phase status (2026-05-11)
 - Phase 0 (mock runtime): done

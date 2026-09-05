@@ -308,7 +308,7 @@ cheap pilot (e.g. `--per-category-limit 5` ≈ 10 queries first).
 - input: 80 × 13,885 ≈ **1.11 M tokens**
 - output: 80 × 2,513 ≈ **0.20 M tokens**
 - at Gemini 3.5 Flash list rates (verify current pricing before the run;
-  flash-class input has been ~$0.30/M and output ~$2.50/M): ≈ $0.33 input
+  flash-class input has been ~$0.30/M and output ~$2.50/M — *note these are ~5× below the same-day verified table in `EXP-T4-gemini-caching.md`; treat the dollar figures here as lower bounds*): ≈ $0.33 input
   + $0.50 output ≈ **$0.85, comfortably <$1**; wall-clock ≈ 80 ×
   7–9 s ≈ **10–12 min** with the latency-sprint pipeline.
 

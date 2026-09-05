@@ -99,7 +99,10 @@ Suggested interpretation:
 
 ## Completed single-trial evidence run
 
-The repository includes one committed Gemini 3.5 Flash evidence run:
+The repository includes two committed Gemini 3.5 Flash evidence runs. The CSM
+rows of record are `gemini35-160k-30q-v2-wave1` (re-measured 2026-06-10 on the
+post-wave defaults; see EVIDENCE.md); `v1` holds the comparison-baseline rows
+and the superseded v1 CSM rows:
 
 - Run id: `gemini35-160k-30q-v1`
 - Artifacts: `data/eval/runs/gemini35-160k-30q-v1/`
@@ -124,7 +127,8 @@ Before running the full confirmation, set a Google Cloud or AI Studio budget
 alert and run a tiny smoke first:
 
 ```bash
-npm run csm -- bench run --systems csm,rag --trials 1 --corpus-sizes 100K --model-contexts 8K --queries q01 --model gemini-3.5-flash --run-id gemini-cost-smoke
+npm run csm -- bench run --systems csm --trials 1 --corpus-sizes 100K --model-contexts 8K --queries q01 --model gemini-3.5-flash --run-id gemini-cost-smoke
+# (`rag` was a comparison baseline that no longer exists; the CLI used to drop it silently)
 ```
 
 If the smoke behaves, run the full confirmation. The benchmark cache is
@@ -187,7 +191,12 @@ npx tsx scripts/measure-gemini-caching.ts --live   # executes (needs GEMINI_API_
 The Python sidecars can route their internal LLM calls through Gemini's
 OpenAI-compatible endpoint via the Node LLM-cache proxy:
 
+> **Removed.** The proxy (`npm run proxy:start`), the `services/` sidecars and
+> `CSM_GEMINI_REASONING_EFFORT` no longer exist in the repo; nothing reads that
+> variable. The block below is kept only as a record of the 2026-06 setup.
+
 ```bash
+# HISTORICAL — these commands no longer work in this repo
 export CSM_OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 export OPENAI_API_KEY=$GEMINI_API_KEY
 export CSM_GEMINI_REASONING_EFFORT=low

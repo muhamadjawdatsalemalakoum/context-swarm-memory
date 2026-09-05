@@ -3,6 +3,13 @@
 **Status: first real win of the campaign. Not yet answer-gated.**
 Free (Claude sidecar), 45 paired queries per arm, real BEAM 1M slice.
 
+*(Forward pointer, 2026-09-05: the answer gate ran (arm C, +0.365, 26W/5L, §"ALL"
+below) and the router has been default ON since 2026-08-01. BUT arm r1mC predates
+the render-gap fix (`EXP-capsule-render-gap.md` lists it among the affected
+arms): both arms lacked the capsule, so the delta is within-harness valid and
+the absolutes are not, and it has not been re-measured with the capsule
+rendered. Every post-fix certified arm runs with it ON — indirect support.)*
+
 ## Why this could only be found at 1M
 
 Shards per user, measured:

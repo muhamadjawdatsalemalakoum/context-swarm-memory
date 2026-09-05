@@ -16,7 +16,9 @@ statements below:
   effect at 100k scale** — PaySwift parity at +6.4% tokens, BEAM-slice 100k
   inside CIs, because ~9-session units make alphabetical top-8 nearly
   exhaustive. `CSM_ROUTER_HYBRID` stays default-off; re-gate on a 500k slice
-  (27 sessions/unit) before scale runs. Correction: q04 is recall/packing
+  (27 sessions/unit) before scale runs. *(Superseded: the re-gate happened at 1M
+  on 2026-08-01 and the router has been default **ON** since — see STATUS.md;
+  the +0.365 figure carries a render-gap caveat.)* Correction: q04 is recall/packing
   starvation (T1 class), not router starvation — the router-starved class is
   q03/q16/q17/q24/q30. The Gemma-era probe false-negative narrative is dead:
   gemini-3.5-flash probes accept gold candidates at 98%, so the router-trust

@@ -55,7 +55,9 @@ return {
 
 The corrected number on q01 is **5.1× higher** than the buggy one. Publishing the buggy one would have destroyed the project's credibility.
 
-## Per-baseline status today
+## Per-baseline status at the time of the campaign
+
+*(Historical. Only `csm` remains in the codebase; the other rows describe baselines since removed.)*
 
 | Baseline | LLM calls per query | Accounting | Risk |
 |---|---|---|---|

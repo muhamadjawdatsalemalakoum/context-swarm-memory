@@ -1,5 +1,13 @@
 ﻿# Agent Memory Benchmark Bridge
 
+> **Read [`../../docs/STATUS.md`](../../docs/STATUS.md) first.** The status
+> banner below is from 2026-06-09. Since then: PR #19 was author-closed
+> unmerged; the upstream runner changed (post-PR-#20); the May comparison
+> quoted further down is historical and not comparable to a current run; and
+> `amb:patch` makes two upstream edits (provider registration in
+> `memory/__init__.py`, an HTTP timeout in `llm/gemini.py`) in addition to
+> copying the provider file.
+>
 > **Status 2026-06-09:** the officialization effort is paused while CSM core
 > R&D (warm service, token cost, summarization/ordering) lands. Everything
 > verified against AMB HEAD and the exact resume runbook live in
@@ -44,9 +52,10 @@ Hindsight is the named comparator to beat. It presents itself as agent memory
 that learns over time, with retain/recall/reflect APIs and a public SOTA memory
 benchmark story. CSM should not claim victory by beating weak RAG controls.
 
-The first full local comparison is now complete on BEAM 100K: CSM scored
-0.757573 with 342/400 correct rows versus the accepted Hindsight artifact at
-0.733658 with 326/400 correct rows. See
+The first full local comparison (May 2026, pre-#20 runner, **historical**) on
+BEAM 100K: CSM scored 0.757573 with 342/400 correct rows versus the accepted
+Hindsight artifact at 0.733658 with 326/400 correct rows. Superseded by the June
+official-runner rerun and then by the August campaign; see STATUS.md. Record:
 [`../../docs/BEAM_100K_CSM_VS_HINDSIGHT.md`](../../docs/BEAM_100K_CSM_VS_HINDSIGHT.md).
 
 Future publishable tables should include at least:

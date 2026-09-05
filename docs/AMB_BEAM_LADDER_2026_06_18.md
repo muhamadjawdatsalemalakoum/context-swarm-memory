@@ -5,6 +5,14 @@ Complete BEAM scaling ladder for Context Swarm Memory, run through the
 (100K, 500K, 1M, 10M). This is the data behind the reply to his
 "run all BEAM configurations up to 10M" request.
 
+> **HISTORICAL — read [STATUS.md](STATUS.md) first.** The **scores** below are
+> stale twice over: they measured a CSM config that predates the hybrid router,
+> ID repair, batched probe and fact fold; and the upstream runner has since
+> changed (post-PR-#20: new prompt, nugget judge, temp 0, no τ-b), so they are
+> not comparable to any current run. PR #19 was **author-closed 2026-06-22,
+> unmerged**. The **cost** column is still current. Original status text
+> follows.
+>
 > Status: **not an official leaderboard claim.** Produced by AMB's own
 > runner with the CSM provider (PR #19). Single-trial. Hindsight has a
 > published BEAM number only at 100K, so the deeper tiers are CSM's own
@@ -145,9 +153,12 @@ so it is excluded from the head-to-head.
 
 ```
 # per tier (frozen pipeline, resumable):
-pwsh scripts/run-beam-tier.ps1 -Split 10m -Name amb-beam-10m-official-v1
-# or the full ladder with resume + single-instance guard:
-pwsh scripts/run-beam-ladder.ps1
+# These were the June 2026 invocations. TODAY the ladder requires -Tag (run dirs
+# become amb-beam-<split>-<tag>) and holds 10M by default; see
+# docs/PREFLIGHT_OFFICIAL_LADDER.md for the current launch recipe. Re-running the
+# per-tier command below against the completed June -Name would resume-write
+# into that finished run dir.
+pwsh scripts/run-beam-ladder.ps1 -Tag official-v3-<date>
 ```
 
 `npm run verify:published` recomputes every headline number above directly

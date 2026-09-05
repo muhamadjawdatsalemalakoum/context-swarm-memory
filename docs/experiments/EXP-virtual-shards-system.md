@@ -3,6 +3,11 @@
 **Status: DO NOT SHIP. `CSM_VIRTUAL_SHARDS` and `CSM_SHARD_DESCRIPTORS` stay
 default-off.** Free (Claude sidecar), 60 paired queries, 100K.
 
+*(Forward pointer, 2026-09-05: `CSM_VIRTUAL_SHARDS` is still OFF. `CSM_SHARD_DESCRIPTORS`
+was flipped ON on 2026-08-01 — not on its own merit (it is flat alone) but because
+the hybrid router's lexical leg consumes it; see `tests/env.test.ts` FLAGS and
+STATUS.md. The −0.12 coverage result here is what the failure record cites.)*
+
 ## What was predicted
 
 The router component bench ([EXP-router-component-bench](EXP-router-component-bench.md))

@@ -119,8 +119,10 @@ Actionable leftovers found:
    Observation, fact registry — the 10M-tier registry is ~60 LLM calls charged
    to one arbitrary query's wall clock). Move to `/ingest`; zero answer-visible
    change.
-2. **Warm server never passes `preferenceProfile`** — `grep preferenceProfile
-   scripts/amb-csm-server.ts` returns nothing while `executeAmbRetrieve`
+2. **Warm server never passes `preferenceProfile`** *(fixed since: the server now
+   passes both the profile and the fact fold — `getScopedPreferenceProfile`,
+   `getScopedFactRegistryFolded`; pinned by `tests/ambServer.test.ts`)* — at the
+   time, `grep preferenceProfile scripts/amb-csm-server.ts` returned nothing while `executeAmbRetrieve`
    supports it and `run-beam-slice.ts` wires it. Confirms readiness-plan P3
    ("profile builder onto server path") as a *correctness* gap, not a nicety:
    an official AMB run through the warm server silently loses the

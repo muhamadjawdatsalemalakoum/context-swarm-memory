@@ -58,9 +58,8 @@ Two claims carry the project, and they are different kinds of claim:
 
 ## The flat-cost result (June 2026, official AMB runner)
 
-Run through the **unmodified public Agent Memory Benchmark (AMB) runner** at
-every BEAM split from 100K to 10M tokens — their CLI, their scoring, their
-judge path, a 3-file CSM provider and nothing else. Answer model
+Run through the **public Agent Memory Benchmark (AMB) runner** at every BEAM
+split from 100K to 10M tokens — their CLI, their scoring, their judge path. CSM enters through `npm run amb:patch`, which copies one provider file into the upstream checkout and makes two upstream edits: it registers the provider in `memory/__init__.py`, and it adds a configurable HTTP timeout (`OMB_GEMINI_TIMEOUT_MS`) to `llm/gemini.py`. Neither edit touches scoring, judging or retrieval logic, but "a 3-file provider and nothing else" — the earlier wording — was not accurate. Answer model
 `gemini-3.1-pro-preview`, judge `gemini-2.5-flash-lite`, matching the Hindsight
 artifact. Frozen pipeline, single-trial, 2,000 graded queries.
 
@@ -83,8 +82,10 @@ either system's ingest-time cost.</sup>
 
 **What survives from this run:** the flat *per-query retrieval* cost. All-in
 input is ~36–38K per query whether the per-unit haystack is 154K or 11.7M
-tokens. The internal pipeline is ~25% of the token *count* but runs on models
-~10× cheaper, so ~7% of the dollars.
+tokens. The internal pipeline is ~25% of the token *count* at 100K–1M
+(8.8–9.9K of 36–38K) and ~9% at 10M (3.4K of 35.9K, where one giant shard means
+one probe and one recall), and it runs on models ~10× cheaper — so single-digit
+percent of the dollars.
 
 **What does not survive:** the scores, as a statement about CSM today. And the
 cost figure needs one correction of its own, because the configuration that
@@ -149,6 +150,10 @@ lever that has since been certified and turned on:
 | batched probe (hosted only) | **ON** | −21% internal input (arithmetic: one shared scaffold replaces 8), score delta +0.032 — below its 0.079 MDE, i.e. neutral. Local providers stay OFF. |
 | fact fold (write-time fact registry) | **ON** | 500K `knowledge_update` **certified on two independent readers** (+0.382 / +0.326); 1M paired +0.114 with CI above zero; token-neutral at answer time |
 | preference profile | OFF | composed with the fold it measured **−0.036** (4W/9L) versus the fold alone |
+| coverage mode + chronicle (`CSM_COVERAGE`) | **ON** | deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10 |
+| embedding recall floor (`CSM_EMBED_FLOOR_K=10`) | **ON** | bridge path: a local-embedding top-K of raw turns is unioned into the return set when CSM's packet is starved. On every certified query |
+| shard expansion (`CSM_SHARD_EXPAND_K=3` / `_MAX=16`) | **ON** | bridge path: neighbouring turns of a hit are pulled in. On every certified query |
+| entity bridge (`CSM_ENTITY_BRIDGE_K=6` / `_MAX=24`) | **ON** | bridge path: same-shard turns sharing the query's entity terms are pulled in. On every certified query; its hand-rolled cut now goes through `select()` |
 | lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage reranker (`CSM_AMB_COVERAGE_RERANK` — the one that gained +11.6 proxy and lost answers), cross-encoder reranker (`CSM_HYBRID_RERANK` — a different, unrelated lever), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash |
 
 The gap between that config and the ladder's config is not cosmetic. On the
@@ -263,8 +268,11 @@ flowchart TD
 - **Writes are Committer-gated.** Durable memory changes only via
   `appendEventAndSnapshot` (user `remember`) or `applyCommitDecision`.
   Snapshots are immutable and versioned; the storage layer refuses overwrites.
-- **Indexing is LLM-free.** Hybrid lexical + local `all-MiniLM-L6-v2` routing;
-  no LLM-generated index is ever built, so adding memory costs no API tokens.
+- **Indexing is LLM-free.** Routing is lexical in the CLI, and hybrid — lexical
+  plus a local `all-MiniLM-L6-v2` embedding leg — on the benchmark bridge, which
+  builds the embedding index at ingest. No LLM-generated index is ever built, so
+  adding memory costs no API tokens. (The CLI does not yet wire the hybrid
+  router; the +0.365 result is a bridge-path measurement.)
 - **A component that cannot discriminate says so.** Ranking goes through
   `select()`, which reports degeneracy rather than returning a confident-looking
   arbitrary order.

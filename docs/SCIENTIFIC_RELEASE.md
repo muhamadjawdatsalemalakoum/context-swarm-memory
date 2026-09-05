@@ -73,7 +73,7 @@ Gemini numbers unless the README clearly says the answering model changed.
 
 ## 4. Sidecar reproducibility
 
-The sidecar environment is documented in `services/README.md`.
+The sidecar environment was documented in `services/README.md`; that directory and the sidecars were removed with the comparison-baseline cleanup, so this section is historical.
 
 Minimum artifact set:
 

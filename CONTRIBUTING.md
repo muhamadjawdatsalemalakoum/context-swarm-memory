@@ -22,7 +22,7 @@ Contributions follow the standard GitHub fork-and-PR flow. For larger architectu
 
 Requirements:
 
-- **Node.js 20 or later** (`node --version` to check). The repo uses ES modules and NodeNext resolution.
+- **Node.js 22 or later** (`node --version` to check; `package.json` `engines` enforces `>=22`). The repo uses ES modules and NodeNext resolution.
 - **npm** (ships with Node).
 
 ```bash

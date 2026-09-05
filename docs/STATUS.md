@@ -36,8 +36,12 @@ survived.
 | 1M | `abstention` | 70 | 0.679 | 0.486 | **+0.193** | 0.167 | 23/8/39 | **+0.185** (n=69) |
 
 The second reader ran at a *smaller* n than the primary — 67 and 69 rather than
-70 — because free-tier throttling exhausted retries on 7 and 1 pairs
-respectively. Those pairs are excluded and reported as-is, never backfilled.
+70 — because free-tier throttling exhausted retries. At 500K the run covered the
+`knowledge_update` + `information_extraction` pair (140 rows) and lost 7 in total,
+**3 of them `knowledge_update`** (70 − 3 = 67); at 1M it lost 1 `abstention` pair.
+(An earlier version of this paragraph said "7" against the 500K
+`knowledge_update` row, which does not reconcile with n=67.) Excluded pairs are
+reported as-is, never backfilled.
 
 Also certified as a pair at 500K: `knowledge_update` + `information_extraction`
 combined, +0.129 (45W/22L/73T, MDE 0.123).
@@ -57,6 +61,11 @@ claimed as leads:** 500K `contradiction_resolution` (+0.096, 38W/21L) and
    ID repair, the batched probe, and the fact fold — see the defaults table
    below. On the same 1M queries, `knowledge_update` went from −0.435 on that
    ladder to −0.111 today, and `abstention` from +0.086 to +0.193 certified.
+   *Read that comparison for its direction, not its magnitude:* the "ladder"
+   column is the official Gemini judge and the "today" column is the free
+   instrument, so it crosses instruments — exactly what this page otherwise
+   forbids. It is kept because the movement is far larger than the instruments'
+   known offset (~0.04), and it is labelled so nobody quotes it as a delta.
 2. **Its scores are no longer comparable to anything current.** After upstream
    PR #20 the benchmark changed its answer prompt (mem0-parity), its judge
    (nugget-based), and its temperature (0); `event_ordering` is no longer
@@ -152,6 +161,9 @@ is a test failure.
 | fact fold | **ON** | 500K `knowledge_update` certified ×2 readers; 1M paired +0.114 (CI > 0); abstention guard a symmetric wash; token-neutral at answer time |
 | preference profile | **OFF** | every certified full-n arm ran profile-OFF; composed with the fold it measured **−0.036** (4W/9L) versus fold alone |
 | coverage mode + chronicle (`CSM_COVERAGE`) | **ON** | deterministic cited timeline for summary/ordering/temporal queries; default since 2026-06-10 |
+| embedding recall floor (`CSM_EMBED_FLOOR_K=10`) | **ON** | bridge path: a local-embedding top-K of raw turns is unioned into the return set when CSM's packet is starved. On every certified query |
+| shard expansion (`CSM_SHARD_EXPAND_K=3` / `_MAX=16`) | **ON** | bridge path: neighbouring turns of a hit are pulled in. On every certified query |
+| entity bridge (`CSM_ENTITY_BRIDGE_K=6` / `_MAX=24`) | **ON** | bridge path: same-shard turns sharing the query's entity terms are pulled in. On every certified query; its hand-rolled cut now goes through `select()` |
 | lean return, needle net, session digests, ordered capsule, local probe gate, probe shrink, coverage reranker (`CSM_AMB_COVERAGE_RERANK` — the one that gained +11.6 proxy and lost answers), cross-encoder reranker (`CSM_HYBRID_RERANK` — a different, unrelated lever), virtual shards, legacy vocab/intent | **OFF** | each measured negative, non-replicating, or a wash |
 
 A residual-loss audit confirmed nothing measured-positive is switched off under
@@ -212,8 +224,8 @@ needs a different second reader.
 
 | instrument | what it is | when it is authoritative |
 |---|---|---|
-| **Official AMB runner** (Gemini) | upstream CLI, scoring, judge; a 3-file CSM provider and nothing else | the only publishable instrument; currently blocked |
-| **Free head-to-head** (`scripts/headtohead-arms.ts`) | one reader + one judge serve both arms; only the retrieved context differs; Hindsight replayed from its own published contexts | calibrated ρ 0.864 / MAE 0.077 vs the official judge; reproduced the official tie@100K and loss@1M. Certifies *within-instrument* paired deltas only. **Known defect (found 2026-09-05):** the reader's context is silently cut at 200,000 chars. Hindsight's contexts never reach it; CSM's did on **1 of 140** rows in the certified 500K pair (`28_information_extraction_1`, 371K→200K, 46% dropped) and **1 of 70** in the 1M paired fold arm (`34_knowledge_update_1`, 215K→200K). The cut is asymmetric *against* CSM, so the certified leads are if anything conservative — but it was silent, and is now counted and written into the output. |
+| **Official AMB runner** (Gemini) | upstream CLI, scoring, judge. CSM enters via `npm run amb:patch`: one provider file copied in, plus two upstream edits — registering the provider in `memory/__init__.py`, and a configurable HTTP timeout in `llm/gemini.py`. Neither touches scoring/judging/retrieval; "a 3-file provider and nothing else" was not accurate | the only publishable instrument; currently blocked |
+| **Free head-to-head** (`scripts/headtohead-arms.ts`) | one reader + one judge serve both arms; only the retrieved context differs; Hindsight replayed from its own published contexts | calibrated ρ 0.864 / MAE 0.077 vs the **pre-#20** official judge (`gemini-2.5-flash-lite`, rubric-fraction + Kendall τ-b), on the 100K artifact; reproduced the official tie@100K and loss@1M. **Upstream has since replaced that judge with a nugget judge (post-PR-#20); the calibration has not been redone against it**, so "calibrated against the official judge" means the June judge, not today's. Certifies *within-instrument* paired deltas only. **Known defect (found 2026-09-05):** the reader's context is silently cut at 200,000 chars. Hindsight's contexts never reach it; CSM's did on **1 of 140** rows in the certified 500K pair (`28_information_extraction_1`, 371K→200K, 46% dropped) and **1 of 70** in the 1M paired fold arm (`34_knowledge_update_1`, 215K→200K). The cut is asymmetric *against* CSM, so the certified leads are if anything conservative — but it was silent, and is now counted and written into the output. |
 | **Agent-SDK sidecar** | local iteration harness | iteration only — it carries ~8.5K tokens/call of harness overhead that is not CSM's, so its token totals are never publishable |
 
 Numbers from different instruments are **never pooled**. Absolute levels differ

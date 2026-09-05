@@ -38,7 +38,7 @@ Both formats share the same scorer entry point (`scoreAnswer` in `src/eval/score
 
 ## 4. Systems compared
 
-Four baselines, all calling **the same Gemma 4 model via Ollama** for fair head-to-head:
+*(Historical — the PaySwift/BABILong campaign. Only `csm` remains in the codebase; the three comparison baselines were removed afterwards and their runs are kept as committed artifacts.)* Four baselines, all calling **the same Gemma 4 model via Ollama** for fair head-to-head:
 
 - **`csm`** — the full CSM pipeline: router → probe → recall → synthesize → `MemoryPacket` → MCQ/free-form answer step, with a local embedding recall floor when the CSM packet is starved. Tests the architectural thesis.
 - **`longctx`** — concatenate all events into one prompt, truncate at the model context limit. The strawman; expected to fail above the model's native window.

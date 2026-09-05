@@ -19,7 +19,7 @@ artifacts:
 
 | arm | source | published accuracy |
 |---|---|---|
-| CSM | `data/eval/runs/amb-beam-100k-official-v1/.../rag/100k.json` | 0.7431 |
+| CSM | `data/eval/runs/amb-beam-100k-official-v1/.../rag/100k.json` (the PR #19 rerun artifact, 0.7431; the ladder's separate 100K run scored 0.7367 — the two are different single-trial runs) | 0.7431 |
 | Hindsight | vectorize-io public blob, `outputs/beam/hindsight/single-query/100k.json.gz` | **0.7337** |
 
 The Hindsight artifact was downloaded from the benchmark's own public storage

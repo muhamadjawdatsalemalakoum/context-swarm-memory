@@ -113,7 +113,7 @@ cause of the verbatim-fact gap. I originally implied it was; that was wrong.
 |---|---|---|
 | router | 16% of documents | alphabetical |
 | probe | 17% of turns | alphabetical |
-| recall | 29% of each turn's text | first-N chars |
+| recall | 29% of each turn's text *(pre-correction figure; the CORRECTION block above replaces it with a fixed 480-char cap, ~3.8% of shard text)* | first-N chars |
 
 Each stage independently discards ~80% of what reaches it, and each does so by
 a rule unrelated to the query. This is the mechanism behind every

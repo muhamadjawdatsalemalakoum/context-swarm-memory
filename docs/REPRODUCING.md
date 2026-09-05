@@ -64,16 +64,18 @@ npm run bench:replay -- scaling-rq1
 npm run bench:replay -- scaling-1m
 ```
 
-To regenerate the combined SOTA headline table from committed rows:
+The combined SOTA headline table and the scaling-SOTA slope report
+(`data/eval/runs/sota-combined/headline.md`, `scaling.md`) are committed
+artifacts. Their generators (`bench:sota:headline`, `bench:sota:scaling`) were
+removed with the comparison-baseline cleanup and no longer exist in
+`package.json`; the tables are frozen as committed.
 
 ```powershell
-npm run bench:sota:headline
+# (removed) npm run bench:sota:headline
 ```
 
-To regenerate the scaling-SOTA slope report:
-
 ```powershell
-npm run bench:sota:scaling
+# (removed) npm run bench:sota:scaling
 ```
 
 This recomputes the aggregated `summary.json` from the cached `results.jsonl` for that run. Expected wall clock: **under 5 minutes** end-to-end including disk I/O for the full 9M corpus sweep.

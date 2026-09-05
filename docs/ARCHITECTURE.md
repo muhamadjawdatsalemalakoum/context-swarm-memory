@@ -50,8 +50,9 @@ MemoryPacket → Main Agent
    snapshot, discarded after the answer.
 2. **Single durable-write entry point.** Durable memory only changes through
    `appendEventAndSnapshot` (called by `csm remember`) or `applyCommitDecision`
-   (Committer). No other code path is allowed to write a snapshot or chronicle
-   event.
+   (Committer). No other code path writes a snapshot or a commit chronicle
+   event. The one exception is `csm init`, which appends the single `init`
+   chronicle record when it creates the data tree — before any shard exists.
 3. **Snapshots are immutable and versioned.** IDs go `S001`, `S002`, … The
    storage layer (`JsonlStorage.writeSnapshot`) refuses overwrites at the file
    level.
@@ -106,8 +107,10 @@ output directly.
 
 ## Eval harness
 
-[`src/eval/`](../src/eval/) holds the benchmark machinery: `baselines/` (csm,
-vanillaRag, hybridRag, longContext), `runner.ts` + `scorer.ts` (orchestration and
+[`src/eval/`](../src/eval/) holds the benchmark machinery: `baselines/` (`csm`
+only — the vanillaRag/hybridRag/longContext comparison baselines were removed
+after the benchmark campaign; their historical runs remain under
+`data/eval/runs/`), `runner.ts` + `scorer.ts` (orchestration and
 grading), `mcq.ts` (multiple-choice helpers), `corpus.ts`/`fixtures.ts`/`embed.ts`
 (corpora + embeddings), `cache.ts`/`cachedLlm.ts` (replayable provider-call cache),
 `plotter.ts` (charts/tables), and `runEval.ts` (smoke eval; `npm run eval`).

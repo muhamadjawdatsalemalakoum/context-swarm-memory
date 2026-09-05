@@ -5,6 +5,12 @@ replayable from cache. Validated on the official BEAM 100K artifact
 (`data/eval/runs/amb-beam-100k-official-v1/.../rag/100k.json`, 400 rows,
 answer `gemini-3.1-pro-preview`, judge `gemini-2.5-flash-lite`).
 
+*(Scope note, 2026-09-05: the judge this calibrates against is the **pre-#20**
+official judge — `gemini-2.5-flash-lite`, rubric fraction plus Kendall τ-b for
+event_ordering. Upstream replaced it with a nugget judge after PR #20. Every
+downstream "ρ 0.864 vs the official judge" means the June judge; the calibration
+has not been redone against the current one.)*
+
 ## Why this exists
 
 Every CSM retrieval improvement so far is measured as gold-facet **coverage**,

@@ -35,7 +35,9 @@ Structural findings behind the plan:
   only 40% of queries), so any FIXED probe cut loses recall by construction —
   reductions must be confidence-gated or mechanism-batched.
 
-## Levers shipped (all default-off; flags echoed in run manifests)
+## Levers shipped (flags echoed in run manifests)
+
+*(Correction 2026-09-05: this heading said "all default-off". `CSM_PROBE_BATCH` (L2b) has been default ON for hosted providers since 2026-08-01, and lean K=16 (L1) was flipped ON on 2026-08-01 and REVERTED on 2026-08-02 after a 500K information_extraction regression — see STATUS.md and `tests/env.test.ts`.)*
 
 ### L0 — free wins *(committed 74dcd07)*
 Synth JSON indent dropped (~10–15% of synth payload); `CSM_PROBE_INDEX_CHARS`
@@ -66,7 +68,7 @@ zero retrieval variance; this pairing alone cut the gate MDE to ~0.07–0.10):
 | dd-k12 | −50% | −0.0759 | [−0.152, −0.015], instr_following 0W/5L | FAIL |
 
 Clean dose-response; the proxy predicted the ordering. **K=16 is the shipping
-point.** On the slice that is ~11.3K answer-visible tokens vs ~15.2K; with the
+point.** *(It shipped 2026-08-01 and was reverted 2026-08-02: 500K lean-off won all three wider categories. Lean return is OFF; the projection below did not survive cross-tier measurement.)* On the slice that is ~11.3K answer-visible tokens vs ~15.2K; with the
 official path's profile dedupe (−22.6%) on top, CSM's answer context lands
 **below Hindsight's 17.9K**.
 

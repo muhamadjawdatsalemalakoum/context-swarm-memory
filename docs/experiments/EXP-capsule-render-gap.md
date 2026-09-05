@@ -77,9 +77,13 @@ it is exactly what a slot-count effect looks like.
 - **"Fold, never append" / the displacement mechanism.** Retracted pending
   re-measurement. It may still be true — `RETURN_K` really is a hard cap — but
   this experiment did not show it.
-- **Every capsule-resident lever.** `CSM_AMB_ORDERED_CAPSULE`,
+- **Every capsule-resident lever measured on THIS harness.** `CSM_AMB_ORDERED_CAPSULE`,
   `CSM_AMB_OBSERVE_MEMORY`, `CSM_AMB_FACT_MEMORY`, `CSM_AMB_SYNTH_MEMORY`,
-  `CSM_AMB_PREFERENCE_PROFILE` were measured as content no-ops. Only their slot
+  `CSM_AMB_PREFERENCE_PROFILE` were measured as content no-ops *on the sidecar
+  arms*. (Clarification 2026-09-05: `CSM_AMB_OBSERVE_MEMORY` also has an earlier
+  official-config paired 40q measurement on the real bridge —
+  `WRITE_TIME_MEMORY_2026_07.md`, summarization 0.714→0.936 — which this defect
+  does not touch.) Only their slot
   cost was ever visible.
 - **Arm scores A–I, including 0.8037 and "CSM numerically ahead of Hindsight at
   1M".** Measured on CSM-minus-capsule. Direction may survive; the numbers do not

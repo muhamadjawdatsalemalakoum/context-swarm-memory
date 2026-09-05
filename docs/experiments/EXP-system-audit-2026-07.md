@@ -353,7 +353,7 @@ payloads, unresolvable-id rate:
 | unresolved | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | **35.9%** |
 
 Every ladder arm already ran with ID repair on. Only my misconfigured HR run did
-not. Arm H's +0.386 and its sign flip against Hindsight stand unchanged.
+not. Arm H's +0.386 and its sign flip against Hindsight stand unchanged. *(Retracted the next day: `EXP-capsule-render-gap.md` shows arm H lost 7.2% of its answer-visible characters to the render gap and lists 0.8037 among the numbers that "do not stand as reported".)*
 
 **The official Gemini ladder is unaffected by F12.** Those runs (2026-06-10 /
 06-18) predate the fix, but delivered 25.8 memories/query (median 25, the full
@@ -391,7 +391,7 @@ value. This mirrors what `src/core/selection.ts` did for ranking ("a component
 that cannot discriminate must say so") applied to configuration.
 
 All 8 boolean resolvers and all 17 integer read sites now route through it; five
-hand-rolled parser copies deleted.
+hand-rolled parser copies deleted. *(Correction 2026-09-05: not all. A full-repo audit found twelve more hand-parsed integer readers and two enum readers that silently defaulted — `tokenBudget.ts`, `coverage.ts`, `retrievalUnit.ts`, six in `baselines/csm.ts`, `CSM_VIRTUAL_SHARDS`, `CSM_GEMINI_CACHE`, `CSM_PROVIDER` — plus five tests pinning the silent behaviour. Fixed in audit unit 2; `tests/envIntegerResolvers.test.ts` now tables every resolver.)*
 
 **`providerModelEnvVar()`** — the write side of the table `resolveProviderModel`
 reads, so both directions share one source of truth. The bridge's

@@ -433,7 +433,9 @@ regression; any 7-winning-category drop > 0.02.
 
 ---
 
-## 7. Live gate results (orchestrator, 2026-06-10)
+## 7b. Live gate results (orchestrator, 2026-06-10)
+
+*(Renumbered from a duplicate "## 7" so in-doc §7 references are unambiguous.)*
 
 **PaySwift 30q A/B** (rd-t2hybrid-30q-v1 vs rd-probelite-30q-v1, flash-lite
 probes both arms): 29/30 both (same q04 miss), latency -5%, pipeline input
@@ -449,7 +451,7 @@ latency ~identical). Structural cause: 100k units average ~9 sessions, so
 the alphabetical top-8 already probes nearly the whole unit — Discovery A's
 cliff is a 500k/1m phenomenon (27/52 sessions per unit, per the T3 census).
 
-**Verdict: CSM_ROUTER_HYBRID stays default-off.** The mechanism is proven
+**Verdict (2026-06-10): CSM_ROUTER_HYBRID stays default-off.** *(Superseded 2026-08-01: the 500K/1M re-gate this verdict asked for happened at 1M and the router is default ON — `EXP-router-1m-hybrid.md`, STATUS.md. Note the +0.365 there carries a render-gap caveat.)* The mechanism is proven
 (offline recall@3 0.714->0.857/0.857, BEAM fixture gold top-3 0/4->4/4) and
 shelved for the scale phase: re-gate on a 500k BEAM-slice before the 500k/1m
 official runs, where informed top-8 vs alphabetical-8 is load-bearing.
