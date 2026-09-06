@@ -10,7 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Continuation of the audit recorded in units 1 and 2 above. Each unit is one
 commit; each finding was verified by hand before being touched. Full candidate
-list with per-item status: `docs/experiments/AUDIT-2026-09-05.md`.
+report: `docs/experiments/AUDIT-2026-09-05.md`; raw list with per-item status: `docs/experiments/AUDIT-2026-09-05-CANDIDATES.md`.
 
 - **Unit 3 — invariant 4.** Six bare `.sort().slice()` cuts routed through
   `select()` with their tiebreak stated (byte-identical order). The degeneracy

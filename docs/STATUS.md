@@ -251,7 +251,7 @@ top-level docs, experiment docs, config and CI) produced **383 candidate
 findings**. Agent-side verification was killed twice by usage limits, so every
 finding acted on below was **verified by hand against the code or the artifact**
 before it was touched. The full candidate list with per-item status is
-[`experiments/AUDIT-2026-09-05.md`](experiments/AUDIT-2026-09-05.md); the twelve
+[`experiments/AUDIT-2026-09-05.md`](experiments/AUDIT-2026-09-05.md) (report) and [`experiments/AUDIT-2026-09-05-CANDIDATES.md`](experiments/AUDIT-2026-09-05-CANDIDATES.md) (raw list); the twelve
 fix units are the commits `e952618..HEAD` and are itemised in `CHANGELOG.md`.
 
 ### Invariant scorecard (CLAUDE.md's ten, after the fixes)
